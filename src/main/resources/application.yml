@@ -12,8 +12,8 @@ jwt:
   secret: ${JWT_SECRET:claveSuperSecretaParaJWT1234567890}
   expiration: 86400000  
 
-#api:
-#  apicloud:
-#    url: https://api.apicloud.com/...   
-#    token: ${API_CLOUD_TOKEN:token_de_prueba}
+api:
+  apicloud:
+    url: https://api.apicloud.com/...   
+    token: ${API_CLOUD_TOKEN:token_de_prueba}
 
