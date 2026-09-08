@@ -10,6 +10,7 @@ public class LoginResponse {
     private String username;
     private String perfil;  
     private String tipoDocumento;
+    private String numeroDocumento;
     private String nombres;
     private String apellidos;
 }

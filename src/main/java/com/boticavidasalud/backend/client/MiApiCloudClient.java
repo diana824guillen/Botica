@@ -14,32 +14,28 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 @Component
-public class ApiCloudClient {
+public class MiApiCloudClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${api.apicloud.url}")
+    @Value("${api.miapicloud.url}")
     private String apiUrl;
 
-    @Value("${api.apicloud.token}")
+    @Value("${api.miapicloud.token}")
     private String apiToken;
 
-    // Constructor para inyección de dependencias (buena práctica)
-    public ApiCloudClient(RestTemplate restTemplate) {
+    public MiApiCloudClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
     public ClienteResponseDTO consultarPorDni(String dni) {
-        String url = apiUrl + "/persona/dni/" + dni;
+        String url = apiUrl + "/v1/dni/" + dni;
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + apiToken);
-        headers.set("Content-Type", "application/json");
-
         HttpEntity<?> entity = new HttpEntity<>(headers);
 
         try {
-            // Usamos ParameterizedTypeReference para evitar raw types y cast
             ParameterizedTypeReference<Map<String, Object>> responseType =
                     new ParameterizedTypeReference<Map<String, Object>>() {};
 
@@ -51,7 +47,19 @@ public class ApiCloudClient {
             );
 
             Map<String, Object> body = response.getBody();
-            if (body == null || body.isEmpty()) {
+            if (body == null || !Boolean.TRUE.equals(body.get("success"))) {
+                return null;
+            }
+
+            Object datosObj = body.get("datos");
+            if (!(datosObj instanceof Map)) {
+                return null;
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> datos = (Map<String, Object>) datosObj;
+
+            if (datos == null || datos.isEmpty()) {
                 return null;
             }
 
@@ -59,28 +67,43 @@ public class ApiCloudClient {
             cliente.setTipoDocumento(TipoDocumento.DNI);
             cliente.setNumeroDocumento(dni);
 
-            // Ajusta las claves según la documentación real de ApiCloud
-            if (body.containsKey("nombres")) {
-                cliente.setNombres((String) body.get("nombres"));
-            } else if (body.containsKey("names")) {
-                cliente.setNombres((String) body.get("names"));
+            // 1. Extraer nombres
+            String nombres = null;
+            if (datos.containsKey("nombres") && datos.get("nombres") != null) {
+                nombres = (String) datos.get("nombres");
             }
 
-            if (body.containsKey("apellidos")) {
-                cliente.setApellidos((String) body.get("apellidos"));
-            } else if (body.containsKey("surnames")) {
-                cliente.setApellidos((String) body.get("surnames"));
+            if (nombres == null || nombres.isEmpty()) {
+                return null;
             }
 
-            if (body.containsKey("correo")) {
-                cliente.setCorreo((String) body.get("correo"));
+            // 2. Extraer apellidos (paterno + materno)
+            String apellidos = null;
+            String paterno = null;
+            String materno = null;
+
+            if (datos.containsKey("ape_paterno") && datos.get("ape_paterno") != null) {
+                paterno = (String) datos.get("ape_paterno");
+            }
+            if (datos.containsKey("ape_materno") && datos.get("ape_materno") != null) {
+                materno = (String) datos.get("ape_materno");
             }
 
+            if (paterno != null && materno != null) {
+                apellidos = paterno + " " + materno;
+            } else if (paterno != null) {
+                apellidos = paterno;
+            } else if (materno != null) {
+                apellidos = materno;
+            }
+
+            cliente.setNombres(nombres);
+            cliente.setApellidos(apellidos);
             cliente.setEstado((short) 1);
+
             return cliente;
 
         } catch (Exception e) {
-            // Si ApiCloud falla (cliente no encontrado, timeout, etc.)
             return null;
         }
     }

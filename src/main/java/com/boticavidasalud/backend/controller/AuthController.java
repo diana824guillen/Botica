@@ -52,6 +52,7 @@ public class AuthController {
             userDetails.getUsername(),
             userDetails.getUsuario().getPerfil().getNombre(),
             userDetails.getUsuario().getTipoDocumento().name(),
+            userDetails.getUsuario().getNumeroDocumento(),
             userDetails.getUsuario().getNombres(),
             userDetails.getUsuario().getApellidos()
         );
