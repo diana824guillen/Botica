@@ -33,7 +33,6 @@ build/
 .vscode/
 
 # Compiled class files
-target/
 *.class
 
 # Log files
@@ -55,3 +54,5 @@ Thumbs.db
 application-local.yml
 application-dev.yml
 .env
+*.env
+
