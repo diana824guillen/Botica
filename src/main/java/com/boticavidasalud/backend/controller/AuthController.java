@@ -1,7 +1,7 @@
 package com.boticavidasalud.backend.controller;
 
-import com.boticavidasalud.backend.dto.LoginRequest;
-import com.boticavidasalud.backend.dto.LoginResponse;
+import com.boticavidasalud.backend.dto.LoginRequestDTO;
+import com.boticavidasalud.backend.dto.LoginResponseDTO;
 import com.boticavidasalud.backend.security.JwtUtil;
 import com.boticavidasalud.backend.security.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -28,7 +28,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequestDTO loginRequest) {
 
         // Autenticar al usuario
         Authentication authentication = authenticationManager.authenticate(
@@ -47,7 +47,7 @@ public class AuthController {
         String jwt = jwtUtil.generateToken(userDetails);
 
         // Respuesta
-        LoginResponse response = new LoginResponse(
+        LoginResponseDTO response = new LoginResponseDTO(
             jwt,
             userDetails.getUsername(),
             userDetails.getUsuario().getPerfil().getNombre(),
