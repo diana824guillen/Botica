@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.Set;
+import java.util.List;
 
 @Data
 public class ProductoRequestDTO {
@@ -24,8 +24,7 @@ public class ProductoRequestDTO {
     @Positive(message = "El stock mínimo debe ser mayor a 0")
     private BigDecimal stockMinimo = BigDecimal.ZERO;
 
-    // Lista de presentaciones (puede ser opcional, según el flujo)
-    private Set<PresentacionDTO> presentaciones;
+    private List<PresentacionDTO> presentaciones;
 }
 
 

@@ -63,7 +63,6 @@ public class ProductoService {
                 presentacion.setFactorConversion(presDTO.getFactorConversion() != null ? presDTO.getFactorConversion() : 1);
                 presentacion.setPrecioVenta(presDTO.getPrecioVenta());
                 presentacion.setEstado((short) 1);
-                
                 Presentacion savedPresentacion = presentacionRepository.save(presentacion);
                 savedProducto.getPresentaciones().add(savedPresentacion);
             }
