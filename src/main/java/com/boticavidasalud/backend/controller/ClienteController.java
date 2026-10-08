@@ -3,7 +3,7 @@ package com.boticavidasalud.backend.controller;
 import com.boticavidasalud.backend.dto.ClienteRequestDTO;
 import com.boticavidasalud.backend.dto.ClienteResponseDTO;
 import com.boticavidasalud.backend.dto.ClienteUpdateDTO;
-import com.boticavidasalud.backend.service.ClienteProcedureService;
+import com.boticavidasalud.backend.service.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,20 +15,18 @@ import java.util.List;
 @RequestMapping("/api/clientes")
 public class ClienteController {
 
-    private final ClienteProcedureService clienteService;
+    private final ClienteService clienteService;
 
-    public ClienteController(ClienteProcedureService clienteService) {
+    public ClienteController(ClienteService clienteService) {
         this.clienteService = clienteService;
     }
 
-    // ==================== CREAR ====================
     @PostMapping
     public ResponseEntity<ClienteResponseDTO> registrarCliente(@Valid @RequestBody ClienteRequestDTO request) {
         ClienteResponseDTO response = clienteService.registrarCliente(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ==================== LEER ====================
     @GetMapping
     public ResponseEntity<List<ClienteResponseDTO>> listarClientes() {
         return ResponseEntity.ok(clienteService.listarClientes());
@@ -44,7 +42,6 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.obtenerPorId(id));
     }
 
-    // ==================== ACTUALIZAR ====================
     @PutMapping("/{id}")
     public ResponseEntity<ClienteResponseDTO> actualizarCliente(
             @PathVariable Integer id,
@@ -52,7 +49,6 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.actualizarCliente(id, request));
     }
 
-    // ==================== CAMBIAR ESTADO ====================
     @PatchMapping("/{id}/estado")
     public ResponseEntity<ClienteResponseDTO> cambiarEstado(
             @PathVariable Integer id,
@@ -60,7 +56,6 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.cambiarEstado(id, estado));
     }
 
-    // ==================== ELIMINACIÓN LÓGICA ====================
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarCliente(@PathVariable Integer id) {
         clienteService.eliminarLogicamente(id);

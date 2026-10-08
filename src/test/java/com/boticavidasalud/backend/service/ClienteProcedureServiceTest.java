@@ -26,7 +26,7 @@ class ClienteProcedureServiceTest {
     private MiApiCloudClient miApiCloudClient;
 
     @InjectMocks
-    private ClienteProcedureService clienteService;
+    private ClienteService clienteService;
 
     private ClienteResponseDTO datosApi;
 
