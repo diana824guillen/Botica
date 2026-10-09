@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -13,12 +15,6 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    // 404 - Recurso no encontrado
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
 
     // 400 - Error de negocio (duplicados, estado inválido, etc.)
     @ExceptionHandler(BusinessException.class)
@@ -36,14 +32,25 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, mensaje);
     }
 
-    // 500 - Errores no controlados
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
-        // No exponer detalles internos (SQL) al cliente
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
+    // 401 - No autenticado
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Debe autenticarse para acceder a este recurso");
     }
 
-    // 409 - Conflicto con restricciones únicas (mensaje amigable, sin SQL)
+    // 403 - Sin permisos
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, "No tiene permisos para realizar esta acción");
+    }
+
+    // 404 - Recurso no encontrado
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    // 409 - Conflicto con restricciones únicas
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
         String mensaje = "Conflicto con los datos. Verifique la información ingresada.";
@@ -62,6 +69,13 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, mensaje);
     }
 
+    // 500 - Errores no controlados
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+        // No exponer detalles internos (SQL) al cliente
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
+    }
+
     // Método auxiliar
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String mensaje) {
         Map<String, Object> body = new HashMap<>();
@@ -72,5 +86,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(body);
     }
 }
+
 
 
