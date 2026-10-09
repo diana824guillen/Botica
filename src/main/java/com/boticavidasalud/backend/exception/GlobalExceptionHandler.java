@@ -1,5 +1,6 @@
 package com.boticavidasalud.backend.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -38,8 +39,27 @@ public class GlobalExceptionHandler {
     // 500 - Errores no controlados
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                ex.getMessage() != null ? ex.getMessage() : "Error interno del servidor");
+        // No exponer detalles internos (SQL) al cliente
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
+    }
+
+    // 409 - Conflicto con restricciones únicas (mensaje amigable, sin SQL)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String mensaje = "Conflicto con los datos. Verifique la información ingresada.";
+        String fullMsg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+
+        if (fullMsg.contains("uq_presentacion_producto_tipo_factor")) {
+            mensaje = "Ya existe una presentación con ese tipo y factor para este producto";
+        } else if (fullMsg.contains("uq_categoria_nombre")) {
+            mensaje = "Ya existe una categoría con ese nombre";
+        } else if (fullMsg.contains("uq_cliente_documento")) {
+            mensaje = "Ya existe un cliente con ese número de documento";
+        } else if (fullMsg.contains("uq_producto_nombre")) {
+            mensaje = "Ya existe un producto con ese nombre";
+        }
+
+        return buildResponse(HttpStatus.CONFLICT, mensaje);
     }
 
     // Método auxiliar

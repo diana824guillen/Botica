@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 @Data
 public class PresentacionDTO {
 
+    private Integer id;
+
     @NotNull(message = "El tipo de presentación es obligatorio")
     private TipoPresentacion tipo;
 

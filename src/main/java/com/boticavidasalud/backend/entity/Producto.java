@@ -4,17 +4,19 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "producto")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@DynamicUpdate
 public class Producto {
 
     @Id
@@ -53,10 +55,10 @@ public class Producto {
     private LocalDateTime fechaEliminacion;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Presentacion> presentaciones = new HashSet<>();
+    private List<Presentacion> presentaciones = new ArrayList<>();
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Lote> lotes = new HashSet<>();
+    private List<Lote> lotes = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

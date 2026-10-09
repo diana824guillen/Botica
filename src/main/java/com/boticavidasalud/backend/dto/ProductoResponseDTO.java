@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -21,6 +21,6 @@ public class ProductoResponseDTO {
     private BigDecimal stockActual;
     private Short estado;
     private LocalDateTime fechaCreacion;
-    private Set<PresentacionInfoDTO> presentaciones;
+    private List<PresentacionInfoDTO> presentaciones;
 }
 

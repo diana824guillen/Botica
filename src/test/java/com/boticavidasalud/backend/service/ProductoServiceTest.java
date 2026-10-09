@@ -19,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -111,7 +110,7 @@ class ProductoServiceTest {
         productoMock.setRequiereReceta(false);
         productoMock.setStockMinimo(BigDecimal.TEN);
         productoMock.setEstado((short) 1);
-        productoMock.setPresentaciones(new HashSet<>());
+        productoMock.setPresentaciones(new ArrayList<>());
 
         when(productoRepository.findById(1)).thenReturn(Optional.of(productoMock));
 

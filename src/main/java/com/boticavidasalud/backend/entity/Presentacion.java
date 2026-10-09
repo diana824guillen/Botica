@@ -2,17 +2,20 @@ package com.boticavidasalud.backend.entity;
 
 import com.boticavidasalud.backend.enums.TipoPresentacion;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Entity
 @Table(name = "presentacion")
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@DynamicUpdate
 public class Presentacion {
 
     @Id
@@ -45,6 +48,9 @@ public class Presentacion {
     @Column(name = "fecha_desactivacion")
     private LocalDateTime fechaDesactivacion;
 
+    @Column(name = "fecha_eliminacion")
+    private LocalDateTime fechaEliminacion;
+
     @PrePersist
     protected void onCreate() {
         fechaCreacion = LocalDateTime.now();
@@ -54,19 +60,6 @@ public class Presentacion {
     @PreUpdate
     protected void onUpdate() {
         fechaActualizacion = LocalDateTime.now();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Presentacion that = (Presentacion) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 }
 
