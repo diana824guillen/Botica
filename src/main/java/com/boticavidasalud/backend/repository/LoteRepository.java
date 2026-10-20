@@ -28,6 +28,10 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
 
     @Query("SELECT l FROM Lote l WHERE l.estado = 1 AND l.cantidad > 0 AND l.fechaVencimiento < :hoy ORDER BY l.fechaVencimiento ASC")
     List<Lote> listarVencidos(@Param("hoy") LocalDate hoy);
+
+    // Buscar lotes activos con stock, ordenados por fecha de vencimiento (FIFO)
+    @Query("SELECT l FROM Lote l WHERE l.producto.id = :idProducto AND l.estado = 1 AND l.cantidad > 0 ORDER BY l.fechaVencimiento ASC")
+    List<Lote> findLotesActivosParaVenta(@Param("idProducto") Integer idProducto);
 }
 
 
