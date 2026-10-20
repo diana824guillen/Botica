@@ -1,18 +1,21 @@
 package com.boticavidasalud.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Entity
 @Table(name = "lote")
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@DynamicUpdate
 public class Lote {
 
     @Id
@@ -38,6 +41,15 @@ public class Lote {
     @Column(nullable = false)
     private Short estado = 1;
 
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
+
+    @Column(name = "fecha_desactivacion")
+    private LocalDateTime fechaDesactivacion;
+
+    @Column(name = "fecha_eliminacion")
+    private LocalDateTime fechaEliminacion;
+
     @PrePersist
     protected void onCreate() {
         fechaIngreso = LocalDateTime.now();
@@ -45,17 +57,9 @@ public class Lote {
         if (cantidad == null) cantidad = BigDecimal.ZERO;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Lote lote = (Lote) o;
-        return Objects.equals(id, lote.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+    @PreUpdate
+    protected void onUpdate() {
+        fechaActualizacion = LocalDateTime.now();
     }
 }
 
