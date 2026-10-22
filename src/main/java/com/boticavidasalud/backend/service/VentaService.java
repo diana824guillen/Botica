@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -199,6 +200,27 @@ public class VentaService {
             }
         }
         return descuentoTotal;
+    }
+
+    // ============================================================
+    // HISTORIAL DE COMPRAS DE UN CLIENTE
+    // ============================================================
+    public List<HistorialCompraDTO> obtenerHistorialCompras(Integer idCliente) {
+        // 1. Validar que el cliente exista
+        if (!clienteRepository.existsById(idCliente)) {
+            throw new ResourceNotFoundException("Cliente no encontrado con ID: " + idCliente);
+        }
+
+        // 2. Buscar sus ventas y mapearlas al DTO
+        List<Venta> ventas = ventaRepository.findByClienteId(idCliente);
+
+        return ventas.stream().map(v -> new HistorialCompraDTO(
+                v.getId(),
+                v.getNumeroNotaVenta(),
+                v.getFechaVenta(),
+                v.getTotal(),
+                v.getEstado()
+        )).collect(Collectors.toList());
     }
 
     // ============================================================
