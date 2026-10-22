@@ -1,1 +1,36 @@
-/* You can add global styles to this file, and also import other style files */
+// Importamos las variables globales
+@use './styles/variables' as v;
+
+// ==========================================
+// Estilos Base Globales
+// ==========================================
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: v.$bg-body;
+  color: v.$text-main;
+  -webkit-font-smoothing: antialiased;
+}
+
+// Utilidades
+.text-center { text-align: center; }
+.text-muted { color: v.$text-muted; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.w-100 { width: 100%; }
+
+// Tarjeta reutilizable
+.card {
+  background: v.$bg-surface;
+  border-radius: v.$radius-md;
+  box-shadow: v.$shadow-md;
+  padding: 1.5rem;
+  border: 1px solid v.$border-color;
+}
+
+
