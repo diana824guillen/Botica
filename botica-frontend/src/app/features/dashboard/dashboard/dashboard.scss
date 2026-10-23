@@ -40,9 +40,12 @@
     border-color: v.$primary-light;
   }
 
+  /* Ajuste para los iconos de Bootstrap */
   .icon {
     font-size: 2.5rem;
+    color: v.$primary-color;
     margin-bottom: 1rem;
+    display: block;
   }
 
   h3 {

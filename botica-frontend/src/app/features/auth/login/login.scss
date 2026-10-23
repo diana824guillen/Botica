@@ -37,10 +37,27 @@
     margin-bottom: 0.5rem;
     color: v.$text-main;
   }
+}
+
+/* =========================================
+   Estilos para los inputs con iconos
+   ========================================= */
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  /* Ajuste para los iconos de Bootstrap */
+  i.icon {
+    position: absolute;
+    left: 1rem;
+    color: v.$text-muted;
+    font-size: 1.1rem; /* Tamaño del icono */
+  }
 
   input {
     width: 100%;
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 3rem 0.85rem 3rem;
     border: 1px solid v.$border-color;
     border-radius: v.$radius-md;
     font-size: 1rem;
@@ -52,8 +69,33 @@
       box-shadow: 0 0 0 3px v.$primary-light;
     }
   }
+
+  /* Botón del ojito */
+  .eye-btn {
+    position: absolute;
+    right: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: v.$text-muted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    
+    &:hover {
+      color: v.$primary-color;
+    }
+    
+    i {
+      font-size: 1.1rem;
+    }
+  }
 }
 
+/* =========================================
+   Mensajes de Error
+   ========================================= */
 .error-text {
   color: v.$danger-color;
   font-size: 0.8rem;

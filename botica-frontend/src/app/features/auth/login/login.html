@@ -8,33 +8,44 @@
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-4">
       
+      <!-- Campo Usuario -->
       <div class="form-group">
         <label>Usuario</label>
-        <input type="text" formControlName="username" placeholder="Ingrese su usuario" autocomplete="username">
-        <!-- Mensaje de error solo si se toco el campo y es invalido -->
+        <div class="input-with-icon">
+          <i class="bi bi-person icon"></i>
+          <input type="text" formControlName="username" placeholder="Ingrese su usuario" autocomplete="username">
+        </div>
         <span class="error-text" *ngIf="loginForm.get('username')?.touched && loginForm.get('username')?.invalid">
           Mínimo 4 letras o números, sin espacios.
         </span>
       </div>
 
+      <!-- Campo Contraseña con Ojito -->
       <div class="form-group">
         <label>Contraseña</label>
-        <input type="password" formControlName="password" placeholder="Ingrese su contraseña" autocomplete="current-password">
+        <div class="input-with-icon">
+          <i class="bi bi-lock icon"></i>
+          <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Ingrese su contraseña" autocomplete="current-password">
+          
+          <button type="button" class="eye-btn" (click)="togglePasswordVisibility()">
+            @if (showPassword) {
+              <i class="bi bi-eye-slash"></i>
+            } @else {
+              <i class="bi bi-eye"></i>
+            }
+          </button>
+        </div>
         <span class="error-text" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
           La contraseña es obligatoria.
         </span>
       </div>
 
+      <!-- Mensaje de Error del Backend -->
       <div class="error-banner" *ngIf="errorMessage">
         {{ errorMessage }}
       </div>
 
-      <app-button 
-        label="Ingresar al Sistema" 
-        type="submit" 
-        [disabled]="isLoading">
-      </app-button>
-
+      <app-button label="Ingresar al Sistema" type="submit" [disabled]="isLoading"></app-button>
       <p class="loading-text" *ngIf="isLoading">Validando credenciales...</p>
     </form>
   </div>

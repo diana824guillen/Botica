@@ -16,9 +16,10 @@ export class LoginComponent {
   loginForm: FormGroup;
   errorMessage: string = '';
   isLoading: boolean = false;
+  showPassword: boolean = false;
 
   constructor(
-    private fb: FormBuilder, 
+    private fb: FormBuilder,
     private authService: AuthService,
     private router: Router
   ) {
@@ -26,6 +27,10 @@ export class LoginComponent {
       username: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9]{4,20}$')]],
       password: ['', Validators.required]
     });
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
   }
 
   onSubmit() {
@@ -39,12 +44,12 @@ export class LoginComponent {
 
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
-        this.router.navigate(['/dashboard']); // A donde ira al entrar
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.isLoading = false;
-        if (err.status === 401 || err.status === 403) {
-          this.errorMessage = 'Usuario o contraseña incorrectos.';
+        if (err.error && err.error.mensaje) {
+          this.errorMessage = err.error.mensaje;
         } else {
           this.errorMessage = 'Error de conexión con el servidor.';
         }

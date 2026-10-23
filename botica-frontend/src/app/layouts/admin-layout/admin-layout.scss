@@ -1,52 +1,50 @@
 @use '../../../styles/variables' as v;
 
+/* Contenedor principal: Fija la altura de la pantalla */
 .layout-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh; 
+  overflow: hidden; /* Evita que toda la página haga scroll */
   background-color: v.$bg-body;
 }
 
 /* --- SIDEBAR --- */
 .sidebar {
   width: 250px;
+  height: 100vh;
   background-color: v.$bg-surface;
   border-right: 1px solid v.$border-color;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
-  box-shadow: v.$shadow-sm;
+  transition: width 0.3s ease, border 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden; /* Oculta el contenido cuando se cierra */
 
-  &.sidebar-collapsed {
-    width: 70px;
+  /* Cuando la clase sidebar-collapsed está en el padre, ocultamos el sidebar */
+  .sidebar-collapsed & {
+    width: 0;
+    border-right: none;
   }
 }
 
 .sidebar-header {
   padding: 1.5rem 1rem;
+  border-bottom: 1px solid v.$border-color;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid v.$border-color;
+  justify-content: center;
   
   h2 {
     color: v.$primary-color;
     font-size: 1.2rem;
-    white-space: nowrap;
-    overflow: hidden;
+    margin: 0;
   }
-}
-
-.toggle-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: v.$text-muted;
 }
 
 .sidebar-menu {
   padding: 1rem 0;
   flex: 1;
+  overflow-y: auto; /* Si hay muchos menús, el sidebar tiene su propio scroll */
 
   ul {
     list-style: none;
@@ -69,6 +67,8 @@
         .icon {
           font-size: 1.2rem;
           margin-right: 1rem;
+          width: 24px;
+          text-align: center;
         }
       }
     }
@@ -80,6 +80,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100vh; /* Ocupa el 100% de la altura */
+  overflow: hidden;
 }
 
 .topbar {
@@ -91,15 +93,37 @@
   align-items: center;
   border-bottom: 1px solid v.$border-color;
   box-shadow: v.$shadow-sm;
+  flex-shrink: 0; /* Evita que el topbar se encoja */
 }
 
-.user-info {
+.topbar-left {
   display: flex;
   align-items: center;
   gap: 1rem;
 
-  .greeting { font-size: 1rem; color: v.$text-main; }
-  
+  .toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: v.$text-main;
+    display: flex;
+    align-items: center;
+    
+    &:hover { color: v.$primary-color; }
+  }
+
+  .greeting {
+    font-size: 1rem;
+    color: v.$text-main;
+  }
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
   .badge {
     background-color: v.$primary-light;
     color: v.$primary-color;
@@ -126,9 +150,12 @@
   }
 }
 
+/* El contenido tiene su propio scroll interno */
 .content-area {
   padding: 2rem;
   flex: 1;
+  overflow-y: auto; 
+  background-color: v.$bg-body;
 }
 
 

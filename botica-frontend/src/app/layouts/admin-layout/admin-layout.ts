@@ -17,12 +17,12 @@ export class AdminLayoutComponent {
 
   // Definimos los módulos del sistema
   menuItems = [
-    { label: 'Inicio', route: '/dashboard', icon: '🏠', roles: ['ADMIN', 'VENDEDOR'] },
-    { label: 'Punto de Venta', route: '/ventas', icon: '🛒', roles: ['ADMIN', 'VENDEDOR'] },
-    { label: 'Clientes', route: '/clientes', icon: '👥', roles: ['ADMIN', 'VENDEDOR'] },
-    { label: 'Productos', route: '/productos', icon: '📦', roles: ['ADMIN'] },
-    { label: 'Reportes', route: '/reportes', icon: '📊', roles: ['ADMIN'] },
-    { label: 'Usuarios', route: '/usuarios', icon: '⚙️', roles: ['ADMIN'] }
+    { label: 'Inicio', route: '/dashboard', icon: 'bi-house-door', roles: ['ADMIN', 'VENDEDOR'] },
+    { label: 'Punto de Venta', route: '/ventas', icon: 'bi-cart3', roles: ['ADMIN', 'VENDEDOR'] },
+    { label: 'Clientes', route: '/clientes', icon: 'bi-people', roles: ['ADMIN', 'VENDEDOR'] },
+    { label: 'Productos', route: '/productos', icon: 'bi-box-seam', roles: ['ADMIN'] },
+    { label: 'Reportes', route: '/reportes', icon: 'bi-bar-chart', roles: ['ADMIN'] },
+    { label: 'Usuarios', route: '/usuarios', icon: 'bi-gear', roles: ['ADMIN'] }
   ];
 
   constructor(private authService: AuthService, private router: Router) {
