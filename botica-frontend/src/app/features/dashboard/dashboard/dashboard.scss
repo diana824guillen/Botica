@@ -1,0 +1,66 @@
+@use '../../../../styles/variables' as v;
+
+.dashboard-container {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.welcome-header {
+  margin-bottom: 2.5rem;
+
+  h1 {
+    color: v.$primary-color;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    font-size: 1.1rem;
+  }
+}
+
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: v.$bg-surface;
+  padding: 2rem 1.5rem;
+  border-radius: v.$radius-lg;
+  box-shadow: v.$shadow-sm;
+  border: 1px solid v.$border-color;
+  transition: all 0.3s ease;
+  text-align: center;
+  cursor: default;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: v.$shadow-md;
+    border-color: v.$primary-light;
+  }
+
+  .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    color: v.$text-main;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: v.$text-muted;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+

@@ -1,0 +1,134 @@
+@use '../../../styles/variables' as v;
+
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: v.$bg-body;
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+  width: 250px;
+  background-color: v.$bg-surface;
+  border-right: 1px solid v.$border-color;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  box-shadow: v.$shadow-sm;
+
+  &.sidebar-collapsed {
+    width: 70px;
+  }
+}
+
+.sidebar-header {
+  padding: 1.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid v.$border-color;
+  
+  h2 {
+    color: v.$primary-color;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: v.$text-muted;
+}
+
+.sidebar-menu {
+  padding: 1rem 0;
+  flex: 1;
+
+  ul {
+    list-style: none;
+    li {
+      a {
+        display: flex;
+        align-items: center;
+        padding: 0.85rem 1.5rem;
+        color: v.$text-main;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+        
+        &:hover, &.active {
+          background-color: v.$primary-light;
+          color: v.$primary-color;
+          border-right: 4px solid v.$primary-color;
+        }
+
+        .icon {
+          font-size: 1.2rem;
+          margin-right: 1rem;
+        }
+      }
+    }
+  }
+}
+
+/* --- MAIN CONTENT --- */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background-color: v.$bg-surface;
+  height: 70px;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid v.$border-color;
+  box-shadow: v.$shadow-sm;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .greeting { font-size: 1rem; color: v.$text-main; }
+  
+  .badge {
+    background-color: v.$primary-light;
+    color: v.$primary-color;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+}
+
+.logout-btn {
+  background-color: transparent;
+  color: v.$danger-color;
+  border: 1px solid v.$danger-color;
+  padding: 0.5rem 1rem;
+  border-radius: v.$radius-md;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: v.$danger-color;
+    color: white;
+  }
+}
+
+.content-area {
+  padding: 2rem;
+  flex: 1;
+}
+
+

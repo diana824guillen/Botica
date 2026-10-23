@@ -1,0 +1,40 @@
+<div class="layout-container" [class.sidebar-collapsed]="!isSidebarOpen">
+  
+  <!-- BARRA LATERAL -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Vida & Salud</h2>
+      <button class="toggle-btn" (click)="toggleSidebar()">☰</button>
+    </div>
+
+    <nav class="sidebar-menu">
+      <ul>
+        <!-- Iteramos los menús permitidos -->
+        <li *ngFor="let item of allowedMenuItems">
+          <a [routerLink]="item.route" routerLinkActive="active">
+            <span class="icon">{{ item.icon }}</span>
+            <span class="label" *ngIf="isSidebarOpen">{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="user-info">
+        <span class="greeting">Hola, <strong>{{ userName }}</strong></span>
+        <span class="badge">{{ userRole }}</span>
+      </div>
+      <button class="logout-btn" (click)="cerrarSesion()">Cerrar Sesión</button>
+    </header>
+
+    <div class="content-area">
+      <router-outlet></router-outlet> <!-- Aquí se inyectan los módulos -->
+    </div>
+  </main>
+
+</div>
+
+
