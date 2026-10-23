@@ -90,13 +90,13 @@ public class AuthController {
                 int intentos = usuario.getIntentosLogin() + 1;
                 
                 if (intentos >= 3) {
-                    // Bloqueo por 1 minuto (cambiar a plusMinutes(10) para producción)
+                    // Bloqueo por 1 minuto
                     usuario.setBloqueoHasta(LocalDateTime.now().plusMinutes(1));
                     usuario.setIntentosLogin(0); // Reseteamos para que al desbloquear empiece de nuevo
                     usuarioRepository.save(usuario);
                     
                     return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body(Map.of("mensaje", "Ha excedido los 3 intentos. Cuenta bloqueada por 1 minuto."));
+                            .body(Map.of("mensaje", "Ha excedido el número máximo de intentos permitidos. Intente de nuevo más tarde."));
                 } else {
                     usuario.setIntentosLogin(intentos);
                     usuarioRepository.save(usuario);

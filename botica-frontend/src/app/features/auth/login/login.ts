@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -19,9 +19,10 @@ export class LoginComponent {
   showPassword: boolean = false;
 
   constructor(
-    private fb: FormBuilder,
+    private fb: FormBuilder, 
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef // Inyectamos el detector de cambios
   ) {
     this.loginForm = this.fb.group({
       username: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9]{4,20}$')]],
@@ -41,6 +42,7 @@ export class LoginComponent {
 
     this.isLoading = true;
     this.errorMessage = '';
+    this.cdr.detectChanges(); // Forzamos actualización al empezar a cargar
 
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
@@ -53,6 +55,8 @@ export class LoginComponent {
         } else {
           this.errorMessage = 'Error de conexión con el servidor.';
         }
+        // Forzamos a Angular a pintar el mensaje de error inmediatamente
+        this.cdr.detectChanges(); 
       }
     });
   }
