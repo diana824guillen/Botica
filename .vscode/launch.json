@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Backend Botica",
+            "request": "launch",
+            "mainClass": "com.boticavidasalud.backend.BackendApplication",
+            "projectName": "backend",
+            "cwd": "${workspaceFolder}/backend",
+            "envFile": "${workspaceFolder}/backend/.env"
+        }
+    ]
+}
+
+

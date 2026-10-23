@@ -1,0 +1,43 @@
+<div class="login-wrapper">
+  <div class="login-card card">
+    
+    <div class="brand">
+      <h1>Vida & Salud</h1>
+      <p class="text-muted">Al alcance de tu familia</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-4">
+      
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" formControlName="username" placeholder="Ingrese su usuario" autocomplete="username">
+        <!-- Mensaje de error solo si se toco el campo y es invalido -->
+        <span class="error-text" *ngIf="loginForm.get('username')?.touched && loginForm.get('username')?.invalid">
+          Mínimo 4 letras o números, sin espacios.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" formControlName="password" placeholder="Ingrese su contraseña" autocomplete="current-password">
+        <span class="error-text" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+          La contraseña es obligatoria.
+        </span>
+      </div>
+
+      <div class="error-banner" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <app-button 
+        label="Ingresar al Sistema" 
+        type="submit" 
+        [disabled]="isLoading">
+      </app-button>
+
+      <p class="loading-text" *ngIf="isLoading">Validando credenciales...</p>
+    </form>
+  </div>
+</div>
+
+
