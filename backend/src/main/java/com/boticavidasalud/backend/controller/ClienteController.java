@@ -5,12 +5,12 @@ import com.boticavidasalud.backend.dto.ClienteResponseDTO;
 import com.boticavidasalud.backend.dto.ClienteUpdateDTO;
 import com.boticavidasalud.backend.service.ClienteService;
 import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/clientes")
@@ -22,37 +22,38 @@ public class ClienteController {
         this.clienteService = clienteService;
     }
 
-    // ADMIN y VENDEDOR pueden registrar (durante venta)
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    // ==================== LEER ====================
+    @PreAuthorize("hasAuthority('CLIENTE_LEER') or hasRole('ADMIN')")
+    @GetMapping
+    public ResponseEntity<Page<ClienteResponseDTO>> listarClientes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search) {
+        return ResponseEntity.ok(clienteService.listarClientesPaginado(page, size, search));
+    }
+
+    @PreAuthorize("hasAuthority('CLIENTE_LEER') or hasRole('ADMIN')")
+    @GetMapping("/{numeroDocumento}")
+    public ResponseEntity<ClienteResponseDTO> obtenerPorDocumento(@PathVariable String numeroDocumento) {
+        return ResponseEntity.ok(clienteService.obtenerPorDocumento(numeroDocumento));
+    }
+
+    @PreAuthorize("hasAuthority('CLIENTE_LEER') or hasRole('ADMIN')")
+    @GetMapping("/id/{id}")
+    public ResponseEntity<ClienteResponseDTO> obtenerPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(clienteService.obtenerPorId(id));
+    }
+
+    // ==================== CREAR ====================
+    @PreAuthorize("hasAuthority('CLIENTE_CREAR') or hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ClienteResponseDTO> registrarCliente(@Valid @RequestBody ClienteRequestDTO request) {
         ClienteResponseDTO response = clienteService.registrarCliente(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Solo ADMIN puede listar todos los clientes
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
-    public ResponseEntity<List<ClienteResponseDTO>> listarClientes() {
-        return ResponseEntity.ok(clienteService.listarClientes());
-    }
-
-    // ADMIN y VENDEDOR pueden buscar por documento (útil en venta)
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
-    @GetMapping("/{numeroDocumento}")
-    public ResponseEntity<ClienteResponseDTO> obtenerPorDocumento(@PathVariable String numeroDocumento) {
-        return ResponseEntity.ok(clienteService.obtenerPorDocumento(numeroDocumento));
-    }
-
-    // ADMIN y VENDEDOR pueden buscar por ID
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
-    @GetMapping("/id/{id}")
-    public ResponseEntity<ClienteResponseDTO> obtenerPorId(@PathVariable Integer id) {
-        return ResponseEntity.ok(clienteService.obtenerPorId(id));
-    }
-
-    // Solo ADMIN puede actualizar
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== EDITAR ====================
+    @PreAuthorize("hasAuthority('CLIENTE_EDITAR') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ClienteResponseDTO> actualizarCliente(
             @PathVariable Integer id,
@@ -60,8 +61,7 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.actualizarCliente(id, request));
     }
 
-    // Solo ADMIN puede cambiar estado
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CLIENTE_EDITAR') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<ClienteResponseDTO> cambiarEstado(
             @PathVariable Integer id,
@@ -69,8 +69,8 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.cambiarEstado(id, estado));
     }
 
-    // Solo ADMIN puede eliminar
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== ELIMINAR ====================
+    @PreAuthorize("hasAuthority('CLIENTE_ELIMINAR') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarCliente(@PathVariable Integer id) {
         clienteService.eliminarLogicamente(id);

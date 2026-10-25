@@ -40,7 +40,7 @@ public class Perfil {
     @Column(name = "fecha_eliminacion")
     private LocalDateTime fechaEliminacion;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "perfil_opcion",
         joinColumns = @JoinColumn(name = "id_perfil"),

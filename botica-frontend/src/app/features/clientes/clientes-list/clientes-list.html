@@ -1,0 +1,88 @@
+<div class="page-header">
+  <div>
+    <h2>Gestión de Clientes</h2>
+    <p class="page-description">Aquí podrás buscar a tus clientes por su documento o nombre, registrar nuevos clientes y mantener sus datos actualizados para un mejor servicio.</p>
+  </div>
+  <button class="btn-primary" *appHasPermission="'CLIENTE_CREAR'" (click)="abrirModal()">
+    <i class="bi bi-person-plus"></i> Nuevo Cliente
+  </button>
+</div>
+
+<div class="search-bar card">
+  <i class="bi bi-search"></i>
+  <input 
+    type="text" 
+    [value]="searchTerm"
+    (input)="onSearchInput($event)" 
+    placeholder="Buscar por DNI o Nombres...">
+</div>
+
+<div class="table-container card">
+  <table class="responsive-table">
+    <thead>
+      <tr>
+        <th>Tipo Doc.</th>
+        <th>N° Documento</th>
+        <th>Nombres y Apellidos</th>
+        <th>Correo</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="isLoading">
+        <td colspan="6" class="text-center">Cargando clientes...</td>
+      </tr>
+      <tr *ngIf="!isLoading && clientes.length === 0">
+        <td colspan="6" class="text-center">No se encontraron clientes.</td>
+      </tr>
+      <tr *ngFor="let c of clientes">
+        <td data-label="Tipo Doc.">{{ c.tipoDocumento }}</td>
+        <td data-label="N° Documento">{{ c.numeroDocumento }}</td>
+        <td data-label="Nombres">{{ c.nombres }} {{ c.apellidos }}</td>
+        <td data-label="Correo">{{ c.correo || 'N/A' }}</td>
+        <td data-label="Estado">
+          <span class="badge" [ngClass]="c.estado === 1 ? 'bg-success' : 'bg-warning'">
+            {{ c.estado === 1 ? 'Activo' : 'Inactivo' }}
+          </span>
+        </td>
+        <td data-label="Acciones" class="actions-cell">
+          <button class="action-btn edit" *appHasPermission="'CLIENTE_EDITAR'" (click)="abrirModal(c)" title="Editar datos">
+            <i class="bi bi-pencil-square"></i>
+          </button>
+          
+          <button class="action-btn toggle" *appHasPermission="'CLIENTE_EDITAR'" 
+                  (click)="cambiarEstado(c.id, c.estado === 1 ? 0 : 1)" 
+                  [title]="c.estado === 1 ? 'Desactivar cliente' : 'Activar cliente'">
+            <i class="bi" [ngClass]="c.estado === 1 ? 'bi-x-circle' : 'bi-check-circle'"></i>
+          </button>
+
+          <button class="action-btn delete" *appHasPermission="'CLIENTE_ELIMINAR'" title="Eliminar cliente">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Paginación -->
+  <div class="pagination" *ngIf="totalPages > 0">
+    <button (click)="cambiarPagina(currentPage - 1)" [disabled]="currentPage === 0">
+      <i class="bi bi-chevron-left"></i> Anterior
+    </button>
+    <span>Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+    <button (click)="cambiarPagina(currentPage + 1)" [disabled]="currentPage === totalPages - 1">
+      Siguiente <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal fuera del contenedor de la tabla -->
+<app-cliente-modal 
+  *ngIf="mostrarModal" 
+  [clienteEditar]="clienteSeleccionado"
+  (cerrar)="cerrarModal()" 
+  (guardado)="cargarClientes()">
+</app-cliente-modal>
+
+

@@ -13,12 +13,15 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -71,6 +74,11 @@ public class AuthController {
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             String jwt = jwtUtil.generateToken(userDetails);
 
+            List<String> permisos = userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .filter(auth -> !auth.startsWith("ROLE_"))
+                    .collect(Collectors.toList());
+
             LoginResponseDTO response = new LoginResponseDTO(
                 jwt,
                 userDetails.getUsername(),
@@ -78,7 +86,8 @@ public class AuthController {
                 userDetails.getUsuario().getTipoDocumento().name(),
                 userDetails.getUsuario().getNumeroDocumento(),
                 userDetails.getUsuario().getNombres(),
-                userDetails.getUsuario().getApellidos()
+                userDetails.getUsuario().getApellidos(),
+                permisos
             );
 
             return ResponseEntity.ok(response);

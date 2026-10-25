@@ -1,0 +1,185 @@
+@use '../../../../styles/variables' as v;
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  h2 { color: v.$text-main; margin: 0 0 0.25rem 0; }
+}
+
+// Estilo de la descripción
+.page-description {
+  color: v.$text-muted;
+  font-size: 0.95rem;
+  margin: 0;
+  max-width: 600px;
+}
+
+.btn-primary {
+  background-color: v.$primary-color;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: v.$radius-md;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover { background-color: v.$primary-hover; }
+}
+
+/* Buscador */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.8rem 1.2rem;
+  border-radius: v.$radius-md;
+  background-color: v.$bg-surface;
+  border: 1px solid v.$border-color;
+  box-shadow: v.$shadow-sm;
+  
+  i {
+    color: v.$text-muted;
+    font-size: 1.2rem;
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    padding: 0.5rem;
+    background: transparent;
+    color: v.$text-main;
+
+    &::placeholder {
+      color: v.$text-muted;
+    }
+  }
+}
+
+/* Paginación */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid v.$border-color;
+
+  button {
+    background: white;
+    border: 1px solid v.$border-color;
+    padding: 0.5rem 1rem;
+    border-radius: v.$radius-md;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    &:hover:not(:disabled) { background: v.$bg-body; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  span {
+    color: v.$text-muted;
+    font-size: 0.9rem;
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th, td {
+    padding: 1rem;
+    border-bottom: 1px solid v.$border-color;
+    vertical-align: middle;
+  }
+
+  th {
+    font-weight: 600;
+    color: v.$text-muted;
+    background-color: #f8fafc;
+  }
+
+  .actions-cell {
+    display: flex;
+    gap: 0.5rem;
+  }
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.2rem;
+  transition: transform 0.2s;
+
+  &:hover { transform: scale(1.1); }
+
+  &.edit { color: v.$info-color; }
+  &.delete { color: v.$danger-color; }
+  &.toggle { color: v.$warning-color; } 
+}
+
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  &.bg-success { background: #d1fae5; color: #065f46; }
+  &.bg-warning { background: #fef3c7; color: #92400e; } 
+}
+
+/* =========================================
+   Diseño Responsivo (Móviles)
+   ========================================= */
+@media (max-width: 768px) {
+  .responsive-table {
+    thead { display: none; }
+    tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid v.$border-color;
+      border-radius: v.$radius-md;
+      padding: 0.5rem;
+    }
+    td {
+      display: flex;
+      justify-content: space-between;
+      text-align: right;
+      border-bottom: none;
+      padding: 0.5rem;
+      
+      &::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: v.$text-muted;
+        text-align: left;
+      }
+    }
+    .actions-cell {
+      justify-content: flex-end;
+      padding-top: 1rem;
+    }
+  }
+}
+
+

@@ -10,6 +10,11 @@ import com.boticavidasalud.backend.enums.TipoDocumento;
 import com.boticavidasalud.backend.exception.BusinessException;
 import com.boticavidasalud.backend.exception.ResourceNotFoundException;
 import com.boticavidasalud.backend.repository.ClienteRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -165,6 +170,16 @@ public class ClienteService {
         cliente.setEstado(EstadoRegistro.ELIMINADO.getValor());
         cliente.setFechaEliminacion(LocalDateTime.now());
         clienteRepository.save(cliente);
+    }
+
+    // ============================================================
+    // Paginacion y filtrado 
+    // ============================================================
+
+    public Page<ClienteResponseDTO> listarClientesPaginado(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<Cliente> clientesPage = clienteRepository.listarPaginadoYFiltrado(search, pageable);
+        return clientesPage.map(this::mapToResponse);
     }
 
     // ============================================================
