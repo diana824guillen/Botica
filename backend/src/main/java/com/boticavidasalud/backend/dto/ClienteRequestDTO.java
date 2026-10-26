@@ -11,7 +11,8 @@ public class ClienteRequestDTO {
 
     private String nombres;     
     private String apellidos;   
-    private String correo;      
+    private String correo;  
+    private String origenDatos;   
 }
 
 

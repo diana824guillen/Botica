@@ -36,7 +36,10 @@ public class Cliente {
     private String correo;
 
     @Column(nullable = false)
-    private Short estado = 1;  
+    private Short estado = 1; 
+
+    @Column(name = "origen_datos", nullable = false, length = 20)
+    private String origenDatos = "MANUAL"; // Valor por defecto
 
     @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime fechaCreacion;

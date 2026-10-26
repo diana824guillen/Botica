@@ -6,6 +6,7 @@ export interface Cliente {
   apellidos: string;
   correo: string | null;
   estado: number;
+  origenDatos: 'RENIEC' | 'MANUAL';
 }
 
 export interface ClienteRequest {
@@ -13,6 +14,7 @@ export interface ClienteRequest {
   nombres?: string;
   apellidos?: string;
   correo?: string;
+  origenDatos?: string;
 }
 
 

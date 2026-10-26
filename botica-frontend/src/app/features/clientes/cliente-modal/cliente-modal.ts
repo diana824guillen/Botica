@@ -20,6 +20,7 @@ export class ClienteModalComponent implements OnInit {
   isLoading: boolean = false;
   errorMessage: string = '';
   modoRegistro: 'AUTO' | 'MANUAL' = 'AUTO';
+  esEdicionAuto: boolean = false;
 
   private fb = inject(FormBuilder);
   private clienteService = inject(ClienteService);
@@ -39,12 +40,10 @@ export class ClienteModalComponent implements OnInit {
 
     this.cambiarModo('AUTO');
 
-    // Actualizar validaciones del documento según el tipo
     this.clienteForm.get('tipoDocumento')?.valueChanges.subscribe(tipo => {
       this.actualizarValidacionDocumento(tipo);
     });
 
-    // Si es edición, cargar datos y deshabilitar campos de documento
     if (this.clienteEditar) {
       this.clienteForm.patchValue({
         tipoDocumento: this.clienteEditar.tipoDocumento,
@@ -53,10 +52,51 @@ export class ClienteModalComponent implements OnInit {
         apellidos: this.clienteEditar.apellidos,
         correo: this.clienteEditar.correo
       });
+      
       this.clienteForm.get('tipoDocumento')?.disable();
       this.clienteForm.get('numeroDocumento')?.disable();
-      this.modoRegistro = 'MANUAL';
-      this.cambiarModo('MANUAL');
+
+      // Usamos el campo real de la BD
+      this.esEdicionAuto = (this.clienteEditar.origenDatos === 'RENIEC');
+      
+      if (this.esEdicionAuto) {
+        this.modoRegistro = 'AUTO';
+        this.cambiarModo('AUTO');
+      } else {
+        this.modoRegistro = 'MANUAL';
+        this.cambiarModo('MANUAL');
+      }
+    }
+  }
+
+  onInputDocumento(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const tipo = this.clienteForm.get('tipoDocumento')?.value;
+    let valor = input.value;
+
+    if (tipo === 'DNI') {
+      valor = valor.replace(/[^0-9]/g, ''); 
+      valor = valor.substring(0, 8);        
+    } else if (tipo === 'CE') {
+      valor = valor.replace(/[^a-zA-Z0-9]/g, ''); 
+      valor = valor.substring(0, 11);             
+    } else if (tipo === 'PASAPORTE') {
+      valor = valor.replace(/[^a-zA-Z0-9]/g, '');
+      valor = valor.substring(0, 15);
+    }
+
+    if (input.value !== valor) {
+      input.value = valor;
+      this.clienteForm.get('numeroDocumento')?.setValue(valor);
+    }
+  }
+
+  onInputNombre(event: Event, controlName: string) {
+    const input = event.target as HTMLInputElement;
+    const valor = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+    if (input.value !== valor) {
+      input.value = valor;
+      this.clienteForm.get(controlName)?.setValue(valor);
     }
   }
 
@@ -65,7 +105,7 @@ export class ClienteModalComponent implements OnInit {
     const nombresCtrl = this.clienteForm.get('nombres');
     const apellidosCtrl = this.clienteForm.get('apellidos');
 
-    if (modo === 'AUTO' && !this.clienteEditar) {
+    if (modo === 'AUTO' || this.esEdicionAuto) {
       nombresCtrl?.clearValidators();
       apellidosCtrl?.clearValidators();
       nombresCtrl?.disable();
@@ -85,9 +125,9 @@ export class ClienteModalComponent implements OnInit {
     if (tipo === 'DNI') {
       docCtrl?.setValidators([Validators.required, Validators.pattern('^\\d{8}$')]);
     } else if (tipo === 'CE') {
-      docCtrl?.setValidators([Validators.required, Validators.pattern('^[a-zA-Z0-9]{9}$')]);
+      docCtrl?.setValidators([Validators.required, Validators.pattern('^[a-zA-Z0-9]{9,11}$')]);
     } else {
-      docCtrl?.setValidators([Validators.required, Validators.pattern('^[a-zA-Z0-9]{1,12}$')]);
+      docCtrl?.setValidators([Validators.required, Validators.pattern('^[a-zA-Z0-9]{9,15}$')]);
     }
     docCtrl?.updateValueAndValidity();
   }
@@ -101,6 +141,13 @@ export class ClienteModalComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     const formData = this.clienteForm.getRawValue();
+
+    // ASIGNAR ORIGEN DE DATOS
+    if (!this.clienteEditar) {
+      formData.origenDatos = (this.modoRegistro === 'AUTO') ? 'RENIEC' : 'MANUAL';
+    } else {
+      formData.origenDatos = this.clienteEditar.origenDatos;
+    }
 
     if (this.clienteEditar) {
       this.clienteService.actualizarCliente(this.clienteEditar.id, formData).subscribe({
@@ -123,11 +170,7 @@ export class ClienteModalComponent implements OnInit {
 
   manejarError(err: any) {
     this.isLoading = false;
-    if (err.error && err.error.mensaje) {
-      this.errorMessage = err.error.mensaje;
-    } else {
-      this.errorMessage = 'Ocurrió un error al guardar el cliente.';
-    }
+    this.errorMessage = err.error?.mensaje || 'Ocurrió un error al guardar el cliente.';
   }
 }
 

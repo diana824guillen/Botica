@@ -78,6 +78,7 @@ public class ClienteService {
         cliente.setApellidos(apellidos);
         cliente.setCorreo(correo);
         cliente.setEstado(EstadoRegistro.ACTIVO.getValor());
+        cliente.setOrigenDatos(request.getOrigenDatos() != null ? request.getOrigenDatos() : "MANUAL");
 
         Cliente guardado = clienteRepository.save(cliente);
         return mapToResponse(guardado);
@@ -200,7 +201,8 @@ public class ClienteService {
                 cliente.getNombres(),
                 cliente.getApellidos(),
                 cliente.getCorreo(),
-                cliente.getEstado()
+                cliente.getEstado(),
+                cliente.getOrigenDatos()
         );
     }
 }

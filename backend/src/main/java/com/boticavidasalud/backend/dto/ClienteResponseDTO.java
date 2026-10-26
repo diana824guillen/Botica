@@ -16,6 +16,7 @@ public class ClienteResponseDTO {
     private String apellidos;
     private String correo;
     private Short estado;
+    private String origenDatos; 
 }
 
 

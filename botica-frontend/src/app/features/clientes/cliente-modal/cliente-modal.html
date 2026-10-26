@@ -14,12 +14,17 @@
       <div class="modo-container" *ngIf="!clienteEditar">
         <label class="radio-label">
           <input type="radio" name="modo" value="AUTO" [checked]="modoRegistro === 'AUTO'" (change)="cambiarModo('AUTO')">
-          Buscar automáticamente en RENIEC
+          <span>Buscar en RENIEC</span>
         </label>
         <label class="radio-label">
           <input type="radio" name="modo" value="MANUAL" [checked]="modoRegistro === 'MANUAL'" (change)="cambiarModo('MANUAL')">
-          Registrar manualmente
+          <span>Registro Manual</span>
         </label>
+      </div>
+
+      <!-- Aviso si está bloqueado por RENIEC -->
+      <div class="info-banner" *ngIf="esEdicionAuto">
+        <i class="bi bi-info-circle"></i> Los nombres y apellidos fueron validados por RENIEC y no pueden ser modificados.
       </div>
 
       <div class="form-row">
@@ -37,28 +42,30 @@
           <input 
             type="text" 
             formControlName="numeroDocumento" 
-            [attr.maxlength]="clienteForm.get('tipoDocumento')?.value === 'DNI' ? 8 : (clienteForm.get('tipoDocumento')?.value === 'CE' ? 9 : 12)"
+            (input)="onInputDocumento($event)"
             placeholder="Ej. 12345678">
           <span class="error-text" *ngIf="clienteForm.get('numeroDocumento')?.invalid && clienteForm.get('numeroDocumento')?.touched">
-            Documento inválido.
+            Documento inválido para el tipo seleccionado.
           </span>
         </div>
       </div>
 
       <div class="form-group">
-        <label>Nombres <span class="required" *ngIf="modoRegistro === 'MANUAL' || clienteEditar">*</span></label>
-        <input type="text" formControlName="nombres" placeholder="Nombres del cliente">
-        <span class="error-text" *ngIf="clienteForm.get('nombres')?.invalid && clienteForm.get('nombres')?.touched">
-          Solo letras y espacios.
-        </span>
+        <label>Nombres <span class="required" *ngIf="modoRegistro === 'MANUAL' || esEdicionAuto">*</span></label>
+        <input 
+          type="text" 
+          formControlName="nombres" 
+          (input)="onInputNombre($event, 'nombres')"
+          placeholder="Nombres del cliente">
       </div>
 
       <div class="form-group">
-        <label>Apellidos <span class="required" *ngIf="modoRegistro === 'MANUAL' || clienteEditar">*</span></label>
-        <input type="text" formControlName="apellidos" placeholder="Apellidos del cliente">
-        <span class="error-text" *ngIf="clienteForm.get('apellidos')?.invalid && clienteForm.get('apellidos')?.touched">
-          Solo letras y espacios.
-        </span>
+        <label>Apellidos <span class="required" *ngIf="modoRegistro === 'MANUAL' || esEdicionAuto">*</span></label>
+        <input 
+          type="text" 
+          formControlName="apellidos" 
+          (input)="onInputNombre($event, 'apellidos')"
+          placeholder="Apellidos del cliente">
       </div>
 
       <div class="form-group">
