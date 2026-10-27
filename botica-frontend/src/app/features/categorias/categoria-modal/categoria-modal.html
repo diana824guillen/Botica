@@ -1,0 +1,161 @@
+<div class="modal-backdrop">
+  <div
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="
+      categoriaEditar
+        ? 'Editar categoría'
+        : 'Registrar nueva categoría'
+    "
+  >
+
+    <div class="modal-header">
+      <h3>
+        {{
+          categoriaEditar
+            ? 'Editar Categoría'
+            : 'Registrar Nueva Categoría'
+        }}
+      </h3>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isLoading"
+        (click)="cerrar.emit()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form
+      [formGroup]="categoriaForm"
+      (ngSubmit)="guardar()"
+    >
+
+      <!-- Nombre -->
+      <div class="form-group">
+
+        <label for="nombreCategoria">
+          Nombre de la categoría
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="nombreCategoria"
+          type="text"
+          formControlName="nombre"
+          maxlength="100"
+          autocomplete="off"
+          placeholder="Ej. Medicamentos"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            categoriaForm.get('nombre')?.touched
+            && categoriaForm.get('nombre')?.hasError('required')
+          "
+        >
+          El nombre de la categoría es obligatorio.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            categoriaForm.get('nombre')?.touched
+            && categoriaForm.get('nombre')?.hasError('pattern')
+          "
+        >
+          El nombre no puede contener solamente espacios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            categoriaForm.get('nombre')?.touched
+            && categoriaForm.get('nombre')?.hasError('maxlength')
+          "
+        >
+          El nombre no puede superar los 100 caracteres.
+        </span>
+
+      </div>
+
+      <!-- Descripción -->
+      <div class="form-group">
+
+        <label for="descripcionCategoria">
+          Descripción
+          <span class="optional">(Opcional)</span>
+        </label>
+
+        <textarea
+          id="descripcionCategoria"
+          formControlName="descripcion"
+          maxlength="255"
+          rows="4"
+          placeholder="Describe brevemente esta categoría"
+        ></textarea>
+
+        <span
+          class="error-text"
+          *ngIf="
+            categoriaForm.get('descripcion')?.touched
+            && categoriaForm.get('descripcion')?.hasError('maxlength')
+          "
+        >
+          La descripción no puede superar los 255 caracteres.
+        </span>
+
+      </div>
+
+      <!-- Error del servidor -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Botones -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isLoading"
+          (click)="cerrar.emit()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="categoriaForm.invalid || isLoading"
+        >
+          {{
+            isLoading
+              ? 'Guardando...'
+              : (
+                  categoriaEditar
+                    ? 'Actualizar categoría'
+                    : 'Guardar categoría'
+                )
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+

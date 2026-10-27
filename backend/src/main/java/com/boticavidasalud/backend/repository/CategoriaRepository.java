@@ -8,21 +8,22 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface CategoriaRepository extends JpaRepository<Categoria, Integer> {
+public interface CategoriaRepository
+        extends JpaRepository<Categoria, Integer> {
 
-    // Buscar por nombre (solo activas o inactivas)
-    @Query("SELECT c FROM Categoria c WHERE c.nombre = :nombre AND c.estado IN (0, 1)")
+    // Comprobar duplicados sin distinguir mayúsculas, minúsculas ni espacios en los extremos.
+    @Query("SELECT c FROM Categoria c WHERE LOWER(TRIM(c.nombre)) = LOWER(TRIM(:nombre))")
     Optional<Categoria> findByNombre(@Param("nombre") String nombre);
 
-    // Buscar por nombre excluyendo un ID (para validar duplicado en UPDATE)
-    @Query("SELECT c FROM Categoria c WHERE c.nombre = :nombre AND c.id <> :id AND c.estado IN (0, 1)")
+    // Comprobar duplicados al actualizar, excluyendo la propia categoría.
+    @Query("SELECT c FROM Categoria c WHERE LOWER(TRIM(c.nombre)) = LOWER(TRIM(:nombre)) AND c.id <> :id")
     Optional<Categoria> findByNombreAndIdNot(@Param("nombre") String nombre, @Param("id") Integer id);
 
-    // Listar solo categorías NO eliminadas
+    // Mostrar categorías activas e inactivas, pero no eliminadas.
     @Query("SELECT c FROM Categoria c WHERE c.estado IN (0, 1) ORDER BY c.id DESC")
     List<Categoria> listarActivas();
 
-    // Buscar por ID (solo activas o inactivas)
+    // Obtener categorías que todavía no han sido eliminadas.
     @Query("SELECT c FROM Categoria c WHERE c.id = :id AND c.estado IN (0, 1)")
     Optional<Categoria> findByIdActivo(@Param("id") Integer id);
 }

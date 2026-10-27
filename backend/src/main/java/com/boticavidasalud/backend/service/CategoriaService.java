@@ -8,6 +8,7 @@ import com.boticavidasalud.backend.enums.EstadoRegistro;
 import com.boticavidasalud.backend.exception.BusinessException;
 import com.boticavidasalud.backend.exception.ResourceNotFoundException;
 import com.boticavidasalud.backend.repository.CategoriaRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,78 +26,130 @@ public class CategoriaService {
         this.categoriaRepository = categoriaRepository;
     }
 
-    // ============================================================
-    // CREAR CATEGORÍA
-    // ============================================================
-    public CategoriaResponseDTO crearCategoria(CategoriaRequestDTO request) {
-        // Verificar duplicado
-        categoriaRepository.findByNombre(request.getNombre()).ifPresent(c -> {
-            throw new BusinessException("Ya existe una categoría con ese nombre");
+    // ==================== CREAR ====================
+
+    public CategoriaResponseDTO crearCategoria(
+            CategoriaRequestDTO request) {
+
+        String nombre = normalizarNombre(request.getNombre());
+
+        if (nombre.isBlank()) {
+            throw new BusinessException(
+                    "El nombre de la categoría es obligatorio"
+            );
+        }
+
+        categoriaRepository.findByNombre(nombre).ifPresent(c -> {
+            throw new BusinessException(
+                    "Ya existe una categoría con ese nombre"
+            );
         });
 
         Categoria categoria = new Categoria();
-        categoria.setNombre(request.getNombre());
-        categoria.setDescripcion(request.getDescripcion());
+        categoria.setNombre(nombre);
+        categoria.setDescripcion(
+                normalizarDescripcion(request.getDescripcion())
+        );
         categoria.setEstado(EstadoRegistro.ACTIVO.getValor());
 
         Categoria guardada = categoriaRepository.save(categoria);
+
         return mapToResponse(guardada);
     }
 
-    // ============================================================
-    // LISTAR CATEGORÍAS
-    // ============================================================
+    // ==================== LISTAR ====================
+
     public List<CategoriaResponseDTO> listarCategorias() {
-        return categoriaRepository.listarActivas().stream()
+        return categoriaRepository.listarActivas()
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    // ============================================================
-    // OBTENER POR ID
-    // ============================================================
+    // ==================== OBTENER POR ID ====================
+
     public CategoriaResponseDTO obtenerPorId(Integer id) {
         Categoria categoria = categoriaRepository.findByIdActivo(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Categoría no encontrada con ID: " + id
+                        )
+                );
+
         return mapToResponse(categoria);
     }
 
-    // ============================================================
-    // ACTUALIZAR CATEGORÍA
-    // ============================================================
-    public CategoriaResponseDTO actualizarCategoria(Integer id, CategoriaUpdateDTO request) {
-        Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
+    // ==================== ACTUALIZAR ====================
 
-        if (categoria.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
-            throw new BusinessException("No se puede actualizar una categoría eliminada");
+    public CategoriaResponseDTO actualizarCategoria(
+            Integer id,
+            CategoriaUpdateDTO request) {
+
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Categoría no encontrada con ID: " + id
+                        )
+                );
+
+        if (categoria.getEstado().equals(
+                EstadoRegistro.ELIMINADO.getValor())) {
+            throw new BusinessException(
+                    "No se puede actualizar una categoría eliminada"
+            );
         }
 
-        // Verificar duplicado en OTRA categoría
-        categoriaRepository.findByNombreAndIdNot(request.getNombre(), id).ifPresent(c -> {
-            throw new BusinessException("Ya existe otra categoría con ese nombre");
-        });
+        String nombre = normalizarNombre(request.getNombre());
 
-        categoria.setNombre(request.getNombre());
-        categoria.setDescripcion(request.getDescripcion());
+        if (nombre.isBlank()) {
+            throw new BusinessException(
+                    "El nombre de la categoría es obligatorio"
+            );
+        }
+
+        categoriaRepository
+                .findByNombreAndIdNot(nombre, id)
+                .ifPresent(c -> {
+                    throw new BusinessException(
+                            "Ya existe otra categoría con ese nombre"
+                    );
+                });
+
+        categoria.setNombre(nombre);
+        categoria.setDescripcion(
+                normalizarDescripcion(request.getDescripcion())
+        );
 
         Categoria actualizada = categoriaRepository.save(categoria);
+
         return mapToResponse(actualizada);
     }
 
-    // ============================================================
-    // CAMBIAR ESTADO
-    // ============================================================
-    public CategoriaResponseDTO cambiarEstado(Integer id, Short nuevoEstado) {
-        if (nuevoEstado == null || (nuevoEstado != 0 && nuevoEstado != 1)) {
-            throw new BusinessException("Estado inválido. Debe ser 0 (Inactivo) o 1 (Activo)");
+    // ==================== CAMBIAR ESTADO ====================
+
+    public CategoriaResponseDTO cambiarEstado(
+            Integer id,
+            Short nuevoEstado) {
+
+        if (nuevoEstado == null ||
+                (nuevoEstado != 0 && nuevoEstado != 1)) {
+            throw new BusinessException(
+                    "Estado inválido. Debe ser 0 (Inactivo) o 1 (Activo)"
+            );
         }
 
         Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Categoría no encontrada con ID: " + id
+                        )
+                );
 
-        if (categoria.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
-            throw new BusinessException("No se puede cambiar el estado de una categoría eliminada");
+        if (categoria.getEstado().equals(
+                EstadoRegistro.ELIMINADO.getValor())) {
+            throw new BusinessException(
+                    "No se puede cambiar el estado de una categoría eliminada"
+            );
         }
 
         categoria.setEstado(nuevoEstado);
@@ -108,28 +161,56 @@ public class CategoriaService {
         }
 
         Categoria actualizada = categoriaRepository.save(categoria);
+
         return mapToResponse(actualizada);
     }
 
-    // ============================================================
-    // ELIMINACIÓN LÓGICA
-    // ============================================================
+    // ==================== ELIMINACIÓN LÓGICA ====================
+
     public void eliminarLogicamente(Integer id) {
         Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Categoría no encontrada con ID: " + id
+                        )
+                );
 
-        if (categoria.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
-            throw new BusinessException("La categoría ya está eliminada");
+        if (categoria.getEstado().equals(
+                EstadoRegistro.ELIMINADO.getValor())) {
+            throw new BusinessException(
+                    "La categoría ya está eliminada"
+            );
         }
 
         categoria.setEstado(EstadoRegistro.ELIMINADO.getValor());
         categoria.setFechaEliminacion(LocalDateTime.now());
+
         categoriaRepository.save(categoria);
     }
 
-    // ============================================================
-    // AUXILIAR
-    // ============================================================
+    // ==================== NORMALIZAR DATOS ====================
+
+    private String normalizarNombre(String nombre) {
+        if (nombre == null) {
+            return "";
+        }
+
+        // Quitar espacios externos y reducir espacios repetidos.
+        return nombre.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizarDescripcion(String descripcion) {
+        if (descripcion == null) {
+            return null;
+        }
+
+        String resultado = descripcion.trim();
+
+        return resultado.isEmpty() ? null : resultado;
+    }
+
+    // ==================== MAPEAR RESPUESTA ====================
+
     private CategoriaResponseDTO mapToResponse(Categoria categoria) {
         return new CategoriaResponseDTO(
                 categoria.getId(),

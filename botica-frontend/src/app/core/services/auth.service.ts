@@ -12,6 +12,7 @@ export interface LoginResponse {
   numeroDocumento: string;
   nombres: string;
   apellidos: string;
+  permisos: string[];
 }
 
 @Injectable({

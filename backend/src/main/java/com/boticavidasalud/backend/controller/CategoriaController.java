@@ -22,51 +22,67 @@ public class CategoriaController {
         this.categoriaService = categoriaService;
     }
 
-    // Solo ADMIN puede crear
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    public ResponseEntity<CategoriaResponseDTO> crearCategoria(
-            @Valid @RequestBody CategoriaRequestDTO request) {
-        CategoriaResponseDTO response = categoriaService.crearCategoria(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
+    // ==================== LEER ====================
 
-    // ADMIN y VENDEDOR pueden ver
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasAuthority('CATEGORIA_LEER') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<CategoriaResponseDTO>> listarCategorias() {
         return ResponseEntity.ok(categoriaService.listarCategorias());
     }
 
-    // ADMIN y VENDEDOR pueden ver
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasAuthority('CATEGORIA_LEER') or hasRole('ADMIN')")
     @GetMapping("/{id}")
-    public ResponseEntity<CategoriaResponseDTO> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<CategoriaResponseDTO> obtenerPorId(
+            @PathVariable Integer id) {
         return ResponseEntity.ok(categoriaService.obtenerPorId(id));
     }
 
-    // Solo ADMIN puede actualizar
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== CREAR ====================
+
+    @PreAuthorize("hasAuthority('CATEGORIA_CREAR') or hasRole('ADMIN')")
+    @PostMapping
+    public ResponseEntity<CategoriaResponseDTO> crearCategoria(
+            @Valid @RequestBody CategoriaRequestDTO request) {
+
+        CategoriaResponseDTO response =
+                categoriaService.crearCategoria(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // ==================== ACTUALIZAR ====================
+
+    @PreAuthorize("hasAuthority('CATEGORIA_EDITAR') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaResponseDTO> actualizarCategoria(
             @PathVariable Integer id,
             @Valid @RequestBody CategoriaUpdateDTO request) {
-        return ResponseEntity.ok(categoriaService.actualizarCategoria(id, request));
+
+        return ResponseEntity.ok(
+                categoriaService.actualizarCategoria(id, request)
+        );
     }
 
-    // Solo ADMIN
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== ACTIVAR / DESACTIVAR ====================
+
+    @PreAuthorize("hasAuthority('CATEGORIA_EDITAR') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<CategoriaResponseDTO> cambiarEstado(
             @PathVariable Integer id,
             @RequestParam Short estado) {
-        return ResponseEntity.ok(categoriaService.cambiarEstado(id, estado));
+
+        return ResponseEntity.ok(
+                categoriaService.cambiarEstado(id, estado)
+        );
     }
 
-     // Solo ADMIN
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== ELIMINAR ====================
+
+    @PreAuthorize("hasAuthority('CATEGORIA_ELIMINAR') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarCategoria(@PathVariable Integer id) {
+    public ResponseEntity<Void> eliminarCategoria(
+            @PathVariable Integer id) {
+
         categoriaService.eliminarLogicamente(id);
         return ResponseEntity.noContent().build();
     }

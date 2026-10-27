@@ -1,0 +1,320 @@
+<div class="page-header">
+
+  <div>
+    <h2>Gestión de Categorías</h2>
+
+    <p class="page-description">
+      Organiza los productos de la botica por categorías
+      para facilitar su administración y consulta.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    class="btn-primary"
+    *appHasPermission="'CATEGORIA_CREAR'"
+    (click)="abrirModal()"
+  >
+    <i class="bi bi-plus-circle"></i>
+    Nueva Categoría
+  </button>
+
+</div>
+
+<!-- Buscador -->
+<div class="search-bar card">
+
+  <i class="bi bi-search"></i>
+
+  <input
+    type="text"
+    [value]="searchTerm"
+    (input)="onSearchInput($event)"
+    placeholder="Buscar por nombre o descripción..."
+    aria-label="Buscar categorías"
+  />
+
+</div>
+
+<!-- Error al cargar -->
+<div
+  class="load-error"
+  *ngIf="errorCarga && !isLoading"
+  role="alert"
+  aria-live="polite"
+>
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarCategorias()"
+  >
+    Reintentar
+  </button>
+</div>
+
+<!-- Tabla -->
+<div class="table-container card">
+
+  <table class="responsive-table">
+
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <!-- Cargando -->
+      <tr *ngIf="isLoading">
+        <td colspan="4" class="text-center">
+          Cargando categorías...
+        </td>
+      </tr>
+
+      <!-- Error -->
+      <tr *ngIf="!isLoading && errorCarga">
+        <td colspan="4" class="text-center">
+          No se pudo cargar la información.
+        </td>
+      </tr>
+
+      <!-- Sin resultados -->
+      <tr
+        *ngIf="
+          !isLoading
+          && !errorCarga
+          && categoriasFiltradas.length === 0
+        "
+      >
+        <td colspan="4" class="text-center">
+          {{
+            searchTerm
+              ? 'No se encontraron categorías con esa búsqueda.'
+              : 'Todavía no hay categorías registradas.'
+          }}
+        </td>
+      </tr>
+
+      <!-- Registros -->
+      <tr *ngFor="let categoria of categoriasPaginadas">
+
+        <td data-label="Nombre">
+          <strong>{{ categoria.nombre }}</strong>
+        </td>
+
+        <td data-label="Descripción">
+          {{ categoria.descripcion || 'Sin descripción' }}
+        </td>
+
+        <td data-label="Estado">
+
+          <span
+            class="badge"
+            [ngClass]="
+              categoria.estado === 1
+                ? 'bg-success'
+                : 'bg-warning'
+            "
+          >
+            {{
+              categoria.estado === 1
+                ? 'Activa'
+                : 'Inactiva'
+            }}
+          </span>
+
+        </td>
+
+        <td data-label="Acciones" class="actions-cell">
+
+          <!-- Editar -->
+          <button
+            type="button"
+            class="action-btn edit"
+            *appHasPermission="'CATEGORIA_EDITAR'"
+            title="Editar categoría"
+            aria-label="Editar categoría"
+            (click)="abrirModal(categoria)"
+          >
+            <i class="bi bi-pencil-square"></i>
+          </button>
+
+          <!-- Activar o desactivar -->
+          <button
+            type="button"
+            class="action-btn toggle"
+            *appHasPermission="'CATEGORIA_EDITAR'"
+            [title]="
+              categoria.estado === 1
+                ? 'Desactivar categoría'
+                : 'Activar categoría'
+            "
+            [attr.aria-label]="
+              categoria.estado === 1
+                ? 'Desactivar categoría'
+                : 'Activar categoría'
+            "
+            (click)="
+              solicitarCambioEstado(
+                categoria,
+                categoria.estado === 1 ? 0 : 1
+              )
+            "
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                categoria.estado === 1
+                  ? 'bi-x-circle'
+                  : 'bi-check-circle'
+              "
+            ></i>
+          </button>
+
+          <!-- Eliminar -->
+          <button
+            type="button"
+            class="action-btn delete"
+            *appHasPermission="'CATEGORIA_ELIMINAR'"
+            title="Eliminar categoría"
+            aria-label="Eliminar categoría"
+            (click)="solicitarEliminacion(categoria)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+
+        </td>
+      </tr>
+
+    </tbody>
+  </table>
+
+  <!-- Paginación -->
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0 && !isLoading"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
+    </button>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+      ({{ categoriasFiltradas.length }} categorías)
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
+
+</div>
+
+<!-- Modal de registro y edición -->
+<app-categoria-modal
+  *ngIf="mostrarModal"
+  [categoriaEditar]="categoriaSeleccionada"
+  (cerrar)="cerrarModal()"
+  (guardado)="cargarCategorias()"
+>
+</app-categoria-modal>
+
+<!-- Modal de confirmación -->
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+    </div>
+
+    <h3>{{ confirmacion.titulo }}</h3>
+
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <p class="confirm-category-name">
+      {{ confirmacion.nombre }}
+    </p>
+
+    <div
+      class="confirm-error"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-cancel"
+        [disabled]="procesandoConfirmacion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoConfirmacion"
+        (click)="confirmarAccion()"
+      >
+        {{
+          procesandoConfirmacion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+

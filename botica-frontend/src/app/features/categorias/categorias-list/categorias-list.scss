@@ -1,0 +1,467 @@
+@use '../../../../styles/variables' as v;
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    margin: 0 0 0.25rem;
+    color: v.$text-main;
+  }
+}
+
+.page-description {
+  max-width: 600px;
+  margin: 0;
+  color: v.$text-muted;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  padding: 0.6rem 1.2rem;
+
+  color: white;
+  background: v.$primary-color;
+  border: none;
+  border-radius: v.$radius-md;
+
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: v.$primary-hover;
+  }
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  margin-bottom: 1.5rem;
+  padding: 0.8rem 1.2rem;
+
+  background: v.$bg-surface;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+  box-shadow: v.$shadow-sm;
+
+  i {
+    color: v.$text-muted;
+    font-size: 1.2rem;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem;
+
+    color: v.$text-main;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+
+    &::placeholder {
+      color: v.$text-muted;
+    }
+  }
+}
+
+.load-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: v.$radius-md;
+
+  overflow-wrap: anywhere;
+
+  span {
+    flex: 1;
+  }
+
+  button {
+    padding: 0.45rem 0.75rem;
+    color: white;
+    background: #991b1b;
+    border: none;
+    border-radius: v.$radius-md;
+    cursor: pointer;
+  }
+}
+
+.table-container {
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th,
+  td {
+    padding: 1rem;
+    border-bottom: 1px solid v.$border-color;
+    vertical-align: middle;
+  }
+
+  th {
+    color: v.$text-muted;
+    background: #f8fafc;
+    font-weight: 600;
+  }
+
+  td {
+    color: v.$text-main;
+  }
+
+  .text-center {
+    text-align: center;
+    padding: 1.5rem;
+    color: v.$text-muted;
+  }
+
+  .actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+  }
+}
+
+.action-btn {
+  padding: 0.2rem;
+
+  background: none;
+  border: none;
+
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &.edit {
+    color: v.$info-color;
+  }
+
+  &.toggle {
+    color: v.$warning-color;
+  }
+
+  &.delete {
+    color: v.$danger-color;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  &.bg-success {
+    color: #065f46;
+    background: #d1fae5;
+  }
+
+  &.bg-warning {
+    color: #92400e;
+    background: #fef3c7;
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+
+  border-top: 1px solid v.$border-color;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    padding: 0.5rem 1rem;
+
+    color: v.$text-main;
+    background: white;
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius-md;
+
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: v.$bg-body;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    color: v.$text-muted;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+}
+
+/* Modal de confirmación */
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.55);
+}
+
+.confirm-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.75rem;
+
+  background: v.$bg-surface;
+  border-radius: v.$radius-lg;
+  box-shadow: v.$shadow-md;
+
+  text-align: center;
+
+  h3 {
+    margin: 0 0 0.75rem;
+    color: v.$text-main;
+  }
+
+  p {
+    margin: 0 0 0.75rem;
+    color: v.$text-muted;
+    line-height: 1.5;
+  }
+}
+
+.confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 1rem;
+
+  border-radius: 50%;
+  font-size: 1.45rem;
+
+  &.activar {
+    color: #15803d;
+    background: #dcfce7;
+  }
+
+  &.desactivar {
+    color: #92400e;
+    background: #fef3c7;
+  }
+
+  &.eliminar {
+    color: #b91c1c;
+    background: #fee2e2;
+  }
+}
+
+.confirm-category-name {
+  margin-top: 0.75rem !important;
+  padding: 0.65rem;
+
+  color: v.$text-main !important;
+  background: v.$bg-body;
+  border-radius: v.$radius-md;
+
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.confirm-error {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: v.$radius-md;
+
+  font-size: 0.9rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+
+  margin-top: 1.5rem;
+
+  button {
+    padding: 0.65rem 1.1rem;
+    border: 0;
+    border-radius: v.$radius-md;
+
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-cancel {
+    color: v.$text-main;
+    background: v.$bg-body;
+
+    &:hover:not(:disabled) {
+      background: #e5e7eb;
+    }
+  }
+
+  .btn-confirm {
+    color: white;
+
+    &.activar {
+      background: #15803d;
+
+      &:hover:not(:disabled) {
+        background: #166534;
+      }
+    }
+
+    &.desactivar {
+      background: #b7791f;
+
+      &:hover:not(:disabled) {
+        background: #92400e;
+      }
+    }
+
+    &.eliminar {
+      background: v.$danger-color;
+
+      &:hover:not(:disabled) {
+        background: #dc2626;
+      }
+    }
+  }
+}
+
+/* Adaptación a pantallas pequeñas */
+
+@media (max-width: 768px) {
+  .responsive-table {
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: block;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+
+      border: 1px solid v.$border-color;
+      border-radius: v.$radius-md;
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+
+      padding: 0.5rem;
+      border-bottom: none;
+      text-align: right;
+
+      &::before {
+        content: attr(data-label);
+        color: v.$text-muted;
+        font-weight: 600;
+        text-align: left;
+      }
+    }
+
+    .text-center {
+      display: block;
+      text-align: center;
+    }
+
+    .actions-cell {
+      justify-content: flex-end;
+      padding-top: 1rem;
+    }
+  }
+
+  .confirm-card {
+    padding: 1.25rem;
+  }
+
+  .confirm-footer {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 540px) {
+  .pagination {
+    flex-wrap: wrap;
+
+    button {
+      padding: 0.5rem 0.65rem;
+    }
+
+    span {
+      flex: 1 1 100%;
+      order: -1;
+    }
+  }
+
+  .page-header > .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
