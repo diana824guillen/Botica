@@ -13,7 +13,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,9 +74,9 @@ public class AuthController {
             String jwt = jwtUtil.generateToken(userDetails);
 
             List<String> permisos = userDetails.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .filter(auth -> !auth.startsWith("ROLE_"))
-                    .collect(Collectors.toList());
+                .map(authority -> authority.getAuthority())
+                .filter(auth -> auth != null && !auth.startsWith("ROLE_"))
+                .collect(Collectors.toList());
 
             LoginResponseDTO response = new LoginResponseDTO(
                 jwt,

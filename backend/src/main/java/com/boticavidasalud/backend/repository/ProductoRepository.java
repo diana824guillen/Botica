@@ -23,12 +23,12 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
     @Query("SELECT p FROM Producto p WHERE p.id = :id AND p.estado IN (0, 1)")
     Optional<Producto> findByIdActivo(@Param("id") Integer id);
 
-    // Verificar duplicado por nombre (para CREATE)
-    @Query("SELECT p FROM Producto p WHERE p.nombre = :nombre AND p.estado IN (0, 1)")
+    // Verificar duplicado por nombre, ignorando mayúsculas y espacios en los extremos.
+    @Query("SELECT p FROM Producto p WHERE LOWER(TRIM(p.nombre)) = LOWER(TRIM(:nombre)) AND p.estado IN (0, 1)")
     Optional<Producto> findByNombre(@Param("nombre") String nombre);
 
-    // Verificar duplicado por nombre excluyendo un ID (para UPDATE)
-    @Query("SELECT p FROM Producto p WHERE p.nombre = :nombre AND p.id <> :id AND p.estado IN (0, 1)")
+    // Verificar duplicados al actualizar, excluyendo al mismo producto.
+    @Query("SELECT p FROM Producto p WHERE LOWER(TRIM(p.nombre)) = LOWER(TRIM(:nombre)) AND p.id <> :id AND p.estado IN (0, 1)")
     Optional<Producto> findByNombreAndIdNot(@Param("nombre") String nombre, @Param("id") Integer id);
 
     // Filtrar por categoría (solo activos)

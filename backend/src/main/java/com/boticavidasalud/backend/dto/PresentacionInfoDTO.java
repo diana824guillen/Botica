@@ -11,10 +11,14 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PresentacionInfoDTO {
+
     private Integer id;
     private TipoPresentacion tipo;
+
     private Integer factorConversion;
     private BigDecimal precioVenta;
+
+    private Short estado;
 }
 
 

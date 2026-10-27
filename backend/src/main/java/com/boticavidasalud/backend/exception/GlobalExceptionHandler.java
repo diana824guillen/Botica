@@ -25,8 +25,10 @@ public class GlobalExceptionHandler {
         String normalizado = mensaje == null ? "" : mensaje.toLowerCase(Locale.ROOT);
 
         boolean esConflicto = normalizado.contains("ya existe un cliente con ese número de documento")
-                || normalizado.contains("ya existe una categoría")
-                || normalizado.contains("ya existe otra categoría");
+            || normalizado.contains("ya existe una categoría")
+            || normalizado.contains("ya existe otra categoría")
+            || normalizado.contains("ya existe un producto")
+            || normalizado.contains("ya existe una presentación");
 
         HttpStatus status = esConflicto ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
 

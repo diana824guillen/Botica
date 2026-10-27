@@ -1,11 +1,16 @@
 package com.boticavidasalud.backend.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -15,16 +20,24 @@ public class ProductoRequestDTO {
     private Integer categoriaId;
 
     @NotBlank(message = "El nombre del producto es obligatorio")
+    @Size(max = 150, message = "El nombre no puede superar los 150 caracteres")
     private String nombre;
 
     private String descripcion;
 
     private Boolean requiereReceta = false;
 
-    @Positive(message = "El stock mínimo debe ser mayor a 0")
+    @PositiveOrZero(message = "El stock mínimo no puede ser negativo")
+    @Digits(
+        integer = 8,
+        fraction = 2,
+        message = "El stock mínimo admite hasta dos decimales"
+    )
     private BigDecimal stockMinimo = BigDecimal.ZERO;
 
-    private List<PresentacionDTO> presentaciones;
+    @NotEmpty(message = "Agregue al menos una presentación al producto")
+    @Valid
+    private List<PresentacionDTO> presentaciones = new ArrayList<>();
 }
 
 

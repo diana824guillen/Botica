@@ -4,8 +4,11 @@ import com.boticavidasalud.backend.dto.ProductoRequestDTO;
 import com.boticavidasalud.backend.dto.ProductoResponseDTO;
 import com.boticavidasalud.backend.dto.ProductoUpdateDTO;
 import com.boticavidasalud.backend.dto.PresentacionDTO;
+import com.boticavidasalud.backend.dto.PresentacionInfoDTO;
 import com.boticavidasalud.backend.service.ProductoService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,93 +26,188 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    // ==================== CREAR ====================
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== CREAR PRODUCTO ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_CREAR') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ProductoResponseDTO> crearProducto(@Valid @RequestBody ProductoRequestDTO request) {
-        ProductoResponseDTO response = productoService.crearProducto(request);
+    public ResponseEntity<ProductoResponseDTO> crearProducto(
+            @Valid @RequestBody ProductoRequestDTO request) {
+
+        ProductoResponseDTO response =
+                productoService.crearProducto(request);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ==================== LEER ====================
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    // ==================== LISTAR PRODUCTOS ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<ProductoResponseDTO>> listarProductos(
             @RequestParam(required = false) Integer categoriaId) {
+
         if (categoriaId != null) {
-            return ResponseEntity.ok(productoService.listarProductosPorCategoria(categoriaId));
+            return ResponseEntity.ok(
+                    productoService.listarProductosPorCategoria(categoriaId)
+            );
         }
+
         return ResponseEntity.ok(productoService.listarProductos());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    // ==================== OBTENER PRODUCTO ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
     @GetMapping("/{id}")
-    public ResponseEntity<ProductoResponseDTO> obtenerProducto(@PathVariable Integer id) {
-        return ResponseEntity.ok(productoService.obtenerProductoPorId(id));
+    public ResponseEntity<ProductoResponseDTO> obtenerProducto(
+            @PathVariable Integer id) {
+
+        return ResponseEntity.ok(
+                productoService.obtenerProductoPorId(id)
+        );
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
-    @GetMapping("/stock-bajo")
-    public ResponseEntity<List<ProductoResponseDTO>> listarStockBajo() {
-        return ResponseEntity.ok(productoService.listarProductosConStockBajo());
-    }
+    // ==================== LISTAR PRESENTACIONES DE UN PRODUCTO ====================
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
-    @GetMapping("/por-vencer")
-    public ResponseEntity<List<ProductoResponseDTO>> listarPorVencer(
-            @RequestParam(defaultValue = "30") int dias) {
-        return ResponseEntity.ok(productoService.listarProductosConLotesPorVencer(dias));
-    }
+    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @GetMapping("/{id}/presentaciones")
+    public ResponseEntity<List<PresentacionInfoDTO>> listarPresentaciones(
+            @PathVariable Integer id) {
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
-    @GetMapping("/vencidos")
-    public ResponseEntity<List<ProductoResponseDTO>> listarVencidos() {
-        return ResponseEntity.ok(productoService.listarProductosConLotesVencidos());
-    }
-
-    // ==================== ACTUALIZAR PRODUCTO ====================
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductoResponseDTO> actualizarProducto(
-            @PathVariable Integer id,
-            @Valid @RequestBody ProductoUpdateDTO request) {
-        return ResponseEntity.ok(productoService.actualizarProducto(id, request));
+        return ResponseEntity.ok(
+                productoService.listarPresentaciones(id)
+        );
     }
 
     // ==================== AGREGAR PRESENTACIONES ====================
-    @PreAuthorize("hasRole('ADMIN')")
+
+    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
     @PostMapping("/{id}/presentaciones")
     public ResponseEntity<ProductoResponseDTO> agregarPresentaciones(
             @PathVariable Integer id,
-            @Valid @RequestBody List<PresentacionDTO> presentaciones) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(productoService.agregarPresentaciones(id, presentaciones));
+            @RequestBody List<@Valid PresentacionDTO> presentaciones) {
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                productoService.agregarPresentaciones(id, presentaciones)
+        );
     }
 
-    // ==================== CAMBIAR ESTADO DE PRESENTACIÓN ====================
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== ACTUALIZAR PRESENTACIÓN ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PutMapping("/{id}/presentaciones/{idPresentacion}")
+    public ResponseEntity<PresentacionInfoDTO> actualizarPresentacion(
+            @PathVariable Integer id,
+            @PathVariable Integer idPresentacion,
+            @Valid @RequestBody PresentacionDTO request) {
+
+        return ResponseEntity.ok(
+                productoService.actualizarPresentacion(
+                        id,
+                        idPresentacion,
+                        request
+                )
+        );
+    }
+
+    // ==================== ACTIVAR / DESACTIVAR PRESENTACIÓN ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
     @PatchMapping("/{id}/presentaciones/{idPresentacion}/estado")
     public ResponseEntity<ProductoResponseDTO> cambiarEstadoPresentacion(
             @PathVariable Integer id,
             @PathVariable Integer idPresentacion,
             @RequestParam Short estado) {
-        return ResponseEntity.ok(productoService.cambiarEstadoPresentacion(id, idPresentacion, estado));
+
+        return ResponseEntity.ok(
+                productoService.cambiarEstadoPresentacion(
+                        id,
+                        idPresentacion,
+                        estado
+                )
+        );
     }
 
-    // ==================== CAMBIAR ESTADO DEL PRODUCTO ====================
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== ELIMINAR PRESENTACIÓN ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @DeleteMapping("/{id}/presentaciones/{idPresentacion}")
+    public ResponseEntity<Void> eliminarPresentacion(
+            @PathVariable Integer id,
+            @PathVariable Integer idPresentacion) {
+
+        productoService.eliminarPresentacion(id, idPresentacion);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // ==================== STOCK BAJO ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @GetMapping("/stock-bajo")
+    public ResponseEntity<List<ProductoResponseDTO>> listarStockBajo() {
+        return ResponseEntity.ok(
+                productoService.listarProductosConStockBajo()
+        );
+    }
+
+    // ==================== LOTES POR VENCER ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @GetMapping("/por-vencer")
+    public ResponseEntity<List<ProductoResponseDTO>> listarPorVencer(
+            @RequestParam(defaultValue = "30") int dias) {
+
+        return ResponseEntity.ok(
+                productoService.listarProductosConLotesPorVencer(dias)
+        );
+    }
+
+    // ==================== LOTES VENCIDOS ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @GetMapping("/vencidos")
+    public ResponseEntity<List<ProductoResponseDTO>> listarVencidos() {
+        return ResponseEntity.ok(
+                productoService.listarProductosConLotesVencidos()
+        );
+    }
+
+    // ==================== ACTUALIZAR PRODUCTO ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductoResponseDTO> actualizarProducto(
+            @PathVariable Integer id,
+            @Valid @RequestBody ProductoUpdateDTO request) {
+
+        return ResponseEntity.ok(
+                productoService.actualizarProducto(id, request)
+        );
+    }
+
+    // ==================== ACTIVAR / DESACTIVAR PRODUCTO ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<ProductoResponseDTO> cambiarEstado(
             @PathVariable Integer id,
             @RequestParam Short estado) {
-        return ResponseEntity.ok(productoService.cambiarEstado(id, estado));
+
+        return ResponseEntity.ok(
+                productoService.cambiarEstado(id, estado)
+        );
     }
 
-    // ==================== ELIMINACIÓN LÓGICA ====================
-    @PreAuthorize("hasRole('ADMIN')")
+    // ==================== ELIMINAR PRODUCTO ====================
+
+    @PreAuthorize("hasAuthority('PRODUCTO_ELIMINAR') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarProducto(@PathVariable Integer id) {
+    public ResponseEntity<Void> eliminarProducto(
+            @PathVariable Integer id) {
+
         productoService.eliminarLogicamente(id);
+
         return ResponseEntity.noContent().build();
     }
 }

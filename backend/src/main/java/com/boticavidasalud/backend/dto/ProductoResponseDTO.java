@@ -12,15 +12,23 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductoResponseDTO {
+
     private Integer id;
+    private Integer categoriaId;
     private String categoriaNombre;
+
     private String nombre;
     private String descripcion;
+
     private Boolean requiereReceta;
+
     private BigDecimal stockMinimo;
     private BigDecimal stockActual;
+
     private Short estado;
     private LocalDateTime fechaCreacion;
+
     private List<PresentacionInfoDTO> presentaciones;
 }
+
 

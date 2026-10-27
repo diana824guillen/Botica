@@ -1,8 +1,11 @@
 package com.boticavidasalud.backend.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,16 +18,23 @@ public class ProductoUpdateDTO {
     private Integer categoriaId;
 
     @NotBlank(message = "El nombre del producto es obligatorio")
+    @Size(max = 150, message = "El nombre no puede superar los 150 caracteres")
     private String nombre;
 
     private String descripcion;
 
     private Boolean requiereReceta = false;
 
-    @Positive(message = "El stock mínimo debe ser mayor a 0")
+    @PositiveOrZero(message = "El stock mínimo no puede ser negativo")
+    @Digits(
+        integer = 8,
+        fraction = 2,
+        message = "El stock mínimo admite hasta dos decimales"
+    )
     private BigDecimal stockMinimo = BigDecimal.ZERO;
 
-    // Presentaciones (opcional, si se envían se reemplazan las anteriores)
+    // Opcional: actualizar presentaciones existentes mediante sus IDs.
+    @Valid
     private List<PresentacionDTO> presentaciones;
 }
 
