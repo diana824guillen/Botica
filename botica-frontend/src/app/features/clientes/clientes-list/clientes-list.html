@@ -1,24 +1,45 @@
 <div class="page-header">
+
   <div>
     <h2>Gestión de Clientes</h2>
-    <p class="page-description">Aquí podrás buscar a tus clientes por su documento o nombre, registrar nuevos clientes y mantener sus datos actualizados para un mejor servicio.</p>
+
+    <p class="page-description">
+      Aquí podrás buscar a tus clientes por su documento o nombre,
+      registrar nuevos clientes y mantener sus datos actualizados
+      para un mejor servicio.
+    </p>
   </div>
-  <button class="btn-primary" *appHasPermission="'CLIENTE_CREAR'" (click)="abrirModal()">
-    <i class="bi bi-person-plus"></i> Nuevo Cliente
+
+  <button
+    class="btn-primary"
+    *appHasPermission="'CLIENTE_CREAR'"
+    (click)="abrirModal()"
+  >
+    <i class="bi bi-person-plus"></i>
+    Nuevo Cliente
   </button>
+
 </div>
 
+<!-- Buscador -->
 <div class="search-bar card">
+
   <i class="bi bi-search"></i>
-  <input 
-    type="text" 
+
+  <input
+    type="text"
     [value]="searchTerm"
-    (input)="onSearchInput($event)" 
-    placeholder="Buscar por DNI o Nombres...">
+    (input)="onSearchInput($event)"
+    placeholder="Buscar por DNI o Nombres..."
+  />
+
 </div>
 
+<!-- Tabla de clientes -->
 <div class="table-container card">
+
   <table class="responsive-table">
+
     <thead>
       <tr>
         <th>Tipo Doc.</th>
@@ -29,60 +50,249 @@
         <th>Acciones</th>
       </tr>
     </thead>
+
     <tbody>
+
+      <!-- Cargando -->
       <tr *ngIf="isLoading">
-        <td colspan="6" class="text-center">Cargando clientes...</td>
-      </tr>
-      <tr *ngIf="!isLoading && clientes.length === 0">
-        <td colspan="6" class="text-center">No se encontraron clientes.</td>
-      </tr>
-      <tr *ngFor="let c of clientes">
-        <td data-label="Tipo Doc.">{{ c.tipoDocumento }}</td>
-        <td data-label="N° Documento">{{ c.numeroDocumento }}</td>
-        <td data-label="Nombres">{{ c.nombres }} {{ c.apellidos }}</td>
-        <td data-label="Correo">{{ c.correo || 'N/A' }}</td>
-        <td data-label="Estado">
-          <span class="badge" [ngClass]="c.estado === 1 ? 'bg-success' : 'bg-warning'">
-            {{ c.estado === 1 ? 'Activo' : 'Inactivo' }}
-          </span>
+        <td colspan="6" class="text-center">
+          Cargando clientes...
         </td>
+      </tr>
+
+      <!-- Sin resultados -->
+      <tr *ngIf="!isLoading && clientes.length === 0">
+        <td colspan="6" class="text-center">
+          No se encontraron clientes.
+        </td>
+      </tr>
+
+      <!-- Registros -->
+      <tr *ngFor="let c of clientes">
+
+        <td data-label="Tipo Doc.">
+          {{ c.tipoDocumento }}
+        </td>
+
+        <td data-label="N° Documento">
+          {{ c.numeroDocumento }}
+        </td>
+
+        <td data-label="Nombres">
+          {{ c.nombres }} {{ c.apellidos }}
+        </td>
+
+        <td data-label="Correo">
+          {{ c.correo || 'N/A' }}
+        </td>
+
+        <td data-label="Estado">
+
+          <span
+            class="badge"
+            [ngClass]="
+              c.estado === 1
+                ? 'bg-success'
+                : 'bg-warning'
+            "
+          >
+            {{
+              c.estado === 1
+                ? 'Activo'
+                : 'Inactivo'
+            }}
+          </span>
+
+        </td>
+
         <td data-label="Acciones" class="actions-cell">
-          <button class="action-btn edit" *appHasPermission="'CLIENTE_EDITAR'" (click)="abrirModal(c)" title="Editar datos">
+
+          <!-- Editar -->
+          <button
+            type="button"
+            class="action-btn edit"
+            *appHasPermission="'CLIENTE_EDITAR'"
+            (click)="abrirModal(c)"
+            title="Editar datos"
+            aria-label="Editar cliente"
+          >
             <i class="bi bi-pencil-square"></i>
           </button>
-          
-          <button class="action-btn toggle" *appHasPermission="'CLIENTE_EDITAR'" 
-                  (click)="cambiarEstado(c.id, c.estado === 1 ? 0 : 1)" 
-                  [title]="c.estado === 1 ? 'Desactivar cliente' : 'Activar cliente'">
-            <i class="bi" [ngClass]="c.estado === 1 ? 'bi-x-circle' : 'bi-check-circle'"></i>
+
+          <!-- Activar o desactivar -->
+          <button
+            type="button"
+            class="action-btn toggle"
+            *appHasPermission="'CLIENTE_EDITAR'"
+            (click)="
+              solicitarCambioEstado(
+                c,
+                c.estado === 1 ? 0 : 1
+              )
+            "
+            [title]="
+              c.estado === 1
+                ? 'Desactivar cliente'
+                : 'Activar cliente'
+            "
+            [attr.aria-label]="
+              c.estado === 1
+                ? 'Desactivar cliente'
+                : 'Activar cliente'
+            "
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                c.estado === 1
+                  ? 'bi-x-circle'
+                  : 'bi-check-circle'
+              "
+            ></i>
           </button>
 
-          <button class="action-btn delete" *appHasPermission="'CLIENTE_ELIMINAR'" title="Eliminar cliente">
+          <!-- Eliminar -->
+          <button
+            type="button"
+            class="action-btn delete"
+            *appHasPermission="'CLIENTE_ELIMINAR'"
+            title="Eliminar cliente"
+            aria-label="Eliminar cliente"
+            (click)="solicitarEliminacion(c)"
+          >
             <i class="bi bi-trash"></i>
           </button>
+
         </td>
       </tr>
+
     </tbody>
   </table>
 
   <!-- Paginación -->
-  <div class="pagination" *ngIf="totalPages > 0">
-    <button (click)="cambiarPagina(currentPage - 1)" [disabled]="currentPage === 0">
-      <i class="bi bi-chevron-left"></i> Anterior
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
     </button>
-    <span>Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-    <button (click)="cambiarPagina(currentPage + 1)" [disabled]="currentPage === totalPages - 1">
-      Siguiente <i class="bi bi-chevron-right"></i>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage === totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
     </button>
+
   </div>
+
 </div>
 
-<!-- Modal fuera del contenedor de la tabla -->
-<app-cliente-modal 
-  *ngIf="mostrarModal" 
+<!-- Modal de registro y edición -->
+<app-cliente-modal
+  *ngIf="mostrarModal"
   [clienteEditar]="clienteSeleccionado"
-  (cerrar)="cerrarModal()" 
-  (guardado)="cargarClientes()">
+  (cerrar)="cerrarModal()"
+  (guardado)="cargarClientes()"
+>
 </app-cliente-modal>
+
+<!-- Modal de confirmación para las acciones -->
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- Icono según el tipo de acción -->
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+
+    </div>
+
+    <!-- Título y descripción -->
+    <h3>{{ confirmacion.titulo }}</h3>
+
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <p class="confirm-client-name">
+      {{ confirmacion.nombre }}
+    </p>
+
+    <!-- Mostrar si ocurre un error -->
+    <div
+      class="confirm-error"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <!-- Botones de confirmación -->
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-cancel"
+        [disabled]="procesandoConfirmacion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoConfirmacion"
+        (click)="confirmarAccion()"
+      >
+        {{
+          procesandoConfirmacion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
 
 

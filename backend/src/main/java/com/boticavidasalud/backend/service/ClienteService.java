@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Service
 @Transactional
@@ -38,49 +39,116 @@ public class ClienteService {
     // CREAR CLIENTE (con fallback de MiAPI.Cloud)
     // ============================================================
     public ClienteResponseDTO registrarCliente(ClienteRequestDTO request) {
-        String numeroDoc = request.getNumeroDocumento();
+        String numeroDoc = request.getNumeroDocumento() == null
+                ? ""
+                : request.getNumeroDocumento()
+                        .trim()
+                        .toUpperCase(Locale.ROOT);
 
-        // Verificar duplicado
-        clienteRepository.findByNumeroDocumento(numeroDoc).ifPresent(c -> {
-            throw new BusinessException("Ya existe un cliente con ese número de documento");
-        });
+        if (numeroDoc.isBlank()) {
+            throw new BusinessException(
+                    "El número de documento es obligatorio"
+            );
+        }
 
-        TipoDocumento tipo = determinarTipoDocumento(numeroDoc);
-        String nombres = request.getNombres();
-        String apellidos = request.getApellidos();
-        String correo = request.getCorreo();
+        // 1. Comprobar duplicados antes de consultar MiApiCloud.
+        if (clienteRepository.existsByNumeroDocumento(numeroDoc)) {
+            throw new BusinessException(
+                    "Ya existe un cliente con ese número de documento"
+            );
+        }
 
-        // Si es DNI, intentar autocompletar con MiAPI.Cloud
-        if (tipo == TipoDocumento.DNI) {
-            ClienteResponseDTO datosApi = miApiCloudClient.consultarPorDni(numeroDoc);
-            if (datosApi != null && datosApi.getNombres() != null) {
-                nombres = datosApi.getNombres();
-                apellidos = datosApi.getApellidos();
-            } else {
-                if (nombres == null || nombres.isEmpty()) {
-                    throw new BusinessException(
-                        "MiAPI.ClOUD no está disponible. Por favor, ingrese los nombres y apellidos manualmente."
-                    );
-                }
-            }
-        } else {
-            if (nombres == null || nombres.isEmpty()) {
+        // 2. Determinar el origen del registro.
+        String origenDatos = request.getOrigenDatos() == null
+                ? "MANUAL"
+                : request.getOrigenDatos()
+                        .trim()
+                        .toUpperCase(Locale.ROOT);
+
+        if (!"RENIEC".equals(origenDatos)
+                && !"MANUAL".equals(origenDatos)) {
+
+            throw new BusinessException(
+                    "El origen del registro no es válido"
+            );
+        }
+
+        // 3. Obtener y validar el tipo de documento.
+        TipoDocumento tipo = request.getTipoDocumento() != null
+                ? request.getTipoDocumento()
+                : determinarTipoDocumento(numeroDoc);
+
+        validarFormatoDocumento(tipo, numeroDoc);
+
+        String nombres = limpiarTexto(request.getNombres());
+        String apellidos = limpiarTexto(request.getApellidos());
+
+        String correo = request.getCorreo() == null
+                ? null
+                : request.getCorreo().trim();
+
+        // 4. Consultar MiApiCloud ÚNICAMENTE en modo RENIEC.
+        if ("RENIEC".equals(origenDatos)) {
+
+            if (tipo != TipoDocumento.DNI) {
                 throw new BusinessException(
-                    "Para documentos distintos a DNI, los nombres son obligatorios."
+                        "La consulta de RENIEC está disponible solo para DNI. "
+                        + "Seleccione Registro Manual."
+                );
+            }
+
+            ClienteResponseDTO datosApi =
+                    miApiCloudClient.consultarPorDni(numeroDoc);
+
+            if (datosApi == null
+                    || datosApi.getNombres() == null
+                    || datosApi.getNombres().isBlank()) {
+
+                throw new BusinessException(
+                        "No fue posible consultar MiApiCloud. "
+                        + "Puede cambiar a Registro Manual e ingresar "
+                        + "los datos del cliente."
+                );
+            }
+
+            nombres = datosApi.getNombres().trim();
+            apellidos = limpiarTexto(datosApi.getApellidos());
+
+        } else {
+
+            // 5. Registro manual: no realiza llamadas a MiApiCloud.
+            if (nombres == null || nombres.isBlank()) {
+                throw new BusinessException(
+                        "Los nombres son obligatorios para el registro manual"
+                );
+            }
+
+            if (apellidos == null || apellidos.isBlank()) {
+                throw new BusinessException(
+                        "Los apellidos son obligatorios para el registro manual"
                 );
             }
         }
 
+        // 6. Crear el cliente.
         Cliente cliente = new Cliente();
+
         cliente.setTipoDocumento(tipo);
         cliente.setNumeroDocumento(numeroDoc);
         cliente.setNombres(nombres);
         cliente.setApellidos(apellidos);
-        cliente.setCorreo(correo);
+
+        cliente.setCorreo(
+                correo == null || correo.isBlank()
+                        ? null
+                        : correo
+        );
+
         cliente.setEstado(EstadoRegistro.ACTIVO.getValor());
-        cliente.setOrigenDatos(request.getOrigenDatos() != null ? request.getOrigenDatos() : "MANUAL");
+        cliente.setOrigenDatos(origenDatos);
 
         Cliente guardado = clienteRepository.save(cliente);
+
         return mapToResponse(guardado);
     }
 
@@ -115,18 +183,43 @@ public class ClienteService {
     // ACTUALIZAR CLIENTE
     // ============================================================
     public ClienteResponseDTO actualizarCliente(Integer id, ClienteUpdateDTO request) {
-        Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con ID: " + id));
+        Cliente cliente = clienteRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
+            "Cliente no encontrado con ID: " + id
+        ));
 
         if (cliente.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
             throw new BusinessException("No se puede actualizar un cliente eliminado");
         }
 
-        cliente.setNombres(request.getNombres());
-        cliente.setApellidos(request.getApellidos());
-        cliente.setCorreo(request.getCorreo());
+        // Validación adicional del documento en el servidor.
+        if (request.getNumeroDocumento() != null) {
+
+            String solicitado = request.getNumeroDocumento().trim().toUpperCase(Locale.ROOT);
+
+            String actual = cliente.getNumeroDocumento() == null ? "" : cliente.getNumeroDocumento().trim()
+                    .toUpperCase(Locale.ROOT);
+
+            if (!solicitado.equals(actual)) {
+
+                if (clienteRepository.existsByNumeroDocumento(solicitado)) {
+                    throw new BusinessException("Ya existe un cliente con ese número de documento");
+                }
+
+                throw new BusinessException("No se permite modificar el número de documento del cliente");
+            }
+        }
+
+        if (request.getTipoDocumento() != null && request.getTipoDocumento() != cliente.getTipoDocumento()) {
+            throw new BusinessException("No se permite modificar el tipo de documento del cliente");
+        }
+
+        cliente.setNombres(request.getNombres().trim());
+        cliente.setApellidos(limpiarTexto(request.getApellidos()));
+
+        cliente.setCorreo(request.getCorreo() == null || request.getCorreo().isBlank() ? null : request.getCorreo().trim());
 
         Cliente actualizado = clienteRepository.save(cliente);
+
         return mapToResponse(actualizado);
     }
 
@@ -162,7 +255,7 @@ public class ClienteService {
     // ============================================================
     public void eliminarLogicamente(Integer id) {
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con ID: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con ID: " + id));
 
         if (cliente.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
             throw new BusinessException("El cliente ya está eliminado");
@@ -191,6 +284,22 @@ public class ClienteService {
         if (numero.matches("C\\d{8}")) return TipoDocumento.CE;
         if (numero.matches("[A-Za-z0-9]{6,12}")) return TipoDocumento.PASAPORTE;
         return TipoDocumento.CE;
+    }
+
+    private void validarFormatoDocumento(TipoDocumento tipo, String numero) {
+        boolean valido = switch (tipo) {
+            case DNI -> numero.matches("\\d{8}");
+            case CE -> numero.matches("[A-Z0-9]{9,11}");
+            case PASAPORTE -> numero.matches("[A-Z0-9]{9,15}");
+        };
+
+        if (!valido) {
+            throw new BusinessException("El número de documento no tiene un formato válido para " + tipo);
+        }
+    }
+
+    private String limpiarTexto(String valor) {
+        return valor == null ? null : valor.trim();
     }
 
     private ClienteResponseDTO mapToResponse(Cliente cliente) {

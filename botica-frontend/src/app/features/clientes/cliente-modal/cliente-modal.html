@@ -1,35 +1,63 @@
 <div class="modal-backdrop">
-  <div class="modal-card card">
-    
+  <div class="modal-card card" role="dialog" aria-modal="true"
+    [attr.aria-label]="clienteEditar ? 'Editar cliente' : 'Registrar nuevo cliente'"
+  >
+
     <div class="modal-header">
-      <h3>{{ clienteEditar ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}</h3>
-      <button class="close-btn" (click)="cerrar.emit()">
+      <h3>{{clienteEditar ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}}</h3>
+
+      <button type="button" class="close-btn" aria-label="Cerrar" (click)="cerrar.emit()">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
 
     <form [formGroup]="clienteForm" (ngSubmit)="guardar()">
-      
-      <!-- Toggle solo en creación -->
+
+      <!-- Selección del tipo de registro -->
       <div class="modo-container" *ngIf="!clienteEditar">
+
         <label class="radio-label">
-          <input type="radio" name="modo" value="AUTO" [checked]="modoRegistro === 'AUTO'" (change)="cambiarModo('AUTO')">
+          <input type="radio" name="modo" value="AUTO" [checked]="modoRegistro === 'AUTO'"
+            [disabled]="clienteForm.get('tipoDocumento')?.value !== 'DNI'"
+            (change)="cambiarModo('AUTO')"
+          />
+
           <span>Buscar en RENIEC</span>
         </label>
+
         <label class="radio-label">
-          <input type="radio" name="modo" value="MANUAL" [checked]="modoRegistro === 'MANUAL'" (change)="cambiarModo('MANUAL')">
+          <input
+            type="radio"
+            name="modo"
+            value="MANUAL"
+            [checked]="modoRegistro === 'MANUAL'"
+            (change)="cambiarModo('MANUAL')"
+          />
+
           <span>Registro Manual</span>
         </label>
+
       </div>
 
-      <!-- Aviso si está bloqueado por RENIEC -->
+      <!-- Información cuando se edita un registro de RENIEC -->
       <div class="info-banner" *ngIf="esEdicionAuto">
-        <i class="bi bi-info-circle"></i> Los nombres y apellidos fueron validados por RENIEC y no pueden ser modificados.
+        <i class="bi bi-info-circle"></i>
+
+        <span>
+          Los nombres y apellidos fueron validados por RENIEC
+          y no pueden ser modificados.
+        </span>
       </div>
 
+      <!-- Tipo y número de documento -->
       <div class="form-row">
+
         <div class="form-group col-4">
-          <label>Tipo Doc. <span class="required">*</span></label>
+          <label>
+            Tipo Doc.
+            <span class="required">*</span>
+          </label>
+
           <select formControlName="tipoDocumento">
             <option value="DNI">DNI</option>
             <option value="CE">Carné de Extranjería</option>
@@ -38,56 +66,175 @@
         </div>
 
         <div class="form-group col-8">
-          <label>Número de Documento <span class="required">*</span></label>
-          <input 
-            type="text" 
-            formControlName="numeroDocumento" 
+          <label>
+            Número de Documento
+            <span class="required">*</span>
+          </label>
+
+          <input
+            type="text"
+            formControlName="numeroDocumento"
             (input)="onInputDocumento($event)"
-            placeholder="Ej. 12345678">
-          <span class="error-text" *ngIf="clienteForm.get('numeroDocumento')?.invalid && clienteForm.get('numeroDocumento')?.touched">
+            placeholder="Ej. 12345678"
+          />
+
+          <span
+            class="error-text"
+            *ngIf="
+              clienteForm.get('numeroDocumento')?.invalid
+              && clienteForm.get('numeroDocumento')?.touched
+            "
+          >
             Documento inválido para el tipo seleccionado.
           </span>
         </div>
+
       </div>
 
+      <!-- Nombres -->
       <div class="form-group">
-        <label>Nombres <span class="required" *ngIf="modoRegistro === 'MANUAL' || esEdicionAuto">*</span></label>
-        <input 
-          type="text" 
-          formControlName="nombres" 
+        <label>
+          Nombres
+
+          <span
+            class="required"
+            *ngIf="
+              modoRegistro === 'MANUAL'
+              || esEdicionAuto
+            "
+          >
+            *
+          </span>
+        </label>
+
+        <input
+          type="text"
+          formControlName="nombres"
           (input)="onInputNombre($event, 'nombres')"
-          placeholder="Nombres del cliente">
+          placeholder="Nombres del cliente"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            clienteForm.get('nombres')?.invalid
+            && clienteForm.get('nombres')?.touched
+          "
+        >
+          Ingrese los nombres del cliente.
+        </span>
       </div>
 
+      <!-- Apellidos -->
       <div class="form-group">
-        <label>Apellidos <span class="required" *ngIf="modoRegistro === 'MANUAL' || esEdicionAuto">*</span></label>
-        <input 
-          type="text" 
-          formControlName="apellidos" 
+        <label>
+          Apellidos
+
+          <span
+            class="required"
+            *ngIf="
+              modoRegistro === 'MANUAL'
+              || esEdicionAuto
+            "
+          >
+            *
+          </span>
+        </label>
+
+        <input
+          type="text"
+          formControlName="apellidos"
           (input)="onInputNombre($event, 'apellidos')"
-          placeholder="Apellidos del cliente">
+          placeholder="Apellidos del cliente"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            clienteForm.get('apellidos')?.invalid
+            && clienteForm.get('apellidos')?.touched
+          "
+        >
+          Ingrese los apellidos del cliente.
+        </span>
       </div>
 
+      <!-- Correo electrónico -->
       <div class="form-group">
         <label>Correo Electrónico (Opcional)</label>
-        <input type="email" formControlName="correo" placeholder="ejemplo@correo.com">
-        <span class="error-text" *ngIf="clienteForm.get('correo')?.invalid && clienteForm.get('correo')?.touched">
+
+        <input
+          type="email"
+          formControlName="correo"
+          placeholder="ejemplo@correo.com"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            clienteForm.get('correo')?.invalid
+            && clienteForm.get('correo')?.touched
+          "
+        >
           Ingrese un correo válido.
         </span>
       </div>
 
-      <div class="error-banner" *ngIf="errorMessage">
-        {{ errorMessage }}
+      <!-- Mensajes de error del backend -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+
+        <span>{{ errorMessage }}</span>
+
+        <!-- Solo aparece cuando falla el registro automático -->
+        <button
+          type="button"
+          class="btn-manual-fallback"
+          *ngIf="mostrarAlternativaManual"
+          (click)="cambiarModo('MANUAL')"
+        >
+          <i class="bi bi-pencil-square"></i>
+          Registrar manualmente
+        </button>
+
       </div>
 
+      <!-- Botones del formulario -->
       <div class="modal-footer">
-        <button type="button" class="btn-secondary" (click)="cerrar.emit()">Cancelar</button>
-        <button type="submit" class="btn-primary" [disabled]="clienteForm.invalid || isLoading">
-          {{ isLoading ? 'Guardando...' : 'Guardar Cliente' }}
+
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isLoading"
+          (click)="cerrar.emit()"
+        >
+          Cancelar
         </button>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="clienteForm.invalid || isLoading"
+        >
+          {{
+            isLoading
+              ? 'Guardando...'
+              : (
+                  clienteEditar
+                    ? 'Actualizar cliente'
+                    : 'Guardar cliente'
+                )
+          }}
+        </button>
+
       </div>
 
     </form>
+
   </div>
 </div>
 

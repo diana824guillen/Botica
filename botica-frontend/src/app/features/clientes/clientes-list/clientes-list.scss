@@ -1,38 +1,50 @@
 @use '../../../../styles/variables' as v;
 
+/* Encabezado de la página */
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
   align-items: center;
+
   margin-bottom: 1.5rem;
+
   flex-wrap: wrap;
   gap: 1rem;
 
-  h2 { color: v.$text-main; margin: 0 0 0.25rem 0; }
+  h2 {
+    color: v.$text-main;
+    margin: 0 0 0.25rem 0;
+  }
 }
 
-// Estilo de la descripción
 .page-description {
   color: v.$text-muted;
   font-size: 0.95rem;
+
   margin: 0;
   max-width: 600px;
 }
 
+/* Botón para registrar cliente */
 .btn-primary {
   background-color: v.$primary-color;
   color: white;
+
   border: none;
   padding: 0.6rem 1.2rem;
+
   border-radius: v.$radius-md;
+
   cursor: pointer;
   font-weight: 600;
+
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  
-  &:hover { background-color: v.$primary-hover; }
+
+  &:hover {
+    background-color: v.$primary-hover;
+  }
 }
 
 /* Buscador */
@@ -40,13 +52,17 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+
   margin-bottom: 1.5rem;
   padding: 0.8rem 1.2rem;
+
   border-radius: v.$radius-md;
+
   background-color: v.$bg-surface;
   border: 1px solid v.$border-color;
+
   box-shadow: v.$shadow-sm;
-  
+
   i {
     color: v.$text-muted;
     font-size: 1.2rem;
@@ -54,10 +70,13 @@
 
   input {
     flex: 1;
+
     border: none;
     outline: none;
+
     font-size: 1rem;
     padding: 0.5rem;
+
     background: transparent;
     color: v.$text-main;
 
@@ -67,27 +86,123 @@
   }
 }
 
+/* Contenedor de la tabla */
+.table-container {
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+/* Tabla */
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th,
+  td {
+    padding: 1rem;
+
+    border-bottom: 1px solid v.$border-color;
+
+    vertical-align: middle;
+  }
+
+  th {
+    font-weight: 600;
+    color: v.$text-muted;
+
+    background-color: #f8fafc;
+  }
+
+  .actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+/* Botones de las acciones */
+.action-btn {
+  background: none;
+  border: none;
+
+  cursor: pointer;
+  font-size: 1.2rem;
+
+  padding: 0.2rem;
+
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &.edit {
+    color: v.$info-color;
+  }
+
+  &.delete {
+    color: v.$danger-color;
+  }
+
+  &.toggle {
+    color: v.$warning-color;
+  }
+}
+
+/* Indicadores de estado */
+.badge {
+  padding: 0.25rem 0.75rem;
+
+  border-radius: 20px;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  &.bg-success {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.bg-warning {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
 /* Paginación */
 .pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
   margin-top: 1.5rem;
   padding-top: 1rem;
+
   border-top: 1px solid v.$border-color;
 
   button {
     background: white;
+
     border: 1px solid v.$border-color;
     padding: 0.5rem 1rem;
+
     border-radius: v.$radius-md;
+
     cursor: pointer;
+
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    
-    &:hover:not(:disabled) { background: v.$bg-body; }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    &:hover:not(:disabled) {
+      background: v.$bg-body;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   span {
@@ -96,88 +211,246 @@
   }
 }
 
-.table-container {
-  overflow-x: auto;
+/* ==========================================================
+   MODAL DE CONFIRMACIÓN
+   ========================================================== */
+
+/* Fondo oscuro detrás del modal */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+
+  z-index: 1100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   padding: 1rem;
+
+  background: rgba(17, 24, 39, 0.55);
 }
 
-.responsive-table {
+/* Contenedor principal */
+.confirm-card {
   width: 100%;
-  border-collapse: collapse;
+  max-width: 440px;
+
+  padding: 1.75rem;
+
+  border-radius: v.$radius-lg;
+
+  background: v.$bg-surface;
+  box-shadow: v.$shadow-md;
+
+  text-align: center;
+
+  h3 {
+    margin: 0 0 0.75rem;
+
+    color: v.$text-main;
+  }
+
+  p {
+    color: v.$text-muted;
+
+    line-height: 1.5;
+    margin: 0 0 0.75rem;
+  }
+}
+
+/* Icono de la acción */
+.confirm-icon {
+  display: flex;
+
+  width: 54px;
+  height: 54px;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 1rem;
+
+  border-radius: 50%;
+
+  font-size: 1.45rem;
+
+  /* Verde: activar */
+  &.activar {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  /* Ámbar: desactivar */
+  &.desactivar {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  /* Rojo: eliminar */
+  &.eliminar {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+}
+
+/* Nombre del cliente que se verá afectado */
+.confirm-client-name {
+  color: v.$text-main !important;
+
+  font-weight: 700;
+
+  margin-top: 0.75rem !important;
+  padding: 0.65rem;
+
+  border-radius: v.$radius-md;
+
+  background: v.$bg-body;
+
+  overflow-wrap: anywhere;
+}
+
+/* Mensajes de error dentro del modal */
+.confirm-error {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+
+  border-radius: v.$radius-md;
+
   text-align: left;
 
-  th, td {
-    padding: 1rem;
-    border-bottom: 1px solid v.$border-color;
-    vertical-align: middle;
-  }
+  color: #991b1b;
 
-  th {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+/* Botones del modal */
+.confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+
+  button {
+    padding: 0.65rem 1.1rem;
+
+    border: 0;
+    border-radius: v.$radius-md;
+
     font-weight: 600;
-    color: v.$text-muted;
-    background-color: #f8fafc;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   }
 
-  .actions-cell {
-    display: flex;
-    gap: 0.5rem;
+  /* Cancelar */
+  .btn-cancel {
+    color: v.$text-main;
+    background: v.$bg-body;
+
+    &:hover:not(:disabled) {
+      background: #e5e7eb;
+    }
+  }
+
+  /* Botón de confirmación */
+  .btn-confirm {
+    color: white;
+
+    &.activar {
+      background: #15803d;
+
+      &:hover:not(:disabled) {
+        background: #166534;
+      }
+    }
+
+    &.desactivar {
+      background: #b7791f;
+
+      &:hover:not(:disabled) {
+        background: #92400e;
+      }
+    }
+
+    &.eliminar {
+      background: v.$danger-color;
+
+      &:hover:not(:disabled) {
+        background: #dc2626;
+      }
+    }
   }
 }
 
-.action-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0.2rem;
-  transition: transform 0.2s;
+/* ==========================================================
+   DISEÑO RESPONSIVO
+   ========================================================== */
 
-  &:hover { transform: scale(1.1); }
-
-  &.edit { color: v.$info-color; }
-  &.delete { color: v.$danger-color; }
-  &.toggle { color: v.$warning-color; } 
-}
-
-.badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  &.bg-success { background: #d1fae5; color: #065f46; }
-  &.bg-warning { background: #fef3c7; color: #92400e; } 
-}
-
-/* =========================================
-   Diseño Responsivo (Móviles)
-   ========================================= */
 @media (max-width: 768px) {
+
+  /* Tabla adaptada a dispositivos móviles */
   .responsive-table {
-    thead { display: none; }
+
+    thead {
+      display: none;
+    }
+
     tr {
       display: block;
+
       margin-bottom: 1rem;
+
       border: 1px solid v.$border-color;
       border-radius: v.$radius-md;
+
       padding: 0.5rem;
     }
+
     td {
       display: flex;
       justify-content: space-between;
+
       text-align: right;
+
       border-bottom: none;
+
       padding: 0.5rem;
-      
+
       &::before {
         content: attr(data-label);
+
         font-weight: 600;
         color: v.$text-muted;
+
         text-align: left;
       }
     }
+
     .actions-cell {
       justify-content: flex-end;
       padding-top: 1rem;
+    }
+  }
+
+  /* Modal en pantallas pequeñas */
+  .confirm-card {
+    padding: 1.25rem;
+  }
+
+  .confirm-footer {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
     }
   }
 }

@@ -15,6 +15,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
     // Buscar por número de documento (solo activos o inactivos)
     @Query("SELECT c FROM Cliente c WHERE c.numeroDocumento = :numeroDocumento AND c.estado IN (0, 1)")
     Optional<Cliente> findByNumeroDocumento(@Param("numeroDocumento") String numeroDocumento);
+    boolean existsByNumeroDocumento(String numeroDocumento);
 
     // Listar solo clientes NO eliminados (para el método antiguo)
     @Query("SELECT c FROM Cliente c WHERE c.estado IN (0, 1) ORDER BY c.id DESC")

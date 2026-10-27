@@ -20,11 +20,11 @@ public class Cliente {
     private Integer id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_documento")
+    @Column(name = "tipo_documento", nullable = false)
     private TipoDocumento tipoDocumento;
 
-    @Column(name = "numero_documento", length = 15, unique = true)
-    private String numeroDocumento;   
+    @Column(name = "numero_documento", length = 15, nullable = false, unique = true)
+    private String numeroDocumento; 
 
     @Column(length = 150, nullable = false)
     private String nombres;

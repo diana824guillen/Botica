@@ -12,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -19,7 +20,14 @@ public class GlobalExceptionHandler {
     // 400 - Error de negocio (duplicados, estado inválido, etc.)
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Map<String, Object>> handleBusiness(BusinessException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        String mensaje = ex.getMessage();
+
+        String normalizado = mensaje == null ? "" : mensaje.toLowerCase(Locale.ROOT);
+
+        HttpStatus status = normalizado.contains("ya existe un cliente con ese número de documento")
+            ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+
+        return buildResponse(status, mensaje);
     }
 
     // 400 - Validaciones de DTO (@NotBlank, @NotNull, etc.)
@@ -53,16 +61,21 @@ public class GlobalExceptionHandler {
     // 409 - Conflicto con restricciones únicas
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
-        String mensaje = "Conflicto con los datos. Verifique la información ingresada.";
-        String fullMsg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
 
-        if (fullMsg.contains("uq_presentacion_producto_tipo_factor")) {
-            mensaje = "Ya existe una presentación con ese tipo y factor para este producto";
-        } else if (fullMsg.contains("uq_categoria_nombre")) {
+        String mensaje = "Conflicto con los datos. Verifique la información ingresada.";
+
+        String detalle = mensajesDeLaExcepcion(ex).toLowerCase(Locale.ROOT);
+
+        if (detalle.contains("uq_presentacion_producto_tipo_factor")) {
+            mensaje = "Ya existe una presentación con ese tipo " + "y factor para este producto";
+
+        } else if (detalle.contains("uq_categoria_nombre")) {
             mensaje = "Ya existe una categoría con ese nombre";
-        } else if (fullMsg.contains("uq_cliente_documento")) {
+
+        } else if (detalle.contains("uq_cliente_documento") || detalle.contains("numero_documento")) {
             mensaje = "Ya existe un cliente con ese número de documento";
-        } else if (fullMsg.contains("uq_producto_nombre")) {
+
+        } else if (detalle.contains("uq_producto_nombre")) {
             mensaje = "Ya existe un producto con ese nombre";
         }
 
@@ -84,6 +97,21 @@ public class GlobalExceptionHandler {
         body.put("error", status.getReasonPhrase());
         body.put("mensaje", mensaje);
         return ResponseEntity.status(status).body(body);
+    }
+
+    private String mensajesDeLaExcepcion(Throwable ex) {
+        StringBuilder mensajes = new StringBuilder();
+        Throwable actual = ex;
+
+        while (actual != null) {
+            if (actual.getMessage() != null) {
+                mensajes.append(" ").append(actual.getMessage());
+            }
+
+            actual = actual.getCause();
+        }
+
+        return mensajes.toString();
     }
 }
 
