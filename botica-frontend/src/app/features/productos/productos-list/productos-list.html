@@ -94,7 +94,6 @@
       <tr>
         <th>Producto</th>
         <th>Categoría</th>
-        <th>Presentaciones activas</th>
         <th>Stock actual</th>
         <th>Stock mínimo</th>
         <th>Receta</th>
@@ -107,14 +106,14 @@
 
       <!-- Cargando -->
       <tr *ngIf="isLoading">
-        <td colspan="8" class="text-center">
+        <td colspan="7" class="text-center">
           Cargando productos...
         </td>
       </tr>
 
       <!-- Error -->
       <tr *ngIf="!isLoading && errorCarga">
-        <td colspan="8" class="text-center">
+        <td colspan="7" class="text-center">
           No se pudo cargar la información.
         </td>
       </tr>
@@ -127,7 +126,7 @@
           && productosFiltrados.length === 0
         "
       >
-        <td colspan="8" class="text-center">
+        <td colspan="7" class="text-center">
           {{
             searchTerm || categoriaSeleccionada !== null
               ? 'No se encontraron productos con los filtros seleccionados.'
@@ -152,12 +151,6 @@
 
         <td data-label="Categoría">
           {{ producto.categoriaNombre }}
-        </td>
-
-        <td data-label="Presentaciones">
-          <span class="presentation-summary">
-            {{ resumenPresentaciones(producto) }}
-          </span>
         </td>
 
         <td data-label="Stock actual">
