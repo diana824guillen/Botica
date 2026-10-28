@@ -1,0 +1,933 @@
+
+<div class="page-header">
+  <div>
+    <h2>Gestión de Lotes</h2>
+
+    <p class="page-description">
+      Controla los ingresos, las existencias y las fechas de vencimiento
+      de los productos de la botica.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    class="btn-primary"
+    *appHasPermission="'LOTE_CREAR'"
+    (click)="abrirModalCrear()"
+  >
+    <i class="bi bi-plus-circle"></i>
+    Registrar ingreso
+  </button>
+</div>
+
+<!-- ======================================================
+     BÚSQUEDA Y FILTROS
+     ====================================================== -->
+
+<div class="filters-container card">
+
+  <div class="search-bar">
+    <i class="bi bi-search"></i>
+
+    <input
+      type="text"
+      [value]="searchTerm"
+      (input)="onSearchInput($event)"
+      placeholder="Buscar por producto o número de lote..."
+      aria-label="Buscar lotes"
+    />
+  </div>
+
+  <div class="filter-group">
+    <label for="filtroEstadoLote">Estado</label>
+
+    <select
+      id="filtroEstadoLote"
+      [ngModel]="filtroEstado"
+      [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="cambiarFiltroEstado($event)"
+    >
+      <option value="todos">Todos</option>
+      <option value="1">Activos</option>
+      <option value="0">Inactivos</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="filtroVencimiento">Vencimiento</label>
+
+    <select
+      id="filtroVencimiento"
+      [ngModel]="filtroVencimiento"
+      [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="cambiarFiltroVencimiento($event)"
+    >
+      <option value="todos">Todos</option>
+      <option value="por-vencer">Por vencer (30 días)</option>
+      <option value="vencidos">Vencidos</option>
+    </select>
+  </div>
+
+</div>
+
+<!-- ======================================================
+     ERROR AL CARGAR LOTES
+     ====================================================== -->
+
+<div
+  class="load-error"
+  *ngIf="errorCarga && !isLoading"
+  role="alert"
+  aria-live="polite"
+>
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarLotes()"
+  >
+    Reintentar
+  </button>
+</div>
+
+<!-- ======================================================
+     TABLA DE LOTES
+     ====================================================== -->
+
+<div class="table-container card">
+
+  <table class="responsive-table">
+
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Número de lote</th>
+        <th>Vencimiento</th>
+        <th>Cantidad (unidad base)</th>
+        <th>Fecha de ingreso</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <!-- Cargando -->
+      <tr *ngIf="isLoading">
+        <td colspan="7" class="text-center">
+          Cargando lotes...
+        </td>
+      </tr>
+
+      <!-- Error -->
+      <tr *ngIf="!isLoading && errorCarga">
+        <td colspan="7" class="text-center">
+          No se pudo cargar la información.
+        </td>
+      </tr>
+
+      <!-- Sin resultados -->
+      <tr
+        *ngIf="
+          !isLoading
+          && !errorCarga
+          && lotesFiltrados.length === 0
+        "
+      >
+        <td colspan="7" class="text-center">
+          {{
+            searchTerm ||
+            filtroEstado !== 'todos' ||
+            filtroVencimiento !== 'todos'
+              ? 'No se encontraron lotes con los filtros seleccionados.'
+              : 'Todavía no hay lotes registrados.'
+          }}
+        </td>
+      </tr>
+
+      <!-- Registros -->
+      <tr *ngFor="let lote of lotesPaginados">
+
+        <td data-label="Producto">
+          <strong>{{ lote.nombreProducto }}</strong>
+        </td>
+
+        <td data-label="Número de lote">
+          {{ lote.numeroLote }}
+        </td>
+
+        <td data-label="Vencimiento">
+          <div class="expiration-cell">
+
+            <span>
+              {{ formatearFechaVencimiento(lote.fechaVencimiento) }}
+            </span>
+
+            <span
+              class="badge bg-danger"
+              *ngIf="esVencido(lote)"
+            >
+              Vencido
+            </span>
+
+            <span
+              class="badge bg-warning"
+              *ngIf="
+                !esVencido(lote)
+                && estaPorVencer(lote)
+              "
+            >
+              Por vencer
+            </span>
+
+          </div>
+        </td>
+
+        <td data-label="Cantidad">
+          {{ lote.cantidad | number:'1.0-2' }}
+        </td>
+
+        <td data-label="Fecha de ingreso">
+          {{ formatearFechaIngreso(lote.fechaIngreso) }}
+        </td>
+
+        <td data-label="Estado">
+          <span
+            class="badge"
+            [ngClass]="
+              lote.estado === 1
+                ? 'bg-success'
+                : 'bg-neutral'
+            "
+          >
+            {{ lote.estado === 1 ? 'Activo' : 'Inactivo' }}
+          </span>
+        </td>
+
+        <td data-label="Acciones" class="actions-cell">
+
+          <!-- Ajustar existencias -->
+          <button
+            type="button"
+            class="action-btn adjust"
+            *appHasPermission="'LOTE_EDITAR'"
+            title="Ajustar existencias"
+            aria-label="Ajustar existencias"
+            (click)="abrirModalAjuste(lote)"
+          >
+            <i class="bi bi-sliders"></i>
+          </button>
+
+          <!-- Activar o desactivar -->
+          <button
+            type="button"
+            class="action-btn toggle"
+            *appHasPermission="'LOTE_EDITAR'"
+            [title]="
+              lote.estado === 1
+                ? 'Desactivar lote'
+                : 'Activar lote'
+            "
+            [attr.aria-label]="
+              lote.estado === 1
+                ? 'Desactivar lote'
+                : 'Activar lote'
+            "
+            (click)="solicitarCambioEstado(lote)"
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                lote.estado === 1
+                  ? 'bi-x-circle'
+                  : 'bi-check-circle'
+              "
+            ></i>
+          </button>
+
+          <!-- Eliminación lógica -->
+          <button
+            type="button"
+            class="action-btn delete"
+            *appHasPermission="'LOTE_ELIMINAR'"
+            title="Eliminar lote"
+            aria-label="Eliminar lote"
+            (click)="solicitarEliminacion(lote)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+  <!-- Paginación -->
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0 && !isLoading"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
+    </button>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
+
+</div>
+
+<!-- ======================================================
+     MODAL: REGISTRAR INGRESO DE LOTE
+     ====================================================== -->
+
+<div
+  class="modal-backdrop"
+  *ngIf="mostrarModalCrear"
+  (click)="cerrarModalCrear()"
+>
+  <section
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Registrar ingreso de lote"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div class="modal-header">
+
+      <div>
+        <h3>Registrar ingreso de lote</h3>
+
+        <p>
+          Registra el lote y las cantidades recibidas
+          según las presentaciones del producto.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrarModalCrear()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Error al consultar los productos -->
+      <div
+        class="error-banner"
+        *ngIf="errorProductos"
+        role="alert"
+        aria-live="polite"
+      >
+        <span>{{ errorProductos }}</span>
+
+        <button
+          type="button"
+          class="btn-retry"
+          (click)="cargarProductos()"
+        >
+          Reintentar
+        </button>
+      </div>
+
+      <form
+        [formGroup]="loteForm"
+        (ngSubmit)="guardarLote()"
+      >
+
+        <div class="form-grid">
+
+          <!-- Producto -->
+          <div class="form-group">
+
+            <label for="productoLote">
+              Producto *
+            </label>
+
+            <select
+              id="productoLote"
+              formControlName="idProducto"
+              (change)="cambiarProductoSeleccionado()"
+            >
+              <option [ngValue]="null">
+                Seleccione un producto
+              </option>
+
+              <option
+                *ngFor="let producto of productosParaIngreso"
+                [ngValue]="producto.id"
+              >
+                {{ producto.nombre }}
+              </option>
+            </select>
+
+            <small
+              class="error-text"
+              *ngIf="
+                loteForm.get('idProducto')?.touched
+                && loteForm.get('idProducto')?.hasError('required')
+              "
+            >
+              Seleccione un producto.
+            </small>
+
+            <small
+              class="help-text"
+              *ngIf="isLoadingProductos"
+            >
+              Cargando productos...
+            </small>
+
+            <small
+              class="help-text"
+              *ngIf="
+                !isLoadingProductos
+                && !errorProductos
+                && productosParaIngreso.length === 0
+              "
+            >
+              No hay productos activos con presentaciones activas.
+            </small>
+
+          </div>
+
+          <!-- Número de lote -->
+          <div class="form-group">
+
+            <label for="numeroLote">
+              Número de lote *
+            </label>
+
+            <input
+              id="numeroLote"
+              type="text"
+              maxlength="50"
+              formControlName="numeroLote"
+              placeholder="Ej. LOT-2026-001"
+            />
+
+            <small
+              class="error-text"
+              *ngIf="
+                loteForm.get('numeroLote')?.touched
+                && loteForm.get('numeroLote')?.hasError('required')
+              "
+            >
+              Ingrese el número del lote.
+            </small>
+
+            <small
+              class="error-text"
+              *ngIf="
+                loteForm.get('numeroLote')?.hasError('maxlength')
+              "
+            >
+              El número no puede superar los 50 caracteres.
+            </small>
+
+          </div>
+
+          <!-- Fecha de vencimiento -->
+          <div class="form-group">
+
+            <label for="fechaVencimiento">
+              Fecha de vencimiento *
+            </label>
+
+            <input
+              id="fechaVencimiento"
+              type="date"
+              formControlName="fechaVencimiento"
+              [min]="fechaMinimaVencimiento"
+            />
+
+            <small
+              class="error-text"
+              *ngIf="
+                loteForm.get('fechaVencimiento')?.touched
+                && loteForm.get('fechaVencimiento')?.hasError('required')
+              "
+            >
+              Seleccione una fecha de vencimiento.
+            </small>
+
+            <small
+              class="error-text"
+              *ngIf="
+                loteForm.get('fechaVencimiento')?.touched
+                && loteForm.get('fechaVencimiento')?.hasError('fechaNoFutura')
+              "
+            >
+              La fecha debe ser posterior a hoy.
+            </small>
+
+          </div>
+
+        </div>
+
+        <!-- Cantidades recibidas por presentación -->
+        <section class="details-section">
+
+          <h4>Cantidades recibidas</h4>
+
+          <p class="help-text">
+            Ingresa la cantidad recibida de cada presentación.
+            Deja en cero las presentaciones que no recibiste.
+          </p>
+
+          <div
+            class="empty-details"
+            *ngIf="
+              loteForm.get('idProducto')?.value
+              && detallesIngresoArray.length === 0
+            "
+          >
+            No hay presentaciones activas para este producto.
+          </div>
+
+          <div
+            class="presentation-rows"
+            formArrayName="detallesIngreso"
+            *ngIf="detallesIngresoArray.length > 0"
+          >
+
+            <div
+              class="presentation-row"
+              *ngFor="
+                let detalle of detallesIngresoArray.controls;
+                let i = index
+              "
+              [formGroupName]="i"
+            >
+
+              <div class="presentation-info">
+
+                <strong>
+                  {{ detalle.get('nombrePresentacion')?.value }}
+                </strong>
+
+                <span>
+                  Factor de conversión:
+                  {{ detalle.get('factorConversion')?.value }}
+                </span>
+
+              </div>
+
+              <div class="quantity-input">
+
+                <label [for]="'cantidadPresentacion' + i">
+                  Cantidad recibida
+                </label>
+
+                <input
+                  [id]="'cantidadPresentacion' + i"
+                  type="number"
+                  min="0"
+                  step="1"
+                  formControlName="cantidadPresentacion"
+                />
+
+                <small
+                  class="error-text"
+                  *ngIf="
+                    detalle.get('cantidadPresentacion')?.touched
+                    && detalle.get('cantidadPresentacion')?.invalid
+                  "
+                >
+                  Ingrese un entero igual o mayor que cero.
+                </small>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- Mensaje de error del registro -->
+        <div
+          class="error-banner"
+          *ngIf="errorModal"
+          role="alert"
+          aria-live="polite"
+        >
+          {{ errorModal }}
+        </div>
+
+        <!-- Acciones del formulario -->
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn-secondary"
+            [disabled]="isSaving"
+            (click)="cerrarModalCrear()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="isSaving || isLoadingProductos"
+          >
+            {{
+              isSaving
+                ? 'Registrando...'
+                : 'Registrar lote'
+            }}
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </section>
+</div>
+
+<!-- ======================================================
+     MODAL: AJUSTAR EXISTENCIAS
+     ====================================================== -->
+
+<div
+  class="modal-backdrop"
+  *ngIf="mostrarModalAjuste && loteSeleccionado"
+  (click)="cerrarModalAjuste()"
+>
+  <section
+    class="modal-card card adjustment-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Ajustar existencias del lote"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div class="modal-header">
+
+      <div>
+        <h3>Ajustar existencias</h3>
+
+        <p>
+          {{ loteSeleccionado.nombreProducto }}
+          · Lote {{ loteSeleccionado.numeroLote }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrarModalAjuste()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Stock actual -->
+      <div class="stock-summary">
+
+        <span>Existencia actual del lote</span>
+
+        <strong>
+          {{ loteSeleccionado.cantidad | number:'1.0-2' }}
+
+          <small>unidades base</small>
+        </strong>
+
+      </div>
+
+      <div
+        class="error-banner"
+        *ngIf="presentacionesParaAjuste.length === 0"
+        role="alert"
+      >
+        El producto no tiene presentaciones activas
+        para realizar un ajuste.
+      </div>
+
+      <form
+        [formGroup]="ajusteForm"
+        (ngSubmit)="guardarAjuste()"
+      >
+
+        <div class="form-grid">
+
+          <!-- Presentación -->
+          <div class="form-group">
+
+            <label for="presentacionAjuste">
+              Presentación *
+            </label>
+
+            <select
+              id="presentacionAjuste"
+              formControlName="idPresentacion"
+            >
+              <option [ngValue]="null">
+                Seleccione una presentación
+              </option>
+
+              <option
+                *ngFor="let presentacion of presentacionesParaAjuste"
+                [ngValue]="presentacion.id"
+              >
+                {{ etiquetaTipo(presentacion.tipo) }}
+                (factor {{ presentacion.factorConversion }})
+              </option>
+            </select>
+
+            <small
+              class="error-text"
+              *ngIf="
+                ajusteForm.get('idPresentacion')?.touched
+                && ajusteForm.get('idPresentacion')?.invalid
+              "
+            >
+              Seleccione una presentación.
+            </small>
+
+          </div>
+
+          <!-- Motivo -->
+          <div class="form-group">
+
+            <label for="motivoAjuste">
+              Motivo *
+            </label>
+
+            <select
+              id="motivoAjuste"
+              formControlName="motivo"
+            >
+              <option
+                *ngFor="let motivo of motivosAjuste"
+                [ngValue]="motivo.value"
+              >
+                {{ motivo.label }}
+              </option>
+            </select>
+
+          </div>
+
+          <!-- Cantidad -->
+          <div class="form-group">
+
+            <label for="cantidadAjuste">
+              Cantidad *
+            </label>
+
+            <input
+              id="cantidadAjuste"
+              type="number"
+              step="1"
+              formControlName="cantidadAjuste"
+              placeholder="Ej. 5"
+            />
+
+            <small class="help-text">
+              En una merma, ingresa la cantidad a descontar como
+              positiva. Para ajustes por conteo o digitación,
+              utiliza un valor positivo para aumentar y negativo
+              para disminuir.
+            </small>
+
+            <small
+              class="error-text"
+              *ngIf="
+                ajusteForm.get('cantidadAjuste')?.touched
+                && ajusteForm.get('cantidadAjuste')?.invalid
+              "
+            >
+              Ingrese una cantidad entera distinta de cero.
+            </small>
+
+          </div>
+
+          <!-- Observación -->
+          <div class="form-group">
+
+            <label for="observacionAjuste">
+              Observación
+            </label>
+
+            <textarea
+              id="observacionAjuste"
+              rows="3"
+              maxlength="200"
+              formControlName="observacion"
+              placeholder="Detalle adicional (opcional)"
+            ></textarea>
+
+          </div>
+
+        </div>
+
+        <!-- Error del ajuste -->
+        <div
+          class="error-banner"
+          *ngIf="errorModal"
+          role="alert"
+          aria-live="polite"
+        >
+          {{ errorModal }}
+        </div>
+
+        <!-- Acciones -->
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn-secondary"
+            [disabled]="isSaving"
+            (click)="cerrarModalAjuste()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="
+              isSaving
+              || presentacionesParaAjuste.length === 0
+            "
+          >
+            {{
+              isSaving
+                ? 'Guardando...'
+                : 'Aplicar ajuste'
+            }}
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </section>
+</div>
+
+<!-- ======================================================
+     MODAL DE CONFIRMACIÓN
+     ====================================================== -->
+
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+    </div>
+
+    <h3>{{ confirmacion.titulo }}</h3>
+
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <p class="confirm-item-name">
+
+      {{ confirmacion.nombreProducto }}
+
+      <small>
+        Lote: {{ confirmacion.numeroLote }}
+      </small>
+
+    </p>
+
+    <div
+      class="error-banner"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="procesandoConfirmacion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoConfirmacion"
+        (click)="confirmarAccion()"
+      >
+        {{
+          procesandoConfirmacion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+      </button>
+
+    </div>
+
+  </section>
+</div>
+
+

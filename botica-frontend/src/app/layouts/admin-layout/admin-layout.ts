@@ -59,6 +59,14 @@ export class AdminLayoutComponent {
     },
 
     {
+      label: 'Lotes',
+      route: '/lotes',
+      icon: 'bi-boxes',
+      roles: ['ADMIN', 'VENDEDOR'],
+      permission: 'LOTE_LEER'
+    },
+
+    {
       label: 'Productos',
       route: '/productos',
       icon: 'bi-box-seam',

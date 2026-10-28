@@ -9,6 +9,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { ClientesListComponent } from './features/clientes/clientes-list/clientes-list';
 import { CategoriasListComponent } from './features/categorias/categorias-list/categorias-list';
 import { ProductosListComponent } from './features/productos/productos-list/productos-list';
+import { LotesListComponent } from './features/lotes/lotes-list/lotes-list';
 
 export const routes: Routes = [
 
@@ -43,6 +44,11 @@ export const routes: Routes = [
       {
         path: 'categorias',
         component: CategoriasListComponent
+      },
+
+      {
+        path: 'lotes',
+        component: LotesListComponent
       },
 
       {
