@@ -62,7 +62,8 @@ export class AdminLayoutComponent {
       label: 'Productos',
       route: '/productos',
       icon: 'bi-box-seam',
-      roles: ['ADMIN']
+      roles: ['ADMIN'],
+      permission: 'PRODUCTO_LEER'
     },
 
     {
@@ -93,6 +94,7 @@ export class AdminLayoutComponent {
     if (user) {
 
       try {
+
         const userData = JSON.parse(user);
 
         this.userName =
@@ -103,7 +105,11 @@ export class AdminLayoutComponent {
           : [];
 
       } catch (error) {
-        console.error('No se pudieron leer los datos del usuario:', error);
+
+        console.error(
+          'No se pudieron leer los datos del usuario:',
+          error
+        );
       }
     }
   }
@@ -112,13 +118,15 @@ export class AdminLayoutComponent {
 
     return this.menuItems.filter(item => {
 
-      // El menú de Categorías depende del permiso de lectura.
+      // Si el menú requiere un permiso específico,
+      // comprobar ese permiso en lugar de depender solo del rol.
       if (item.permission) {
+
         return this.userRole === 'ADMIN' ||
           this.userPermissions.includes(item.permission);
       }
 
-      // Los demás menús mantienen el control actual por rol.
+      // Mantener el comportamiento actual del resto de menús.
       return item.roles.includes(this.userRole);
     });
   }

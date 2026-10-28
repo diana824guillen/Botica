@@ -1,0 +1,408 @@
+<div class="page-header">
+
+  <div>
+    <h2>Gestión de Productos</h2>
+
+    <p class="page-description">
+      Administra los productos de la botica, sus categorías,
+      presentaciones, precios y niveles mínimos de stock.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    class="btn-primary"
+    *appHasPermission="'PRODUCTO_CREAR'"
+    (click)="abrirModalProducto()"
+  >
+    <i class="bi bi-plus-circle"></i>
+    Nuevo Producto
+  </button>
+
+</div>
+
+<!-- Búsqueda y filtro por categoría -->
+<div class="filters-container card">
+
+  <div class="search-bar">
+
+    <i class="bi bi-search"></i>
+
+    <input
+      type="text"
+      [value]="searchTerm"
+      (input)="onSearchInput($event)"
+      placeholder="Buscar por nombre, descripción o categoría..."
+      aria-label="Buscar productos"
+    />
+
+  </div>
+
+  <div class="category-filter">
+
+    <label for="filtroCategoria">Categoría</label>
+
+    <select
+      id="filtroCategoria"
+      [ngModel]="categoriaSeleccionada"
+      [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="cambiarFiltroCategoria($event)"
+    >
+      <option [ngValue]="null">
+        Todas las categorías
+      </option>
+
+      <option
+        *ngFor="let categoria of categorias"
+        [ngValue]="categoria.id"
+      >
+        {{ categoria.nombre }}
+        {{ categoria.estado === 1 ? '' : '(Inactiva)' }}
+      </option>
+
+    </select>
+
+  </div>
+
+</div>
+
+<!-- Error de carga -->
+<div
+  class="load-error"
+  *ngIf="errorCarga && !isLoading"
+  role="alert"
+  aria-live="polite"
+>
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarProductos()"
+  >
+    Reintentar
+  </button>
+</div>
+
+<!-- Tabla de productos -->
+<div class="table-container card">
+
+  <table class="responsive-table">
+
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Categoría</th>
+        <th>Presentaciones activas</th>
+        <th>Stock actual</th>
+        <th>Stock mínimo</th>
+        <th>Receta</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <!-- Cargando -->
+      <tr *ngIf="isLoading">
+        <td colspan="8" class="text-center">
+          Cargando productos...
+        </td>
+      </tr>
+
+      <!-- Error -->
+      <tr *ngIf="!isLoading && errorCarga">
+        <td colspan="8" class="text-center">
+          No se pudo cargar la información.
+        </td>
+      </tr>
+
+      <!-- Sin resultados -->
+      <tr
+        *ngIf="
+          !isLoading
+          && !errorCarga
+          && productosFiltrados.length === 0
+        "
+      >
+        <td colspan="8" class="text-center">
+          {{
+            searchTerm || categoriaSeleccionada !== null
+              ? 'No se encontraron productos con los filtros seleccionados.'
+              : 'Todavía no hay productos registrados.'
+          }}
+        </td>
+      </tr>
+
+      <!-- Registros -->
+      <tr *ngFor="let producto of productosPaginados">
+
+        <td data-label="Producto">
+          <strong>{{ producto.nombre }}</strong>
+
+          <small
+            class="product-description"
+            *ngIf="producto.descripcion"
+          >
+            {{ producto.descripcion }}
+          </small>
+        </td>
+
+        <td data-label="Categoría">
+          {{ producto.categoriaNombre }}
+        </td>
+
+        <td data-label="Presentaciones">
+          <span class="presentation-summary">
+            {{ resumenPresentaciones(producto) }}
+          </span>
+        </td>
+
+        <td data-label="Stock actual">
+          {{ producto.stockActual | number:'1.0-2' }}
+        </td>
+
+        <td data-label="Stock mínimo">
+          {{ producto.stockMinimo | number:'1.0-2' }}
+        </td>
+
+        <td data-label="Receta">
+
+          <span
+            class="badge"
+            [ngClass]="
+              producto.requiereReceta
+                ? 'bg-info'
+                : 'bg-neutral'
+            "
+          >
+            {{ producto.requiereReceta ? 'Sí' : 'No' }}
+          </span>
+
+        </td>
+
+        <td data-label="Estado">
+
+          <span
+            class="badge"
+            [ngClass]="
+              producto.estado === 1
+                ? 'bg-success'
+                : 'bg-warning'
+            "
+          >
+            {{ producto.estado === 1 ? 'Activo' : 'Inactivo' }}
+          </span>
+
+        </td>
+
+        <td data-label="Acciones" class="actions-cell">
+
+          <!-- Editar datos generales -->
+          <button
+            type="button"
+            class="action-btn edit"
+            *appHasPermission="'PRODUCTO_EDITAR'"
+            title="Editar producto"
+            aria-label="Editar producto"
+            (click)="abrirModalProducto(producto)"
+          >
+            <i class="bi bi-pencil-square"></i>
+          </button>
+
+          <!-- Gestionar presentaciones -->
+          <button
+            type="button"
+            class="action-btn presentations"
+            *appHasPermission="'PRODUCTO_EDITAR'"
+            title="Gestionar presentaciones"
+            aria-label="Gestionar presentaciones"
+            (click)="abrirModalPresentaciones(producto)"
+          >
+            <i class="bi bi-boxes"></i>
+          </button>
+
+          <!-- Activar / desactivar -->
+          <button
+            type="button"
+            class="action-btn toggle"
+            *appHasPermission="'PRODUCTO_EDITAR'"
+            [title]="
+              producto.estado === 1
+                ? 'Desactivar producto'
+                : 'Activar producto'
+            "
+            [attr.aria-label]="
+              producto.estado === 1
+                ? 'Desactivar producto'
+                : 'Activar producto'
+            "
+            (click)="
+              solicitarCambioEstado(
+                producto,
+                producto.estado === 1 ? 0 : 1
+              )
+            "
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                producto.estado === 1
+                  ? 'bi-x-circle'
+                  : 'bi-check-circle'
+              "
+            ></i>
+          </button>
+
+          <!-- Eliminar -->
+          <button
+            type="button"
+            class="action-btn delete"
+            *appHasPermission="'PRODUCTO_ELIMINAR'"
+            title="Eliminar producto"
+            aria-label="Eliminar producto"
+            (click)="solicitarEliminacion(producto)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+  <!-- Paginación -->
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0 && !isLoading"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
+    </button>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
+
+</div>
+
+<!-- Modal de creación y edición del producto -->
+<app-producto-modal
+  *ngIf="mostrarModalProducto"
+  [productoEditar]="productoSeleccionado"
+  (cerrar)="cerrarModalProducto()"
+  (guardado)="cargarProductos()"
+>
+</app-producto-modal>
+
+<!-- Modal para gestionar presentaciones -->
+<app-presentaciones-modal
+  *ngIf="mostrarModalPresentaciones && productoParaPresentaciones"
+  [producto]="productoParaPresentaciones"
+  (cerrar)="cerrarModalPresentaciones()"
+  (actualizado)="cargarProductos()"
+>
+</app-presentaciones-modal>
+
+<!-- Modal personalizado de confirmación -->
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+    </div>
+
+    <h3>{{ confirmacion.titulo }}</h3>
+
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <p class="confirm-product-name">
+      {{ confirmacion.nombre }}
+    </p>
+
+    <div
+      class="confirm-error"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-cancel"
+        [disabled]="procesandoConfirmacion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoConfirmacion"
+        (click)="confirmarAccion()"
+      >
+        {{
+          procesandoConfirmacion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+

@@ -344,9 +344,17 @@ public class ProductoService {
             );
         }
 
+        Set<String> combinacionesNuevas = new HashSet<>();
+
         for (PresentacionDTO dto : presentaciones) {
 
             validarDatosPresentacion(dto);
+
+            String clave = crearClavePresentacion(dto.getTipo().name(), dto.getFactorConversion());
+
+            if (!combinacionesNuevas.add(clave)) {
+                throw new BusinessException("No puede repetir el mismo tipo y factor de conversión");
+            }
 
             validarPresentacionNoDuplicada(
                     idProducto,
@@ -692,15 +700,9 @@ public class ProductoService {
                 .findByProductoId(idProducto)
                 .stream()
                 .anyMatch(p ->
-                        !EstadoRegistro.ELIMINADO.getValor()
-                                .equals(p.getEstado())
-                        && EstadoRegistro.ACTIVO.getValor()
-                                .equals(p.getEstado())
-                        && !p.getId().equals(idPresentacionExcluir)
+                        !p.getId().equals(idPresentacionExcluir)
                         && p.getTipo().equals(dto.getTipo())
-                        && p.getFactorConversion().equals(
-                                dto.getFactorConversion()
-                        )
+                        && p.getFactorConversion().equals(dto.getFactorConversion())
                 );
 
         if (duplicada) {
@@ -789,14 +791,16 @@ public class ProductoService {
         BigDecimal stockActual = BigDecimal.ZERO;
 
         if (producto.getLotes() != null) {
-            stockActual = producto.getLotes()
-                    .stream()
-                    .filter(l ->
-                            EstadoRegistro.ACTIVO.getValor()
-                                    .equals(l.getEstado())
-                    )
-                    .map(l -> l.getCantidad())
-                    .reduce(BigDecimal.ZERO, (acumulado, valor) -> acumulado.add(valor));
+        stockActual = producto.getLotes()
+                .stream()
+                .filter(l ->
+                        EstadoRegistro.ACTIVO.getValor().equals(l.getEstado())
+                )
+                .map(l -> l.getCantidad() == null
+                        ? BigDecimal.ZERO
+                        : l.getCantidad())
+                .reduce(BigDecimal.ZERO,
+                        (acumulado, valor) -> acumulado.add(valor));
         }
 
         dto.setStockActual(stockActual);

@@ -1,0 +1,387 @@
+<div class="modal-backdrop">
+  <div
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Gestionar presentaciones"
+  >
+
+    <div class="modal-header">
+
+      <div>
+        <h3>Presentaciones del producto</h3>
+
+        <p class="product-name">
+          {{ producto.nombre }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving || procesandoAccion"
+        (click)="cerrar.emit()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Formulario de presentación -->
+      <section class="presentation-form-section">
+
+        <h4>
+          {{
+            presentacionEditar
+              ? 'Actualizar presentación'
+              : 'Agregar presentación'
+          }}
+        </h4>
+
+        <form
+          [formGroup]="presentacionForm"
+          (ngSubmit)="guardarPresentacion()"
+        >
+
+          <div class="form-row">
+
+            <div class="form-group">
+
+              <label>Tipo de presentación</label>
+
+              <select formControlName="tipo">
+                <option
+                  *ngFor="let tipo of tiposPresentacion"
+                  [value]="tipo.value"
+                >
+                  {{ tipo.label }}
+                </option>
+              </select>
+
+              <span
+                class="error-text"
+                *ngIf="
+                  presentacionForm.get('tipo')?.touched
+                  && presentacionForm.get('tipo')?.invalid
+                "
+              >
+                Seleccione un tipo.
+              </span>
+
+            </div>
+
+            <div class="form-group">
+
+              <label>Factor de conversión</label>
+
+              <input
+                type="number"
+                formControlName="factorConversion"
+                min="1"
+                step="1"
+              />
+
+              <span class="help-text">
+                Unidades contenidas.
+              </span>
+
+              <span
+                class="error-text"
+                *ngIf="
+                  presentacionForm.get('factorConversion')?.touched
+                  && presentacionForm.get('factorConversion')?.invalid
+                "
+              >
+                Ingrese un entero mayor que cero.
+              </span>
+
+            </div>
+
+            <div class="form-group">
+
+              <label>Precio de venta (S/)</label>
+
+              <input
+                type="number"
+                formControlName="precioVenta"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+              />
+
+              <span
+                class="error-text"
+                *ngIf="
+                  presentacionForm.get('precioVenta')?.touched
+                  && presentacionForm.get('precioVenta')?.invalid
+                "
+              >
+                Ingrese un precio mayor que cero.
+              </span>
+
+            </div>
+
+          </div>
+
+          <div class="form-actions">
+
+            <button
+              type="button"
+              class="btn-secondary"
+              *ngIf="presentacionEditar"
+              [disabled]="isSaving"
+              (click)="cancelarEdicion()"
+            >
+              Cancelar edición
+            </button>
+
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="presentacionForm.invalid || isSaving"
+            >
+              {{
+                isSaving
+                  ? 'Guardando...'
+                  : (
+                      presentacionEditar
+                        ? 'Actualizar presentación'
+                        : 'Agregar presentación'
+                    )
+              }}
+            </button>
+
+          </div>
+
+        </form>
+
+      </section>
+
+      <!-- Error de operación -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Tabla de presentaciones -->
+      <section class="presentation-list-section">
+
+        <h4>Presentaciones registradas</h4>
+
+        <div
+          class="loading-message"
+          *ngIf="isLoading"
+        >
+          Cargando presentaciones...
+        </div>
+
+        <div class="table-container" *ngIf="!isLoading">
+
+          <table class="responsive-table">
+
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Factor</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              <tr *ngIf="presentaciones.length === 0">
+                <td colspan="5" class="text-center">
+                  No hay presentaciones registradas.
+                </td>
+              </tr>
+
+              <tr *ngFor="let p of presentaciones">
+
+                <td data-label="Tipo">
+                  {{ etiquetaTipo(p.tipo) }}
+                </td>
+
+                <td data-label="Factor">
+                  {{ p.factorConversion }}
+                </td>
+
+                <td data-label="Precio">
+                  S/ {{ p.precioVenta | number:'1.2-2' }}
+                </td>
+
+                <td data-label="Estado">
+
+                  <span
+                    class="badge"
+                    [ngClass]="
+                      p.estado === 1
+                        ? 'bg-success'
+                        : 'bg-warning'
+                    "
+                  >
+                    {{ p.estado === 1 ? 'Activa' : 'Inactiva' }}
+                  </span>
+
+                </td>
+
+                <td data-label="Acciones" class="actions-cell">
+
+                  <button
+                    type="button"
+                    class="action-btn edit"
+                    title="Editar presentación"
+                    aria-label="Editar presentación"
+                    [disabled]="p.estado !== 1 || isSaving"
+                    (click)="editarPresentacion(p)"
+                  >
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn toggle"
+                    [title]="p.estado === 1 ? 'Desactivar' : 'Activar'"
+                    [attr.aria-label]="p.estado === 1 ? 'Desactivar' : 'Activar'"
+                    (click)="solicitarCambioEstado(p)"
+                  >
+                    <i
+                      class="bi"
+                      [ngClass]="
+                        p.estado === 1
+                          ? 'bi-x-circle'
+                          : 'bi-check-circle'
+                      "
+                    ></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn delete"
+                    title="Eliminar presentación"
+                    aria-label="Eliminar presentación"
+                    [disabled]="isSaving"
+                    (click)="solicitarEliminacion(p)"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <div class="modal-footer">
+
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="isSaving || procesandoAccion"
+        (click)="cerrar.emit()"
+      >
+        Cerrar
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Confirmación de activar, desactivar o eliminar -->
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+    </div>
+
+    <h3>{{ confirmacion.titulo }}</h3>
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <p class="confirm-item-name">
+      {{ etiquetaTipo(confirmacion.presentacion.tipo) }}
+      · Factor {{ confirmacion.presentacion.factorConversion }}
+    </p>
+
+    <div
+      class="error-banner"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="procesandoAccion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoAccion"
+        (click)="confirmarAccion()"
+      >
+        {{
+          procesandoAccion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+

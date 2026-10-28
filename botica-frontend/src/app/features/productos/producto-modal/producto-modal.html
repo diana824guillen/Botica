@@ -1,0 +1,383 @@
+<div class="modal-backdrop">
+  <div
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="
+      productoEditar
+        ? 'Editar producto'
+        : 'Registrar nuevo producto'
+    "
+  >
+
+    <div class="modal-header">
+      <h3>
+        {{
+          productoEditar
+            ? 'Editar Producto'
+            : 'Registrar Nuevo Producto'
+        }}
+      </h3>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrar.emit()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form
+      [formGroup]="productoForm"
+      (ngSubmit)="guardar()"
+    >
+
+      <!-- Categoría -->
+      <div class="form-group">
+
+        <label for="categoriaProducto">
+          Categoría
+          <span class="required">*</span>
+        </label>
+
+        <select
+          id="categoriaProducto"
+          formControlName="categoriaId"
+          [disabled]="cargandoCategorias"
+        >
+          <option [ngValue]="null">
+            {{
+              cargandoCategorias
+                ? 'Cargando categorías...'
+                : 'Seleccione una categoría'
+            }}
+          </option>
+
+          <option
+            *ngFor="let categoria of categorias"
+            [ngValue]="categoria.id"
+          >
+            {{ categoria.nombre }}
+            {{ categoria.estado === 1 ? '' : '(Inactiva)' }}
+          </option>
+        </select>
+
+        <span
+          class="error-text"
+          *ngIf="
+            productoForm.get('categoriaId')?.touched
+            && productoForm.get('categoriaId')?.invalid
+          "
+        >
+          Seleccione una categoría.
+        </span>
+
+      </div>
+
+      <!-- Nombre -->
+      <div class="form-group">
+
+        <label for="nombreProducto">
+          Nombre del producto
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="nombreProducto"
+          type="text"
+          formControlName="nombre"
+          maxlength="150"
+          autocomplete="off"
+          placeholder="Ej. Paracetamol 500 mg"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            productoForm.get('nombre')?.touched
+            && productoForm.get('nombre')?.hasError('required')
+          "
+        >
+          El nombre del producto es obligatorio.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            productoForm.get('nombre')?.touched
+            && productoForm.get('nombre')?.hasError('pattern')
+          "
+        >
+          El nombre no puede contener solamente espacios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            productoForm.get('nombre')?.touched
+            && productoForm.get('nombre')?.hasError('maxlength')
+          "
+        >
+          El nombre no puede superar los 150 caracteres.
+        </span>
+
+      </div>
+
+      <!-- Descripción -->
+      <div class="form-group">
+
+        <label for="descripcionProducto">
+          Descripción
+          <span class="optional">(Opcional)</span>
+        </label>
+
+        <textarea
+          id="descripcionProducto"
+          formControlName="descripcion"
+          rows="3"
+          placeholder="Información adicional del producto"
+        ></textarea>
+
+      </div>
+
+      <!-- Stock mínimo -->
+      <div class="form-group">
+
+        <label for="stockMinimo">
+          Stock mínimo
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="stockMinimo"
+          type="number"
+          formControlName="stockMinimo"
+          min="0"
+          step="0.01"
+        />
+
+        <span class="help-text">
+          Se utilizará como referencia para identificar productos con stock bajo.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            productoForm.get('stockMinimo')?.touched
+            && productoForm.get('stockMinimo')?.invalid
+          "
+        >
+          El stock mínimo debe ser igual o mayor que cero.
+        </span>
+
+      </div>
+
+      <!-- Receta médica -->
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          formControlName="requiereReceta"
+        />
+
+        <span>Este producto requiere receta médica</span>
+      </label>
+
+      <!-- Presentaciones iniciales: solo en la creación -->
+      <section
+        class="presentaciones-section"
+        *ngIf="!productoEditar"
+      >
+
+        <div class="section-heading">
+
+          <div>
+            <h4>Presentaciones iniciales</h4>
+
+            <p>
+              Agregue al menos una presentación y defina su factor
+              de conversión y precio de venta.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="btn-add-presentation"
+            (click)="agregarPresentacion()"
+          >
+            <i class="bi bi-plus-circle"></i>
+            Agregar
+          </button>
+
+        </div>
+
+        <div formArrayName="presentaciones">
+
+          <div
+            class="presentation-form-row"
+            *ngFor="
+              let presentacion of presentacionesForm.controls;
+              let i = index
+            "
+            [formGroupName]="i"
+          >
+
+            <div class="presentation-row-header">
+              <strong>Presentación {{ i + 1 }}</strong>
+
+              <button
+                type="button"
+                class="remove-presentation"
+                title="Quitar presentación"
+                aria-label="Quitar presentación"
+                [disabled]="presentacionesForm.length <= 1"
+                (click)="quitarPresentacion(i)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+
+            <div class="form-group">
+
+              <label>Tipo de presentación</label>
+
+              <select formControlName="tipo">
+                <option
+                  *ngFor="let tipo of tiposPresentacion"
+                  [value]="tipo.value"
+                >
+                  {{ tipo.label }}
+                </option>
+              </select>
+
+            </div>
+
+            <div class="form-row">
+
+              <div class="form-group">
+
+                <label>Factor de conversión</label>
+
+                <input
+                  type="number"
+                  formControlName="factorConversion"
+                  min="1"
+                  step="1"
+                  placeholder="1"
+                />
+
+                <span class="help-text">
+                  Unidades contenidas.
+                </span>
+
+                <span
+                  class="error-text"
+                  *ngIf="
+                    presentacion.get('factorConversion')?.touched
+                    && presentacion.get('factorConversion')?.invalid
+                  "
+                >
+                  Ingrese un entero mayor que cero.
+                </span>
+
+              </div>
+
+              <div class="form-group">
+
+                <label>Precio de venta (S/)</label>
+
+                <input
+                  type="number"
+                  formControlName="precioVenta"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+
+                <span
+                  class="error-text"
+                  *ngIf="
+                    presentacion.get('precioVenta')?.touched
+                    && presentacion.get('precioVenta')?.invalid
+                  "
+                >
+                  Ingrese un precio mayor que cero.
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- Mensaje al editar -->
+      <div
+        class="info-banner"
+        *ngIf="productoEditar"
+      >
+        <i class="bi bi-info-circle"></i>
+
+        <span>
+          Las presentaciones, sus precios y sus factores de conversión
+          se gestionan desde el botón «Presentaciones» de la tabla.
+        </span>
+      </div>
+
+      <!-- Error del servidor -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Acciones -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isSaving"
+          (click)="cerrar.emit()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="
+            productoForm.invalid
+            || isSaving
+            || cargandoCategorias
+            || categorias.length === 0
+          "
+        >
+          {{
+            isSaving
+              ? 'Guardando...'
+              : (
+                  productoEditar
+                    ? 'Actualizar producto'
+                    : 'Guardar producto'
+                )
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+
