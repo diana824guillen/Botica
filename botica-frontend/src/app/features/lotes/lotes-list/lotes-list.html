@@ -1,6 +1,12 @@
+<!-- ==========================================================
+     ENCABEZADO
+     ========================================================== -->
+
 <div class="page-header">
+
   <div>
     <h2>Gestión de Lotes</h2>
+
     <p class="page-description">
       Controla los ingresos, las existencias y las fechas de vencimiento
       de los productos de la botica.
@@ -16,6 +22,7 @@
     <i class="bi bi-plus-circle"></i>
     Nuevo ingreso
   </button>
+
 </div>
 
 <!-- ==========================================================
@@ -23,7 +30,9 @@
      ========================================================== -->
 
 <div class="filters-container card">
+
   <div class="search-bar">
+
     <i class="bi bi-search"></i>
 
     <input
@@ -33,9 +42,11 @@
       placeholder="Buscar por producto o número de lote..."
       aria-label="Buscar lotes"
     />
+
   </div>
 
   <div class="filter-control">
+
     <label for="filtroEstado">Estado</label>
 
     <select
@@ -47,9 +58,11 @@
       <option value="activo">Activo</option>
       <option value="inactivo">Inactivo</option>
     </select>
+
   </div>
 
   <div class="filter-control">
+
     <label for="filtroVencimiento">Vencimiento</label>
 
     <select
@@ -62,15 +75,18 @@
       <option value="vencidos">Vencidos</option>
       <option value="rango">Rango personalizado</option>
     </select>
+
   </div>
 
-  <!-- Rango de fechas personalizado -->
+  <!-- Rango personalizado -->
   <div
     class="date-range-filter"
     *ngIf="filtroVencimiento === 'rango'"
   >
+
     <label>
       Desde
+
       <input
         type="date"
         name="fechaDesde"
@@ -81,6 +97,7 @@
 
     <label>
       Hasta
+
       <input
         type="date"
         name="fechaHasta"
@@ -95,11 +112,13 @@
     >
       Selecciona una fecha inicial y una fecha final válida.
     </p>
+
   </div>
+
 </div>
 
 <!-- ==========================================================
-     ERROR DE CARGA DE LA TABLA
+     ERROR DE CARGA
      ========================================================== -->
 
 <div
@@ -107,6 +126,7 @@
   class="load-error"
   role="alert"
 >
+
   <i class="bi bi-exclamation-circle"></i>
 
   <span>{{ errorCarga }}</span>
@@ -117,6 +137,7 @@
   >
     Reintentar
   </button>
+
 </div>
 
 <!-- ==========================================================
@@ -124,6 +145,7 @@
      ========================================================== -->
 
 <div class="table-container card">
+
   <table class="responsive-table">
 
     <thead>
@@ -182,6 +204,7 @@
         </td>
 
         <td data-label="Vencimiento">
+
           <span>
             {{ lote.fechaVencimiento | date:'dd/MM/yyyy':'UTC' }}
           </span>
@@ -199,6 +222,7 @@
           >
             Próximo a vencer
           </span>
+
         </td>
 
         <td
@@ -213,6 +237,7 @@
         </td>
 
         <td data-label="Estado">
+
           <span
             class="badge"
             [ngClass]="
@@ -223,6 +248,7 @@
           >
             {{ lote.estado === 1 ? 'Activo' : 'Inactivo' }}
           </span>
+
         </td>
 
         <td data-label="Acciones" class="actions-cell">
@@ -282,607 +308,43 @@
           </button>
 
         </td>
+
       </tr>
 
     </tbody>
+
   </table>
+
 </div>
 
 <!-- ==========================================================
-     MODAL: REGISTRAR INGRESO DE LOTE
+     COMPONENTE MODAL: INGRESO DE LOTE
      ========================================================== -->
 
-<div
-  class="modal-backdrop"
+<app-lote-modal
   *ngIf="mostrarModalIngreso"
+  modo="ingreso"
+  (cerrar)="cerrarModalIngreso()"
+  (guardado)="cargarLotes()"
 >
-  <section
-    class="modal-card ingreso-modal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="tituloModalIngreso"
-    (click)="manejarClickDentroDelModal($event)"
-  >
-
-    <!-- Encabezado -->
-    <div class="modal-header">
-      <div>
-        <h3 id="tituloModalIngreso">
-          Registrar ingreso de lote
-        </h3>
-
-        <p>
-          Selecciona el producto y registra las cantidades recibidas.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        class="modal-close"
-        aria-label="Cerrar"
-        [disabled]="procesando"
-        (click)="cerrarModalIngreso()"
-      >
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-
-    <form
-      (ngSubmit)="registrarIngreso()"
-      novalidate
-    >
-
-      <!-- Error dentro del modal -->
-      <div
-        class="modal-form-error"
-        *ngIf="errorIngresoModal"
-        role="alert"
-        aria-live="assertive"
-      >
-        <i class="bi bi-exclamation-circle-fill"></i>
-        <span>{{ errorIngresoModal }}</span>
-      </div>
-
-      <!-- Producto, número de lote y vencimiento -->
-      <div class="form-row ingreso-form-row">
-
-        <!-- Buscador de productos -->
-        <div class="form-group product-picker">
-
-          <label for="buscarProductoIngreso">
-            Producto
-            <span class="required-mark">*</span>
-          </label>
-
-          <div class="product-picker-control">
-
-            <div class="product-picker-input">
-              <i class="bi bi-search"></i>
-
-              <input
-                id="buscarProductoIngreso"
-                type="text"
-                name="buscarProductoIngreso"
-                [ngModel]="busquedaProductoIngreso"
-                (ngModelChange)="buscarProductoIngreso($event)"
-                (focus)="mostrarOpcionesProductoIngreso = true"
-                placeholder="Buscar producto..."
-                autocomplete="off"
-                required
-                [disabled]="cargandoProductos || procesando"
-                [attr.aria-expanded]="
-                  mostrarOpcionesProductoIngreso &&
-                  !productoIngresoSeleccionado
-                "
-                aria-controls="sugerenciasProductos"
-              />
-            </div>
-
-            <!-- Lista flotante de sugerencias -->
-            <div
-              id="sugerenciasProductos"
-              class="product-suggestions"
-              *ngIf="
-                mostrarOpcionesProductoIngreso &&
-                !productoIngresoSeleccionado
-              "
-            >
-
-              <div
-                class="suggestions-loading"
-                *ngIf="cargandoProductos"
-              >
-                Cargando productos...
-              </div>
-
-              <button
-                type="button"
-                *ngFor="let producto of productosCoincidentesIngreso"
-                (click)="seleccionarProductoIngreso(producto)"
-              >
-                <span class="suggestion-icon">
-                  <i class="bi bi-capsule"></i>
-                </span>
-
-                <span class="suggestion-details">
-                  <strong>{{ producto.nombre }}</strong>
-                  <small>{{ producto.categoriaNombre }}</small>
-                </span>
-
-                <i class="bi bi-chevron-right suggestion-arrow"></i>
-              </button>
-
-              <p
-                class="suggestions-empty"
-                *ngIf="
-                  !cargandoProductos &&
-                  productosCoincidentesIngreso.length === 0
-                "
-              >
-                No se encontraron coincidencias.
-              </p>
-
-            </div>
-          </div>
-
-          <p
-            class="field-help"
-            *ngIf="!productoIngresoSeleccionado"
-          >
-            Haz clic para ver sugerencias o escribe el nombre del producto.
-          </p>
-        </div>
-
-        <!-- Número de lote -->
-        <div class="form-group">
-          <label for="numeroLote">
-            Número de lote
-            <span class="required-mark">*</span>
-          </label>
-
-          <input
-            id="numeroLote"
-            type="text"
-            name="numeroLote"
-            [(ngModel)]="numeroLote"
-            maxlength="50"
-            placeholder="Código del envase"
-            required
-            [disabled]="procesando"
-          />
-
-          <p class="field-help">
-            Copia el número impreso en el envase.
-          </p>
-        </div>
-
-        <!-- Fecha de vencimiento -->
-        <div class="form-group">
-          <label for="fechaVencimiento">
-            Fecha de vencimiento
-            <span class="required-mark">*</span>
-          </label>
-
-          <input
-            id="fechaVencimiento"
-            type="date"
-            name="fechaVencimiento"
-            [(ngModel)]="fechaVencimiento"
-            [min]="fechaMinimaVencimiento"
-            required
-            [disabled]="procesando"
-          />
-        </div>
-
-      </div>
-
-      <!-- Producto seleccionado y sus presentaciones -->
-      <div
-        class="selected-product"
-        *ngIf="productoIngresoSeleccionado"
-      >
-
-        <div class="selected-product-heading">
-          <i class="bi bi-check-circle-fill"></i>
-
-          <div>
-            <strong>{{ productoIngresoSeleccionado.nombre }}</strong>
-            <small>
-              {{ productoIngresoSeleccionado.categoriaNombre }}
-            </small>
-          </div>
-
-          <button
-            type="button"
-            class="text-button"
-            [disabled]="procesando"
-            (click)="
-              productoIngresoSeleccionado = null;
-              busquedaProductoIngreso = '';
-              cantidadesIngreso = {};
-              mostrarOpcionesProductoIngreso = true
-            "
-          >
-            Cambiar
-          </button>
-        </div>
-
-        <div class="presentations-section">
-          <h4>Presentaciones recibidas</h4>
-
-          <p class="field-help">
-            Introduce las cantidades recibidas. Deja en cero las
-            presentaciones que no llegaron en este ingreso.
-          </p>
-
-          <div class="presentations-list">
-
-            <div
-              class="presentation-quantity"
-              *ngFor="let presentacion of presentacionesIngreso"
-            >
-              <div>
-                <strong>
-                  {{ etiquetaPresentacion(presentacion) }}
-                </strong>
-
-                <small>
-                  Factor de conversión:
-                  {{ presentacion.factorConversion }}
-                </small>
-              </div>
-
-              <input
-                type="number"
-                min="0"
-                step="1"
-                [name]="'cantidadIngreso' + presentacion.id"
-                [ngModel]="cantidadesIngreso[presentacion.id]"
-                (ngModelChange)="
-                  cantidadesIngreso[presentacion.id] = +$event
-                "
-                [disabled]="procesando"
-                aria-label="Cantidad recibida"
-              />
-            </div>
-
-          </div>
-
-          <p
-            class="empty-presentations"
-            *ngIf="presentacionesIngreso.length === 0"
-          >
-            Este producto no tiene presentaciones activas.
-          </p>
-        </div>
-      </div>
-
-      <!-- Indicador cuando todavía no se eligió producto -->
-      <div
-        class="product-not-selected"
-        *ngIf="!productoIngresoSeleccionado"
-      >
-        <i class="bi bi-info-circle"></i>
-
-        <span>
-          Selecciona un producto para mostrar sus presentaciones
-          y registrar las cantidades recibidas.
-        </span>
-      </div>
-
-      <!-- Acciones del formulario -->
-      <div class="modal-footer ingreso-footer">
-        <button
-          type="button"
-          class="btn-secondary"
-          [disabled]="procesando"
-          (click)="cerrarModalIngreso()"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="submit"
-          class="btn-primary"
-          [disabled]="procesando || !productoIngresoSeleccionado"
-        >
-          <i
-            class="bi"
-            [ngClass]="
-              procesando
-                ? 'bi-arrow-repeat'
-                : 'bi-check-circle'
-            "
-          ></i>
-
-          {{ procesando ? 'Registrando...' : 'Registrar ingreso' }}
-        </button>
-      </div>
-
-    </form>
-  </section>
-</div>
+</app-lote-modal>
 
 <!-- ==========================================================
-     MODAL: AJUSTAR EXISTENCIAS
+     COMPONENTE MODAL: AJUSTE DE EXISTENCIAS
      ========================================================== -->
 
-<div
-  class="modal-backdrop"
+<app-lote-modal
   *ngIf="mostrarModalAjuste && loteAjuste"
+  modo="ajuste"
+  [loteAjuste]="loteAjuste"
+  (cerrar)="cerrarModalAjuste()"
+  (guardado)="cargarLotes()"
 >
-  <section
-    class="modal-card adjustment-modal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="tituloModalAjuste"
-    (click)="$event.stopPropagation()"
-  >
-
-    <!-- Encabezado -->
-    <div class="modal-header">
-      <div>
-        <h3 id="tituloModalAjuste">Ajustar existencias</h3>
-
-        <p>
-          Registra una merma o corrige la cantidad del lote.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        class="modal-close"
-        aria-label="Cerrar"
-        [disabled]="procesando"
-        (click)="cerrarModalAjuste()"
-      >
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-
-    <!-- Información del lote -->
-    <div class="lot-summary">
-      <div>
-        <span>Número de lote</span>
-        <strong>{{ loteAjuste.numeroLote }}</strong>
-      </div>
-
-      <div>
-        <span>Producto</span>
-        <strong>{{ loteAjuste.nombreProducto }}</strong>
-      </div>
-
-      <div>
-        <span>Existencias actuales (unidad base)</span>
-        <strong>
-          {{ loteAjuste.cantidad | number:'1.0-2' }}
-        </strong>
-      </div>
-    </div>
-
-    <!-- Explicación visual de merma y ajuste -->
-    <div class="adjustment-help">
-
-      <div class="adjustment-help__heading">
-        <i class="bi bi-info-circle"></i>
-        <strong>¿Cómo registrar el ajuste?</strong>
-      </div>
-
-      <div class="adjustment-help__item">
-        <span class="adjustment-help__label merma">
-          Merma
-        </span>
-
-        <div>
-          <p>
-            Para retirar productos vencidos, dañados o perdidos,
-            escribe la cantidad a descontar como un número positivo.
-          </p>
-
-          <small>
-            Ejemplo: retirar 2 cajas → digita 2.
-          </small>
-        </div>
-      </div>
-
-      <div class="adjustment-help__item">
-        <span class="adjustment-help__label ajuste">
-          Ajuste de stock
-        </span>
-
-        <div>
-          <p>
-            Para corregir un conteo o un error de digitación,
-            usa un valor positivo para aumentar el stock
-            y uno negativo para disminuirlo.
-          </p>
-
-          <small>
-            Ejemplos: aumentar 3 unidades → 3 /
-            descontar 2 unidades → -2.
-          </small>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Formulario de ajuste -->
-    <form
-      (ngSubmit)="guardarAjuste()"
-      novalidate
-    >
-
-      <!-- Error dentro del modal -->
-      <div
-        class="modal-form-error"
-        *ngIf="errorAjusteModal"
-        role="alert"
-        aria-live="assertive"
-      >
-        <i class="bi bi-exclamation-circle-fill"></i>
-        <span>{{ errorAjusteModal }}</span>
-      </div>
-
-      <!-- Presentación -->
-      <div class="form-group">
-        <label for="presentacionAjuste">
-          Presentación
-          <span class="required-mark">*</span>
-        </label>
-
-        <select
-          id="presentacionAjuste"
-          name="presentacionAjuste"
-          [(ngModel)]="idPresentacionAjuste"
-          required
-          [disabled]="procesando"
-        >
-          <option
-            [ngValue]="null"
-            disabled
-          >
-            Selecciona una presentación
-          </option>
-
-          <option
-            *ngFor="let presentacion of presentacionesDelLote"
-            [ngValue]="presentacion.id"
-          >
-            {{ etiquetaPresentacion(presentacion) }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Motivo -->
-      <div class="form-group">
-        <label for="motivoAjuste">
-          Motivo
-          <span class="required-mark">*</span>
-        </label>
-
-        <select
-          id="motivoAjuste"
-          name="motivoAjuste"
-          [(ngModel)]="motivoAjuste"
-          required
-          [disabled]="procesando"
-        >
-          <option
-            [ngValue]="null"
-            disabled
-          >
-            Seleccione un motivo
-          </option>
-
-          <option
-            *ngFor="let motivo of motivosAjuste"
-            [ngValue]="motivo.valor"
-          >
-            {{ motivo.etiqueta }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Cantidad -->
-      <div class="form-group">
-        <label for="cantidadAjuste">
-          {{
-            esMotivoMerma
-              ? 'Cantidad a descontar'
-              : 'Cantidad del ajuste'
-          }}
-          <span class="required-mark">*</span>
-        </label>
-
-        <input
-          id="cantidadAjuste"
-          type="number"
-          step="1"
-          [min]="esMotivoMerma ? 1 : null"
-          name="cantidadAjuste"
-          [(ngModel)]="cantidadAjuste"
-          required
-          [disabled]="procesando"
-          [placeholder]="
-            esMotivoMerma
-              ? 'Ej. 2'
-              : 'Ej. 3 o -2'
-          "
-        />
-
-        <p
-          class="field-help"
-          *ngIf="esMotivoMerma"
-        >
-          Escribe la cantidad a retirar como positiva.
-        </p>
-
-        <p
-          class="field-help"
-          *ngIf="!esMotivoMerma"
-        >
-          Escribe un número positivo para aumentar
-          o negativo para disminuir.
-        </p>
-      </div>
-
-      <!-- Observación opcional -->
-      <div class="form-group">
-        <label for="observacionAjuste">
-          Observación
-          <span class="optional-label">(opcional)</span>
-        </label>
-
-        <textarea
-          id="observacionAjuste"
-          name="observacionAjuste"
-          [(ngModel)]="observacionAjuste"
-          maxlength="200"
-          rows="3"
-          placeholder="Añade un detalle si es necesario..."
-          [disabled]="procesando"
-        ></textarea>
-
-        <small class="character-count">
-          {{ observacionAjuste.length }}/200 caracteres
-        </small>
-      </div>
-
-      <!-- Acciones -->
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn-secondary"
-          [disabled]="procesando"
-          (click)="cerrarModalAjuste()"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="submit"
-          class="btn-primary"
-          [disabled]="procesando"
-        >
-          <i
-            class="bi"
-            [ngClass]="
-              procesando
-                ? 'bi-arrow-repeat'
-                : 'bi-check-circle'
-            "
-          ></i>
-
-          {{ procesando ? 'Guardando...' : 'Guardar ajuste' }}
-        </button>
-      </div>
-
-    </form>
-  </section>
-</div>
+</app-lote-modal>
 
 <!-- ==========================================================
-     MODAL: CONFIRMAR ACCIÓN SOBRE UN LOTE
+     CONFIRMACIÓN: ACTIVAR, DESACTIVAR O ELIMINAR
+     Permanece en lotes-list, como en los demás módulos.
      ========================================================== -->
 
 <div
@@ -890,6 +352,7 @@
   *ngIf="confirmacionLote"
   (click)="cerrarConfirmacionLote()"
 >
+
   <section
     class="confirmation-card"
     role="dialog"
@@ -898,11 +361,12 @@
     (click)="$event.stopPropagation()"
   >
 
-    <!-- Icono según la acción -->
+    <!-- Icono de la acción -->
     <div
       class="confirmation-icon"
       [ngClass]="confirmacionLote.tipo"
     >
+
       <i
         class="bi"
         [ngClass]="
@@ -913,14 +377,16 @@
               : 'bi-trash'
         "
       ></i>
+
     </div>
 
     <h3>{{ confirmacionLote.titulo }}</h3>
 
     <p>{{ confirmacionLote.mensaje }}</p>
 
-    <!-- Datos para confirmar el lote correcto -->
+    <!-- Datos del lote -->
     <div class="confirmation-lot-details">
+
       <span>
         <strong>Producto:</strong>
         {{ confirmacionLote.nombreProducto }}
@@ -930,9 +396,10 @@
         <strong>Número de lote:</strong>
         {{ confirmacionLote.numeroLote }}
       </span>
+
     </div>
 
-    <!-- Error dentro de la confirmación -->
+    <!-- Error de confirmación -->
     <div
       class="confirmation-error"
       *ngIf="errorConfirmacionLote"
@@ -943,8 +410,9 @@
       {{ errorConfirmacionLote }}
     </div>
 
-    <!-- Botones de confirmación -->
+    <!-- Botones -->
     <div class="confirmation-footer">
+
       <button
         type="button"
         class="btn-secondary"
@@ -967,9 +435,11 @@
             : confirmacionLote.textoBoton
         }}
       </button>
+
     </div>
 
   </section>
+
 </div>
 
 

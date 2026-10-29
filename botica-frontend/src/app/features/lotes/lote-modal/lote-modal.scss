@@ -1,0 +1,666 @@
+@use '../../../../styles/variables' as v;
+
+/* ==========================================================
+   FONDO Y CONTENEDOR
+   ========================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 700px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  color: v.$text-main;
+  background: v.$bg-surface;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-lg;
+  box-shadow: v.$shadow-md;
+}
+
+.ingreso-modal {
+  max-width: 900px;
+  padding: 1.15rem;
+
+  > form { min-width: 0; }
+
+  .modal-header {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.75rem;
+
+    h3 { font-size: 1.1rem; }
+    p { font-size: 0.85rem; }
+  }
+
+  .form-group { margin-bottom: 0.75rem; }
+
+  .field-help {
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+}
+
+.adjustment-modal {
+  max-width: 640px;
+  padding: 1.5rem;
+}
+
+/* ==========================================================
+   ENCABEZADO Y CIERRE
+   ========================================================== */
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid v.$border-color;
+
+  h3 {
+    margin: 0 0 0.35rem;
+    color: v.$text-main;
+    font-size: 1.2rem;
+  }
+
+  p {
+    margin: 0;
+    color: v.$text-muted;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+}
+
+.modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  color: v.$text-muted;
+  background: transparent;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: v.$text-main;
+    background: #f1f5f9;
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+/* ==========================================================
+   CAMPOS Y AYUDAS DE LOS FORMULARIOS
+   ========================================================== */
+
+.form-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  margin-bottom: 1rem;
+
+  > label {
+    color: v.$text-main;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0.7rem 0.75rem;
+    color: v.$text-main;
+    background: #fff;
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius-md;
+    font: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: v.$primary-color;
+      box-shadow: 0 0 0 2px v.$primary-light;
+    }
+
+    &:disabled,
+    &[readonly] {
+      background: #f8fafc;
+      cursor: not-allowed;
+    }
+  }
+
+  textarea { resize: vertical; line-height: 1.5; }
+}
+
+.required-mark {
+  display: inline-block;
+  margin-left: 0.15rem;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.optional-label {
+  color: v.$text-muted;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.field-help {
+  margin: 0;
+  color: v.$text-muted;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.character-count {
+  align-self: flex-end;
+  color: v.$text-muted;
+  font-size: 0.75rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.ingreso-form-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.85rem;
+  overflow: visible;
+}
+
+/* ==========================================================
+   BOTONES Y PIE DEL FORMULARIO
+   ========================================================== */
+
+.modal-footer,
+.ingreso-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid v.$border-color;
+
+  button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.65rem 1rem;
+    border-radius: v.$radius-md;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
+  .btn-primary {
+    color: #fff;
+    background: v.$primary-color;
+    border: 1px solid v.$primary-color;
+
+    &:hover:not(:disabled) { background: v.$primary-hover; }
+  }
+
+  .btn-secondary {
+    color: v.$text-main;
+    background: #fff;
+    border: 1px solid v.$border-color;
+
+    &:hover:not(:disabled) { background: #f8fafc; }
+  }
+}
+
+.ingreso-footer {
+  position: static;
+  z-index: auto;
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  background: transparent;
+}
+
+/* ==========================================================
+   SELECTOR DE PRODUCTOS
+   ========================================================== */
+
+.product-picker {
+  position: relative;
+  z-index: 25;
+  min-width: 0;
+}
+
+.product-picker-control {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.product-picker-input {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+  padding-left: 0.75rem;
+  background: #fff;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+
+  > i { color: v.$text-muted; font-size: 1rem; }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    box-shadow: none;
+
+    &:focus { outline: none; box-shadow: none; }
+  }
+
+  &:focus-within {
+    outline: 2px solid v.$primary-light;
+    border-color: v.$primary-color;
+  }
+}
+
+.product-suggestions {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border: 1px solid v.$border-color;
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.14);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.55rem 0.65rem;
+    color: v.$text-main;
+    text-align: left;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid #eef2f7;
+    cursor: pointer;
+
+    &:last-of-type { border-bottom: none; }
+
+    &:hover,
+    &:focus-visible {
+      background: #f0fdfa;
+      outline: none;
+    }
+  }
+}
+
+.suggestion-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+}
+
+.suggestion-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+
+  strong {
+    display: block;
+    color: v.$text-main;
+    font-size: 0.84rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    display: block;
+    margin-top: 0.15rem;
+    color: v.$text-muted;
+    font-size: 0.75rem;
+  }
+}
+
+.suggestion-arrow { color: #94a3b8; }
+
+.suggestions-loading,
+.suggestions-empty {
+  margin: 0;
+  padding: 0.8rem;
+  color: v.$text-muted;
+  font-size: 0.82rem;
+}
+
+.product-not-selected {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  padding: 0.65rem 0.75rem;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+
+  i { flex-shrink: 0; color: #0f766e; }
+}
+
+/* ==========================================================
+   PRODUCTO SELECCIONADO
+   ========================================================== */
+
+.selected-product {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+}
+
+.selected-product-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+
+  > i { color: #059669; font-size: 1.2rem; }
+
+  > div {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  strong { color: v.$text-main; overflow-wrap: anywhere; }
+  small { color: v.$text-muted; }
+}
+
+.text-button {
+  color: v.$primary-color;
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+/* ==========================================================
+   PRESENTACIONES Y CANTIDADES
+   ========================================================== */
+
+.presentations-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid v.$border-color;
+
+  h4 {
+    margin: 0 0 0.35rem;
+    color: v.$text-main;
+    font-size: 0.9rem;
+  }
+}
+
+.presentations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 0.6rem;
+  padding-right: 0.2rem;
+}
+
+.presentation-quantity {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  background: #fff;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  strong {
+    color: v.$text-main;
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
+  }
+
+  small { color: v.$text-muted; font-size: 0.74rem; }
+
+  input {
+    width: 82px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: 0.45rem;
+    color: v.$text-main;
+    background: #fff;
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius-md;
+    text-align: center;
+  }
+}
+
+.empty-presentations {
+  margin: 0.75rem 0 0;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+/* ==========================================================
+   RESUMEN DEL LOTE Y AYUDA DE AJUSTE
+   ========================================================== */
+
+.lot-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  span { color: v.$text-muted; font-size: 0.78rem; }
+  strong { color: v.$text-main; font-size: 0.9rem; overflow-wrap: anywhere; }
+}
+
+.adjustment-help {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #334155;
+    font-size: 0.95rem;
+    i { color: #0f766e; font-size: 1.1rem; }
+  }
+
+  &__item {
+    display: grid;
+    grid-template-columns: 125px minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+
+    p {
+      margin: 0;
+      color: #475569;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    small {
+      display: block;
+      margin-top: 0.35rem;
+      color: #64748b;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+  }
+
+  &__label {
+    display: inline-flex;
+    width: fit-content;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    &.merma { color: #991b1b; background: #fee2e2; }
+    &.ajuste { color: #1d4ed8; background: #dbeafe; }
+  }
+}
+
+/* ==========================================================
+   ERRORES DEL MODAL
+   ========================================================== */
+
+.modal-form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+  padding: 0.8rem 0.9rem;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: v.$radius-md;
+  font-size: 0.875rem;
+  line-height: 1.45;
+
+  i { flex-shrink: 0; margin-top: 0.1rem; font-size: 1rem; }
+  span { min-width: 0; overflow-wrap: anywhere; }
+}
+
+/* ==========================================================
+   DISEÑO ADAPTABLE DEL MODAL
+   ========================================================== */
+
+@media (max-width: 900px) {
+  .ingreso-form-row {
+    grid-template-columns: 1fr 1fr;
+    .product-picker { grid-column: 1 / -1; }
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-card { padding: 1.15rem; }
+  .form-row { grid-template-columns: 1fr; gap: 0; }
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop {
+    align-items: flex-start;
+    padding: 0.5rem;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 1rem);
+    padding: 1rem;
+  }
+
+  .ingreso-modal { padding: 0.9rem; }
+  .adjustment-modal { padding: 1rem; }
+
+  .ingreso-form-row {
+    grid-template-columns: 1fr;
+    .product-picker { grid-column: auto; }
+  }
+
+  .presentations-list { max-height: 155px; }
+  .lot-summary { grid-template-columns: 1fr; }
+  .adjustment-help__item { grid-template-columns: 1fr; gap: 0.4rem; }
+
+  .presentation-quantity {
+    align-items: flex-start;
+    input { width: 85px; }
+  }
+
+  .selected-product-heading { flex-wrap: wrap; }
+
+  .modal-footer,
+  .ingreso-footer {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+
+    button { width: 100%; }
+  }
+}
+
+
