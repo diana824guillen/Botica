@@ -6,49 +6,39 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-
-import {
-  AbstractControl,
-  FormArray,
-  FormBuilder,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators
-} from '@angular/forms';
-
+import { FormsModule } from '@angular/forms';
 import { Observable, finalize } from 'rxjs';
+
+import { LoteService } from '../services/lote';
 
 import {
   Lote,
-  LoteRequest,
   LoteAjusteRequest,
+  LoteRequest,
   MotivoAjuste
 } from '../../../core/models/lote.model';
 
 import {
   Producto,
-  Presentacion,
-  TipoPresentacion
+  Presentacion
 } from '../../../core/models/producto.model';
 
+import { ProductoService } from '../../productos/services/producto';
 import { HasPermissionDirective } from '../../../core/directives/has-permission';
 
-import { ProductoService } from '../../productos/services/producto';
-import { LoteService } from '../services/lote';
+interface OpcionMotivoAjuste {
+  valor: MotivoAjuste;
+  etiqueta: string;
+  tipo: 'merma' | 'ajuste';
+}
+
+type FiltroEstado = 'todos' | 'activo' | 'inactivo';
+type FiltroVencimiento = 'todos' | 'vencidos' | 'rango';
 
 type TipoConfirmacionLote =
   | 'activar'
   | 'desactivar'
   | 'eliminar';
-
-type FiltroEstadoLote = 'todos' | '1' | '0';
-
-type FiltroVencimiento =
-  | 'todos'
-  | 'por-vencer'
-  | 'vencidos';
 
 interface ConfirmacionLote {
   id: number;
@@ -60,19 +50,12 @@ interface ConfirmacionLote {
   textoBoton: string;
 }
 
-interface MotivoAjusteOpcion {
-  value: MotivoAjuste;
-  label: string;
-  tipoMovimiento: 'MERMA' | 'AJUSTE';
-}
-
 @Component({
   selector: 'app-lotes-list',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
     HasPermissionDirective
   ],
   templateUrl: './lotes-list.html',
@@ -80,1006 +63,343 @@ interface MotivoAjusteOpcion {
 })
 export class LotesListComponent implements OnInit {
 
-  // ============================================================
-  // DATOS
-  // ============================================================
-
-  lotes: Lote[] = [];
-  productos: Producto[] = [];
-
-  isLoading = true;
-  isLoadingProductos = false;
-  isSaving = false;
-
-  errorCarga = '';
-  errorProductos = '';
-  errorModal = '';
-
-  // ============================================================
-  // MODALES
-  // ============================================================
-
-  mostrarModalCrear = false;
-  mostrarModalAjuste = false;
-
-  loteSeleccionado: Lote | null = null;
-
-  productoIngresoSeleccionado: Producto | null = null;
-  productoAjusteSeleccionado: Producto | null = null;
-
-  loteForm!: FormGroup;
-  ajusteForm!: FormGroup;
-
-  // ============================================================
-  // BÚSQUEDA Y FILTROS
-  // ============================================================
-
-  searchTerm = '';
-
-  filtroEstado: FiltroEstadoLote = 'todos';
-  filtroVencimiento: FiltroVencimiento = 'todos';
-
-  currentPage = 0;
-  pageSize = 10;
-
-  // ============================================================
-  // CONFIRMACIONES
-  // ============================================================
-
-  confirmacion: ConfirmacionLote | null = null;
-
-  procesandoConfirmacion = false;
-  errorConfirmacion = '';
-
-  // ============================================================
-  // MOTIVOS DE AJUSTE
-  // ============================================================
-
-  motivosAjuste: MotivoAjusteOpcion[] = [
-    {
-      value: 'PRODUCTO_VENCIDO',
-      label: 'Producto vencido',
-      tipoMovimiento: 'MERMA'
-    },
-    {
-      value: 'PRODUCTO_DAÑADO',
-      label: 'Producto dañado o roto',
-      tipoMovimiento: 'MERMA'
-    },
-    {
-      value: 'PERDIDA_ROBO',
-      label: 'Pérdida por robo',
-      tipoMovimiento: 'MERMA'
-    },
-    {
-      value: 'DEVOLUCION_PROVEEDOR',
-      label: 'Devolución a proveedor',
-      tipoMovimiento: 'MERMA'
-    },
-    {
-      value: 'USO_INTERNO_DONACION',
-      label: 'Uso interno o donación',
-      tipoMovimiento: 'MERMA'
-    },
-    {
-      value: 'ERROR_CONTEO_FISICO',
-      label: 'Faltante o sobrante en conteo',
-      tipoMovimiento: 'AJUSTE'
-    },
-    {
-      value: 'ERROR_DIGITACION',
-      label: 'Error de digitación',
-      tipoMovimiento: 'AJUSTE'
-    },
-    {
-      value: 'AJUSTE_EMPAQUE',
-      label: 'Ajuste por apertura de empaque',
-      tipoMovimiento: 'AJUSTE'
-    }
-  ];
-
-  // ============================================================
-  // SERVICIOS
-  // ============================================================
-
-  private fb = inject(FormBuilder);
   private loteService = inject(LoteService);
   private productoService = inject(ProductoService);
   private cdr = inject(ChangeDetectorRef);
 
-  // ============================================================
-  // INICIALIZACIÓN
-  // ============================================================
+  // Datos principales.
+  lotes: Lote[] = [];
+  productos: Producto[] = [];
+
+  cargandoLotes = false;
+  cargandoProductos = false;
+  procesando = false;
+
+  errorCarga = '';
+  mensaje = '';
+  tipoMensaje: 'exito' | 'error' = 'exito';
+
+  // Búsqueda y filtros de la tabla.
+  busqueda = '';
+  filtroEstado: FiltroEstado = 'todos';
+  filtroVencimiento: FiltroVencimiento = 'todos';
+
+  fechaDesde = '';
+  fechaHasta = '';
+
+  // Registro de ingreso.
+  mostrarModalIngreso = false;
+
+  busquedaProductoIngreso = '';
+  mostrarOpcionesProductoIngreso = false;
+  productoIngresoSeleccionado: Producto | null = null;
+
+  numeroLote = '';
+  fechaVencimiento = '';
+
+  cantidadesIngreso: Record<number, number> = {};
+
+  // Ajuste de existencias.
+  mostrarModalAjuste = false;
+  loteAjuste: Lote | null = null;
+
+  idPresentacionAjuste: number | null = null;
+  cantidadAjuste: number | null = null;
+
+  motivoAjuste: MotivoAjuste = 'ERROR_CONTEO_FISICO';
+  observacionAjuste = '';
+
+  // Confirmación de acciones.
+  confirmacionLote: ConfirmacionLote | null = null;
+  errorConfirmacionLote = '';
+
+  readonly motivosAjuste: OpcionMotivoAjuste[] = [
+    {
+      valor: 'PRODUCTO_VENCIDO',
+      etiqueta: 'Producto vencido',
+      tipo: 'merma'
+    },
+    {
+      valor: 'PRODUCTO_DANADO',
+      etiqueta: 'Producto dañado o roto',
+      tipo: 'merma'
+    },
+    {
+      valor: 'PERDIDA_ROBO',
+      etiqueta: 'Pérdida por robo',
+      tipo: 'merma'
+    },
+    {
+      valor: 'DEVOLUCION_PROVEEDOR',
+      etiqueta: 'Devolución a proveedor',
+      tipo: 'merma'
+    },
+    {
+      valor: 'USO_INTERNO_DONACION',
+      etiqueta: 'Uso interno o donación',
+      tipo: 'merma'
+    },
+    {
+      valor: 'ERROR_CONTEO_FISICO',
+      etiqueta: 'Faltante o sobrante en conteo',
+      tipo: 'ajuste'
+    },
+    {
+      valor: 'ERROR_DIGITACION',
+      etiqueta: 'Error de digitación',
+      tipo: 'ajuste'
+    },
+    {
+      valor: 'AJUSTE_EMPAQUE',
+      etiqueta: 'Ajuste por apertura de empaque',
+      tipo: 'ajuste'
+    }
+  ];
 
   ngOnInit(): void {
-
-    this.inicializarFormularioLote();
-    this.inicializarFormularioAjuste();
-
     this.cargarLotes();
     this.cargarProductos();
   }
 
-  private inicializarFormularioLote(): void {
-
-    this.loteForm = this.fb.group({
-      idProducto: [
-        null,
-        Validators.required
-      ],
-
-      numeroLote: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(50)
-        ]
-      ],
-
-      fechaVencimiento: [
-        '',
-        [
-          Validators.required,
-          this.validarFechaFutura.bind(this)
-        ]
-      ],
-
-      detallesIngreso: this.fb.array([])
-    });
-  }
-
-  private inicializarFormularioAjuste(): void {
-
-    this.ajusteForm = this.fb.group({
-      idPresentacion: [
-        null,
-        Validators.required
-      ],
-
-      cantidadAjuste: [
-        null,
-        [
-          Validators.required,
-          Validators.pattern(/^-?\d+$/)
-        ]
-      ],
-
-      motivo: [
-        'ERROR_CONTEO_FISICO',
-        Validators.required
-      ],
-
-      observacion: [
-        '',
-        Validators.maxLength(200)
-      ]
-    });
-  }
-
   // ============================================================
-  // VALIDACIÓN DE FECHA FUTURA
+  // FECHAS
   // ============================================================
 
-  private validarFechaFutura(
-    control: AbstractControl
-  ): ValidationErrors | null {
-
-    const fecha = String(control.value || '').trim();
-
-    if (!fecha) {
-      return null;
-    }
-
-    // Las fechas YYYY-MM-DD pueden compararse directamente
-    // sin convertirlas a UTC ni provocar cambios de día.
-    return fecha > this.fechaHoyISO()
-      ? null
-      : { fechaNoFutura: true };
+  get fechaHoy(): string {
+    return this.convertirFechaAString(new Date());
   }
 
   get fechaMinimaVencimiento(): string {
-
     const fecha = new Date();
-
     fecha.setDate(fecha.getDate() + 1);
 
-    return this.formatoFechaLocal(fecha);
+    return this.convertirFechaAString(fecha);
+  }
+
+  private convertirFechaAString(fecha: Date): string {
+    const anio = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+
+    return `${anio}-${mes}-${dia}`;
+  }
+
+  get rangoFechasValido(): boolean {
+    return !!this.fechaDesde
+      && !!this.fechaHasta
+      && this.fechaDesde <= this.fechaHasta;
   }
 
   // ============================================================
-  // FORMULARIO DE INGRESO
+  // LISTADO Y ORDEN VISUAL
   // ============================================================
 
-  get detallesIngresoArray(): FormArray {
-    return this.loteForm.get('detallesIngreso') as FormArray;
-  }
+  get lotesOrdenados(): Lote[] {
+    return [...this.lotes].sort((a, b) => {
+      const fechaA = a.fechaIngreso || '';
+      const fechaB = b.fechaIngreso || '';
 
-  get productosParaIngreso(): Producto[] {
+      // Primero la fecha de ingreso más reciente.
+      const comparacionFecha = fechaB.localeCompare(fechaA);
 
-    return this.productos.filter(producto =>
-      producto.estado === 1 &&
-      (producto.presentaciones || []).some(
-        presentacion => presentacion.estado === 1
-      )
-    );
-  }
-
-  get presentacionesParaAjuste(): Presentacion[] {
-
-    return (
-      this.productoAjusteSeleccionado?.presentaciones || []
-    ).filter(presentacion => presentacion.estado === 1);
-  }
-
-  abrirModalCrear(): void {
-
-    if (this.isSaving) {
-      return;
-    }
-
-    this.errorModal = '';
-    this.productoIngresoSeleccionado = null;
-
-    this.loteForm.reset({
-      idProducto: null,
-      numeroLote: '',
-      fechaVencimiento: ''
-    });
-
-    this.detallesIngresoArray.clear();
-
-    this.mostrarModalCrear = true;
-  }
-
-  cerrarModalCrear(): void {
-
-    if (this.isSaving) {
-      return;
-    }
-
-    this.mostrarModalCrear = false;
-    this.productoIngresoSeleccionado = null;
-    this.errorModal = '';
-  }
-
-  cambiarProductoSeleccionado(): void {
-
-    const valorId = this.loteForm.get('idProducto')?.value;
-
-    const idProducto = valorId == null
-      ? null
-      : Number(valorId);
-
-    this.productoIngresoSeleccionado =
-      idProducto == null
-        ? null
-        : this.productos.find(
-            producto => producto.id === idProducto
-          ) || null;
-
-    this.detallesIngresoArray.clear();
-    this.errorModal = '';
-
-    if (!this.productoIngresoSeleccionado) {
-      return;
-    }
-
-    const presentacionesActivas = (
-      this.productoIngresoSeleccionado.presentaciones || []
-    ).filter(presentacion => presentacion.estado === 1);
-
-    presentacionesActivas.forEach(presentacion => {
-
-      this.detallesIngresoArray.push(
-        this.fb.group({
-          idPresentacion: [
-            presentacion.id
-          ],
-
-          nombrePresentacion: [
-            this.etiquetaTipo(presentacion.tipo)
-          ],
-
-          factorConversion: [
-            presentacion.factorConversion
-          ],
-
-          cantidadPresentacion: [
-            0,
-            [
-              Validators.required,
-              Validators.min(0),
-              Validators.pattern(/^\d+$/)
-            ]
-          ]
-        })
-      );
-    });
-  }
-
-  guardarLote(): void {
-
-    if (this.isSaving) {
-      return;
-    }
-
-    if (this.loteForm.invalid) {
-      this.loteForm.markAllAsTouched();
-      return;
-    }
-
-    const valores = this.loteForm.getRawValue();
-
-    const detallesFormulario =
-      this.detallesIngresoArray.getRawValue();
-
-    // Cada cantidad recibida debe ser un entero no negativo.
-    const cantidadInvalida = detallesFormulario.some(
-      (detalle: any) => {
-
-        const cantidad = Number(
-          detalle.cantidadPresentacion
-        );
-
-        return !Number.isFinite(cantidad) ||
-          !Number.isInteger(cantidad) ||
-          cantidad < 0;
+      if (comparacionFecha !== 0) {
+        return comparacionFecha;
       }
-    );
 
-    if (cantidadInvalida) {
-      this.errorModal =
-        'Las cantidades recibidas deben ser números enteros iguales o mayores que cero.';
-      return;
-    }
+      // Si el ingreso tiene la misma fecha, usar el ID descendente.
+      return b.id - a.id;
+    });
+  }
 
-    // No se envían presentaciones cuya cantidad sea cero.
-    const detallesIngreso = detallesFormulario
-      .map((detalle: any) => ({
-        idPresentacion: Number(detalle.idPresentacion),
-        cantidadPresentacion: Number(
-          detalle.cantidadPresentacion
-        )
-      }))
-      .filter((detalle: any) =>
-        detalle.cantidadPresentacion > 0
-      );
+  get lotesFiltrados(): Lote[] {
+    const termino = this.busqueda.trim().toLocaleLowerCase();
 
-    if (detallesIngreso.length === 0) {
-      this.errorModal =
-        'Ingrese una cantidad mayor que cero en al menos una presentación.';
-      return;
-    }
+    return this.lotesOrdenados.filter(lote => {
 
-    const fechaVencimiento = String(
-      valores.fechaVencimiento || ''
-    );
+      const coincideBusqueda =
+        !termino ||
+        (lote.numeroLote || '').toLocaleLowerCase().includes(termino) ||
+        (lote.nombreProducto || '').toLocaleLowerCase().includes(termino);
 
-    // Validación adicional al control del formulario.
-    if (
-      !fechaVencimiento ||
-      fechaVencimiento <= this.fechaHoyISO()
-    ) {
-      this.errorModal =
-        'La fecha de vencimiento debe ser posterior a hoy.';
-      return;
-    }
+      const coincideEstado =
+        this.filtroEstado === 'todos' ||
+        (this.filtroEstado === 'activo' && lote.estado === 1) ||
+        (this.filtroEstado === 'inactivo' && lote.estado === 0);
 
-    const request: LoteRequest = {
-      numeroLote: String(
-        valores.numeroLote || ''
-      ).trim().replace(/\s+/g, ' '),
+      const fecha = (lote.fechaVencimiento || '').slice(0, 10);
 
-      fechaVencimiento,
+      let coincideVencimiento = true;
 
-      detallesIngreso
-    };
+      if (this.filtroVencimiento === 'vencidos') {
+        coincideVencimiento =
+          lote.estado === 1 &&
+          Number(lote.cantidad) > 0 &&
+          fecha < this.fechaHoy;
+      }
 
-    this.isSaving = true;
-    this.errorModal = '';
+      if (this.filtroVencimiento === 'rango') {
+        coincideVencimiento =
+          this.rangoFechasValido &&
+          lote.estado === 1 &&
+          Number(lote.cantidad) > 0 &&
+          fecha >= this.fechaDesde &&
+          fecha <= this.fechaHasta;
+      }
 
-    this.loteService
-      .crearLote(Number(valores.idProducto), request)
-      .pipe(
-        finalize(() => {
-          this.isSaving = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-
-        next: () => {
-
-          this.mostrarModalCrear = false;
-          this.productoIngresoSeleccionado = null;
-
-          this.cargarLotes();
-        },
-
-        error: (err) => {
-
-          this.errorModal = this.obtenerMensajeError(
-            err,
-            'No se pudo registrar el lote.'
-          );
-        }
-
-      });
+      return coincideBusqueda && coincideEstado && coincideVencimiento;
+    });
   }
 
   // ============================================================
-  // CARGAR PRODUCTOS
-  // ============================================================
-
-  cargarProductos(): void {
-
-    this.isLoadingProductos = true;
-    this.errorProductos = '';
-
-    this.productoService
-      .listarProductos()
-      .pipe(
-        finalize(() => {
-          this.isLoadingProductos = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-
-        next: (respuesta) => {
-          this.productos = respuesta || [];
-        },
-
-        error: (err) => {
-
-          this.errorProductos = this.obtenerMensajeError(
-            err,
-            'No se pudieron cargar los productos.'
-          );
-        }
-
-      });
-  }
-
-  // ============================================================
-  // CARGAR LOTES
+  // CARGA DE DATOS
   // ============================================================
 
   cargarLotes(): void {
-
-    this.isLoading = true;
+    this.cargandoLotes = true;
     this.errorCarga = '';
 
-    this.loteService
-      .listarLotes()
+    this.loteService.listarLotes()
       .pipe(
         finalize(() => {
-          this.isLoading = false;
-          this.ajustarPagina();
+          this.cargandoLotes = false;
           this.cdr.detectChanges();
         })
       )
       .subscribe({
-
-        next: (respuesta) => {
-
+        next: respuesta => {
           this.lotes = respuesta || [];
-
-          this.ajustarPagina();
         },
-
-        error: (err) => {
-
-          this.lotes = [];
+        error: err => {
+          console.error('Error al cargar los lotes:', err);
 
           this.errorCarga = this.obtenerMensajeError(
             err,
             'No se pudieron cargar los lotes.'
           );
         }
-
       });
   }
 
+  cargarProductos(): void {
+    this.cargandoProductos = true;
+
+    this.productoService.listarProductos()
+      .pipe(
+        finalize(() => {
+          this.cargandoProductos = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: respuesta => {
+          this.productos = respuesta || [];
+        },
+        error: err => {
+          console.error('Error al cargar los productos:', err);
+        }
+      });
+  }
+
+  private obtenerMensajeError(
+    err: any,
+    mensajePredeterminado: string
+  ): string {
+    if (err?.status === 0) {
+      return 'No se pudo conectar con el servidor.';
+    }
+
+    if (err?.status === 403) {
+      return err?.error?.mensaje ||
+        'No tiene permisos para realizar esta operación.';
+    }
+
+    return err?.error?.mensaje ||
+      err?.error?.message ||
+      mensajePredeterminado;
+  }
+
+  private mostrarMensaje(
+    texto: string,
+    tipo: 'exito' | 'error'
+  ): void {
+    this.mensaje = texto;
+    this.tipoMensaje = tipo;
+  }
+
   // ============================================================
-  // BÚSQUEDA Y FILTROS
+  // FILTRO DE PRODUCTOS PARA EL INGRESO
   // ============================================================
 
-  get lotesFiltrados(): Lote[] {
-
-    const termino = this.searchTerm
+  get productosCoincidentesIngreso(): Producto[] {
+    const termino = this.busquedaProductoIngreso
       .trim()
-      .toLowerCase();
+      .toLocaleLowerCase();
 
-    return this.lotes.filter(lote => {
+    return this.productos
+      .filter(producto => {
 
-      const nombreProducto = (
-        lote.nombreProducto || ''
-      ).toLowerCase();
+        const tienePresentacionActiva =
+          (producto.presentaciones || []).some(
+            presentacion => presentacion.estado === 1
+          );
 
-      const numeroLote = (
-        lote.numeroLote || ''
-      ).toLowerCase();
+        const productoDisponible =
+          producto.estado === 1 && tienePresentacionActiva;
 
-      const coincideTexto =
-        !termino ||
-        nombreProducto.includes(termino) ||
-        numeroLote.includes(termino);
+        const coincideTexto =
+          !termino ||
+          (producto.nombre || '')
+            .toLocaleLowerCase()
+            .includes(termino) ||
+          (producto.categoriaNombre || '')
+            .toLocaleLowerCase()
+            .includes(termino);
 
-      const coincideEstado =
-        this.filtroEstado === 'todos' ||
-        String(lote.estado) === this.filtroEstado;
-
-      let coincideVencimiento = true;
-
-      if (this.filtroVencimiento === 'vencidos') {
-
-        coincideVencimiento = this.esVencido(lote);
-
-      } else if (
-        this.filtroVencimiento === 'por-vencer'
-      ) {
-
-        coincideVencimiento = this.estaPorVencer(lote);
-      }
-
-      return coincideTexto &&
-        coincideEstado &&
-        coincideVencimiento;
-    });
+        return productoDisponible && coincideTexto;
+      })
+      .slice(0, termino ? 8 : 5);
   }
 
-  get totalPages(): number {
-
-    return Math.ceil(
-      this.lotesFiltrados.length / this.pageSize
-    );
-  }
-
-  get lotesPaginados(): Lote[] {
-
-    const inicio = this.currentPage * this.pageSize;
-
-    return this.lotesFiltrados.slice(
-      inicio,
-      inicio + this.pageSize
-    );
-  }
-
-  onSearchInput(event: Event): void {
-
-    this.searchTerm = (
-      event.target as HTMLInputElement
-    ).value;
-
-    this.currentPage = 0;
-  }
-
-  cambiarFiltroEstado(
-    estado: FiltroEstadoLote
-  ): void {
-
-    this.filtroEstado = estado;
-    this.currentPage = 0;
-  }
-
-  cambiarFiltroVencimiento(
-    filtro: FiltroVencimiento
-  ): void {
-
-    this.filtroVencimiento = filtro;
-    this.currentPage = 0;
-  }
-
-  cambiarPagina(pagina: number): void {
-
-    if (pagina >= 0 && pagina < this.totalPages) {
-      this.currentPage = pagina;
-    }
-  }
-
-  private ajustarPagina(): void {
-
-    if (this.totalPages === 0) {
-
-      this.currentPage = 0;
-
-    } else if (this.currentPage >= this.totalPages) {
-
-      this.currentPage = this.totalPages - 1;
-    }
-  }
-
-  // ============================================================
-  // FECHAS Y VENCIMIENTOS
-  // ============================================================
-
-  private fechaHoyISO(): string {
-
-    return this.formatoFechaLocal(new Date());
-  }
-
-  private fechaEnDiasISO(dias: number): string {
-
-    const fecha = new Date();
-
-    fecha.setDate(fecha.getDate() + dias);
-
-    return this.formatoFechaLocal(fecha);
-  }
-
-  private formatoFechaLocal(fecha: Date): string {
-
-    const anio = fecha.getFullYear();
-
-    const mes = String(
-      fecha.getMonth() + 1
-    ).padStart(2, '0');
-
-    const dia = String(
-      fecha.getDate()
-    ).padStart(2, '0');
-
-    return `${anio}-${mes}-${dia}`;
-  }
-
-  /**
-   * Formatea una fecha ISO de tipo YYYY-MM-DD
-   * sin convertirla a UTC ni modificar el día.
-   */
-  formatearFechaVencimiento(
-    fecha: string | null | undefined
-  ): string {
-
-    if (!fecha) {
-      return '—';
-    }
-
-    const fechaSinHora = String(fecha).split('T')[0];
-
-    const partes = fechaSinHora.split('-');
+  buscarProductoIngreso(valor: string): void {
+    this.busquedaProductoIngreso = valor;
 
     if (
-      partes.length !== 3 ||
-      !partes[0] ||
-      !partes[1] ||
-      !partes[2]
+      this.productoIngresoSeleccionado &&
+      valor.trim().toLocaleLowerCase() !==
+        this.productoIngresoSeleccionado.nombre
+          .trim()
+          .toLocaleLowerCase()
     ) {
-      return String(fecha);
+      this.productoIngresoSeleccionado = null;
+      this.cantidadesIngreso = {};
     }
 
-    const [anio, mes, dia] = partes;
-
-    return `${dia}/${mes}/${anio}`;
+    this.mostrarOpcionesProductoIngreso = true;
   }
 
-  /**
-   * Formatea la fecha y hora de ingreso sin utilizar
-   * DatePipe, para evitar conversiones de zona horaria.
-   */
-  formatearFechaIngreso(
-    fecha: string | null | undefined
-  ): string {
+  seleccionarProductoIngreso(producto: Producto): void {
+    this.productoIngresoSeleccionado = producto;
+    this.busquedaProductoIngreso = producto.nombre;
+    this.mostrarOpcionesProductoIngreso = false;
 
-    if (!fecha) {
-      return '—';
+    this.cantidadesIngreso = {};
+
+    for (const presentacion of this.presentacionesIngreso) {
+      this.cantidadesIngreso[presentacion.id] = 0;
     }
-
-    const partes = String(fecha).split('T');
-
-    const fechaParte = partes[0];
-
-    const fechaFormateada =
-      this.formatearFechaVencimiento(fechaParte);
-
-    if (partes.length < 2 || !partes[1]) {
-      return fechaFormateada;
-    }
-
-    const hora = partes[1].substring(0, 5);
-
-    return `${fechaFormateada} ${hora}`;
   }
 
-  esVencido(lote: Lote): boolean {
-
-    return lote.estado === 1 &&
-      Number(lote.cantidad) > 0 &&
-      lote.fechaVencimiento < this.fechaHoyISO();
-  }
-
-  estaPorVencer(lote: Lote): boolean {
-
-    const hoy = this.fechaHoyISO();
-    const limite = this.fechaEnDiasISO(30);
-
-    return lote.estado === 1 &&
-      Number(lote.cantidad) > 0 &&
-      lote.fechaVencimiento >= hoy &&
-      lote.fechaVencimiento <= limite;
-  }
-
-  // ============================================================
-  // AJUSTAR EXISTENCIAS
-  // ============================================================
-
-  abrirModalAjuste(lote: Lote): void {
-
-    if (this.isSaving) {
-      return;
+  get presentacionesIngreso(): Presentacion[] {
+    if (!this.productoIngresoSeleccionado) {
+      return [];
     }
 
-    const producto = this.productos.find(
-      item => item.id === lote.idProducto
-    );
-
-    if (!producto) {
-
-      this.errorCarga =
-        'No se encontraron los datos del producto asociado al lote.';
-
-      return;
-    }
-
-    this.loteSeleccionado = lote;
-    this.productoAjusteSeleccionado = producto;
-
-    const primeraPresentacion =
-      (producto.presentaciones || []).find(
-        presentacion => presentacion.estado === 1
-      );
-
-    this.ajusteForm.reset({
-      idPresentacion: primeraPresentacion?.id ?? null,
-      cantidadAjuste: null,
-      motivo: 'ERROR_CONTEO_FISICO',
-      observacion: ''
-    });
-
-    this.errorModal = '';
-    this.mostrarModalAjuste = true;
+    return (this.productoIngresoSeleccionado.presentaciones || [])
+      .filter(presentacion => presentacion.estado === 1);
   }
 
-  cerrarModalAjuste(): void {
-
-    if (this.isSaving) {
-      return;
-    }
-
-    this.mostrarModalAjuste = false;
-    this.loteSeleccionado = null;
-    this.productoAjusteSeleccionado = null;
-    this.errorModal = '';
-  }
-
-  guardarAjuste(): void {
-
-    if (this.isSaving || !this.loteSeleccionado) {
-      return;
-    }
-
-    if (this.ajusteForm.invalid) {
-
-      this.ajusteForm.markAllAsTouched();
-
-      this.errorModal =
-        'Complete correctamente los campos del ajuste.';
-
-      return;
-    }
-
-    const valores = this.ajusteForm.getRawValue();
-
-    const cantidadIngresada = Number(
-      valores.cantidadAjuste
-    );
-
-    if (
-      !Number.isFinite(cantidadIngresada) ||
-      !Number.isInteger(cantidadIngresada) ||
-      cantidadIngresada === 0
-    ) {
-
-      this.errorModal =
-        'Ingrese una cantidad entera distinta de cero.';
-
-      return;
-    }
-
-    const motivo = valores.motivo as MotivoAjuste;
-
-    const opcionMotivo = this.motivosAjuste.find(
-      item => item.value === motivo
-    );
-
-    if (!opcionMotivo) {
-
-      this.errorModal = 'Seleccione un motivo válido.';
-
-      return;
-    }
-
-    /*
-     * Para las mermas, la interfaz acepta una cantidad positiva
-     * y la convierte a negativa antes de enviarla al backend.
-     *
-     * Para los ajustes:
-     *   positivo = aumenta existencias
-     *   negativo = disminuye existencias
-     */
-    const cantidadAjuste =
-      opcionMotivo.tipoMovimiento === 'MERMA'
-        ? -Math.abs(cantidadIngresada)
-        : cantidadIngresada;
-
-    const request: LoteAjusteRequest = {
-      idPresentacion: Number(valores.idPresentacion),
-      cantidadAjuste,
-      motivo,
-      observacion:
-        String(valores.observacion || '').trim() || null
-    };
-
-    this.isSaving = true;
-    this.errorModal = '';
-
-    this.loteService
-      .ajustarLote(
-        this.loteSeleccionado.id,
-        request
-      )
-      .pipe(
-        finalize(() => {
-          this.isSaving = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-
-        next: () => {
-
-          this.mostrarModalAjuste = false;
-          this.loteSeleccionado = null;
-          this.productoAjusteSeleccionado = null;
-
-          this.cargarLotes();
-          this.cargarProductos();
-        },
-
-        error: (err) => {
-
-          this.errorModal = this.obtenerMensajeError(
-            err,
-            'No se pudo realizar el ajuste de existencias.'
-          );
-        }
-
-      });
-  }
-
-  // ============================================================
-  // CONFIRMAR ACTIVACIÓN O DESACTIVACIÓN
-  // ============================================================
-
-  solicitarCambioEstado(lote: Lote): void {
-
-    const activar = lote.estado === 0;
-
-    this.confirmacion = {
-      id: lote.id,
-
-      tipo: activar
-        ? 'activar'
-        : 'desactivar',
-
-      numeroLote: lote.numeroLote,
-      nombreProducto: lote.nombreProducto,
-
-      titulo: activar
-        ? 'Activar lote'
-        : 'Desactivar lote',
-
-      mensaje: activar
-        ? '¿Desea activar este lote?'
-        : '¿Desea desactivar este lote? El registro se conservará, pero dejará de estar activo.',
-
-      textoBoton: activar
-        ? 'Activar'
-        : 'Desactivar'
-    };
-
-    this.errorConfirmacion = '';
-  }
-
-  // ============================================================
-  // CONFIRMAR ELIMINACIÓN
-  // ============================================================
-
-  solicitarEliminacion(lote: Lote): void {
-
-    this.confirmacion = {
-      id: lote.id,
-      tipo: 'eliminar',
-      numeroLote: lote.numeroLote,
-      nombreProducto: lote.nombreProducto,
-
-      titulo: 'Eliminar lote',
-
-      mensaje:
-        'El lote se marcará como eliminado y su existencia se retirará del stock disponible. ¿Desea continuar?',
-
-      textoBoton: 'Eliminar'
-    };
-
-    this.errorConfirmacion = '';
-  }
-
-  cerrarConfirmacion(): void {
-
-    if (this.procesandoConfirmacion) {
-      return;
-    }
-
-    this.confirmacion = null;
-    this.errorConfirmacion = '';
-  }
-
-  confirmarAccion(): void {
-
-    const accion = this.confirmacion;
-
-    if (!accion || this.procesandoConfirmacion) {
-      return;
-    }
-
-    this.procesandoConfirmacion = true;
-    this.errorConfirmacion = '';
-
-    const peticion: Observable<unknown> =
-      accion.tipo === 'eliminar'
-
-        ? this.loteService.eliminarLote(accion.id)
-
-        : this.loteService.cambiarEstado(
-            accion.id,
-            accion.tipo === 'activar' ? 1 : 0
-          );
-
-    peticion
-      .pipe(
-        finalize(() => {
-          this.procesandoConfirmacion = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-
-        next: () => {
-
-          this.confirmacion = null;
-
-          this.cargarLotes();
-          this.cargarProductos();
-        },
-
-        error: (err) => {
-
-          this.errorConfirmacion = this.obtenerMensajeError(
-            err,
-            'No se pudo completar la operación.'
-          );
-        }
-
-      });
-  }
-
-  // ============================================================
-  // ETIQUETAS DE PRESENTACIÓN
-  // ============================================================
-
-  etiquetaTipo(tipo: TipoPresentacion): string {
-
-    const etiquetas: Record<TipoPresentacion, string> = {
+  etiquetaPresentacion(presentacion: Presentacion): string {
+    const nombres: Record<string, string> = {
       UNIDAD: 'Unidad',
       BLISTER: 'Blíster',
       CAJA: 'Caja',
@@ -1088,39 +408,455 @@ export class LotesListComponent implements OnInit {
       OTRO: 'Otro'
     };
 
-    return etiquetas[tipo] || tipo;
+    const nombre = nombres[presentacion.tipo] || presentacion.tipo;
+
+    return `${nombre} · ${presentacion.factorConversion} unidad(es) base`;
   }
 
   // ============================================================
-  // MANEJO DE ERRORES
+  // MODAL DE NUEVO INGRESO
   // ============================================================
 
-  private obtenerMensajeError(
-    err: any,
-    mensajePredeterminado: string
-  ): string {
+  abrirModalIngreso(): void {
+    this.limpiarFormularioIngreso();
+    this.mostrarModalIngreso = true;
 
-    const cuerpo = err?.error;
-
-    const mensaje = String(
-      cuerpo?.mensaje ??
-      cuerpo?.message ??
-      (typeof cuerpo === 'string' ? cuerpo : '')
-    ).trim();
-
-    if (err?.status === 403) {
-
-      return mensaje ||
-        'No tiene permisos para realizar esta operación.';
-    }
-
-    if (err?.status === 0) {
-
-      return 'No se pudo conectar con el servidor.';
-    }
-
-    return mensaje || mensajePredeterminado;
+    this.mostrarOpcionesProductoIngreso = false;
   }
+
+  cerrarModalIngreso(): void {
+    if (this.procesando) {
+      return;
+    }
+
+    this.mostrarModalIngreso = false;
+    this.limpiarFormularioIngreso();
+  }
+
+  private limpiarFormularioIngreso(): void {
+    this.busquedaProductoIngreso = '';
+    this.mostrarOpcionesProductoIngreso = false;
+    this.productoIngresoSeleccionado = null;
+
+    this.numeroLote = '';
+    this.fechaVencimiento = '';
+
+    this.cantidadesIngreso = {};
+  }
+
+  registrarIngreso(): void {
+    if (this.procesando) {
+      return;
+    }
+
+    const producto = this.productoIngresoSeleccionado;
+
+    if (!producto) {
+      this.mostrarMensaje(
+        'Busca y selecciona un producto antes de registrar el ingreso.',
+        'error'
+      );
+      return;
+    }
+
+    if (!this.numeroLote.trim()) {
+      this.mostrarMensaje(
+        'Ingresa el número de lote que aparece en el envase.',
+        'error'
+      );
+      return;
+    }
+
+    if (!this.fechaVencimiento) {
+      this.mostrarMensaje(
+        'Selecciona la fecha de vencimiento.',
+        'error'
+      );
+      return;
+    }
+
+    if (this.fechaVencimiento <= this.fechaHoy) {
+      this.mostrarMensaje(
+        'La fecha de vencimiento debe ser posterior a hoy.',
+        'error'
+      );
+      return;
+    }
+
+    const detallesIngreso = this.presentacionesIngreso
+      .map(presentacion => ({
+        idPresentacion: presentacion.id,
+        cantidadPresentacion:
+          Number(this.cantidadesIngreso[presentacion.id] || 0)
+      }))
+      .filter(detalle => detalle.cantidadPresentacion > 0);
+
+    if (detallesIngreso.length === 0) {
+      this.mostrarMensaje(
+        'Ingresa una cantidad mayor que cero en al menos una presentación.',
+        'error'
+      );
+      return;
+    }
+
+    const cantidadesValidas = detallesIngreso.every(
+      detalle =>
+        Number.isInteger(detalle.cantidadPresentacion) &&
+        detalle.cantidadPresentacion > 0
+    );
+
+    if (!cantidadesValidas) {
+      this.mostrarMensaje(
+        'Las cantidades deben ser números enteros positivos.',
+        'error'
+      );
+      return;
+    }
+
+    const request: LoteRequest = {
+      numeroLote: this.numeroLote.trim(),
+      fechaVencimiento: this.fechaVencimiento,
+      detallesIngreso
+    };
+
+    this.procesando = true;
+
+    this.loteService.crearLote(producto.id, request)
+      .pipe(
+        finalize(() => {
+          this.procesando = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.mostrarModalIngreso = false;
+          this.limpiarFormularioIngreso();
+
+          this.mostrarMensaje(
+            'El ingreso del lote se registró correctamente.',
+            'exito'
+          );
+
+          this.cargarLotes();
+          this.cargarProductos();
+        },
+        error: err => {
+          this.mostrarMensaje(
+            this.obtenerMensajeError(
+              err,
+              'No se pudo registrar el ingreso del lote.'
+            ),
+            'error'
+          );
+        }
+      });
+  }
+
+  // ============================================================
+  // AJUSTE DE EXISTENCIAS
+  // ============================================================
+
+  abrirModalAjuste(lote: Lote): void {
+    this.loteAjuste = lote;
+    this.idPresentacionAjuste = null;
+    this.cantidadAjuste = null;
+
+    this.motivoAjuste = 'ERROR_CONTEO_FISICO';
+    this.observacionAjuste = '';
+
+    const presentaciones = this.presentacionesDelLote;
+
+    if (presentaciones.length > 0) {
+      this.idPresentacionAjuste = presentaciones[0].id;
+    }
+
+    this.mostrarModalAjuste = true;
+  }
+
+  cerrarModalAjuste(): void {
+    if (this.procesando) {
+      return;
+    }
+
+    this.mostrarModalAjuste = false;
+    this.loteAjuste = null;
+  }
+
+  get presentacionesDelLote(): Presentacion[] {
+    if (!this.loteAjuste) {
+      return [];
+    }
+
+    const producto = this.productos.find(
+      item => item.id === this.loteAjuste?.idProducto
+    );
+
+    return (producto?.presentaciones || [])
+      .filter(presentacion => presentacion.estado === 1);
+  }
+
+  get motivoSeleccionado(): OpcionMotivoAjuste | undefined {
+    return this.motivosAjuste.find(
+      motivo => motivo.valor === this.motivoAjuste
+    );
+  }
+
+  get esMotivoMerma(): boolean {
+    return this.motivoSeleccionado?.tipo === 'merma';
+  }
+
+  guardarAjuste(): void {
+    if (!this.loteAjuste || this.procesando) {
+      return;
+    }
+
+    if (!this.idPresentacionAjuste) {
+      this.mostrarMensaje(
+        'Selecciona la presentación para realizar el ajuste.',
+        'error'
+      );
+      return;
+    }
+
+    if (
+      this.cantidadAjuste === null ||
+      !Number.isFinite(Number(this.cantidadAjuste)) ||
+      !Number.isInteger(Number(this.cantidadAjuste)) ||
+      Number(this.cantidadAjuste) === 0
+    ) {
+      this.mostrarMensaje(
+        'Ingresa una cantidad entera distinta de cero.',
+        'error'
+      );
+      return;
+    }
+
+    let cantidadEnviar = Number(this.cantidadAjuste);
+
+    // La interfaz solicita una cantidad positiva para una merma.
+    // El backend recibe la cantidad negativa que debe descontar.
+    if (this.esMotivoMerma) {
+      if (cantidadEnviar <= 0) {
+        this.mostrarMensaje(
+          'Para una merma, ingresa la cantidad a descontar como positiva.',
+          'error'
+        );
+        return;
+      }
+
+      cantidadEnviar = -Math.abs(cantidadEnviar);
+    }
+
+    const request: LoteAjusteRequest = {
+      idPresentacion: this.idPresentacionAjuste,
+      cantidadAjuste: cantidadEnviar,
+      motivo: this.motivoAjuste,
+      observacion: this.observacionAjuste.trim() || null
+    };
+
+    this.procesando = true;
+
+    this.loteService.ajustarLote(this.loteAjuste.id, request)
+      .pipe(
+        finalize(() => {
+          this.procesando = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.mostrarModalAjuste = false;
+          this.loteAjuste = null;
+
+          this.mostrarMensaje(
+            'Las existencias del lote se actualizaron correctamente.',
+            'exito'
+          );
+
+          this.cargarLotes();
+          this.cargarProductos();
+        },
+        error: err => {
+          this.mostrarMensaje(
+            this.obtenerMensajeError(
+              err,
+              'No se pudo ajustar el stock del lote.'
+            ),
+            'error'
+          );
+        }
+      });
+  }
+
+  // ============================================================
+  // CONFIRMAR ACTIVAR, DESACTIVAR Y ELIMINAR
+  // ============================================================
+
+  solicitarCambioEstado(lote: Lote): void {
+    const activar = lote.estado !== 1;
+
+    this.confirmacionLote = {
+      id: lote.id,
+      tipo: activar ? 'activar' : 'desactivar',
+      numeroLote: lote.numeroLote,
+      nombreProducto: lote.nombreProducto,
+
+      titulo: activar
+        ? 'Activar lote'
+        : 'Desactivar lote',
+
+      mensaje: activar
+        ? '¿Deseas activar este lote para que vuelva a estar disponible en el inventario?'
+        : '¿Deseas desactivar este lote? Se conservará su registro, pero dejará de estar disponible como lote activo.',
+
+      textoBoton: activar ? 'Activar lote' : 'Desactivar lote'
+    };
+
+    this.errorConfirmacionLote = '';
+  }
+
+  solicitarEliminacion(lote: Lote): void {
+    this.confirmacionLote = {
+      id: lote.id,
+      tipo: 'eliminar',
+      numeroLote: lote.numeroLote,
+      nombreProducto: lote.nombreProducto,
+
+      titulo: 'Eliminar lote',
+
+      mensaje:
+        '¿Estás seguro de eliminar este lote? Esta acción lo retirará de los lotes disponibles y se conservará el registro de la operación.',
+
+      textoBoton: 'Eliminar lote'
+    };
+
+    this.errorConfirmacionLote = '';
+  }
+
+  cerrarConfirmacionLote(): void {
+    if (this.procesando) {
+      return;
+    }
+
+    this.confirmacionLote = null;
+    this.errorConfirmacionLote = '';
+  }
+
+  confirmarAccionLote(): void {
+    const accion = this.confirmacionLote;
+
+    if (!accion || this.procesando) {
+      return;
+    }
+
+    this.procesando = true;
+    this.errorConfirmacionLote = '';
+
+    const peticion: Observable<unknown> =
+      accion.tipo === 'eliminar'
+        ? this.loteService.eliminarLote(accion.id)
+        : this.loteService.cambiarEstado(
+            accion.id,
+            accion.tipo === 'activar' ? 1 : 0
+          );
+
+    peticion
+      .pipe(
+        finalize(() => {
+          this.procesando = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: () => {
+          // Cerrar la confirmación sin mostrar mensajes de éxito.
+          this.confirmacionLote = null;
+          this.errorConfirmacionLote = '';
+
+          // Actualizar la tabla y los datos de productos.
+          this.cargarLotes();
+          this.cargarProductos();
+        },
+
+        error: (err: any) => {
+          this.errorConfirmacionLote = this.obtenerMensajeError(
+            err,
+            'No se pudo completar la operación. Inténtalo nuevamente.'
+          );
+        }
+      });
+  }
+
+  // ============================================================
+  // INDICADORES Y UTILIDADES DE LA TABLA
+  // ============================================================
+
+  esVencido(lote: Lote): boolean {
+    return lote.estado === 1 &&
+      Number(lote.cantidad) > 0 &&
+      lote.fechaVencimiento < this.fechaHoy;
+  }
+
+  esPorVencer(lote: Lote): boolean {
+    if (
+      lote.estado !== 1 ||
+      Number(lote.cantidad) <= 0 ||
+      this.esVencido(lote)
+    ) {
+      return false;
+    }
+
+    const limite = new Date();
+    limite.setDate(limite.getDate() + 30);
+
+    const fechaLimite = this.convertirFechaAString(limite);
+
+    return lote.fechaVencimiento <= fechaLimite;
+  }
+
+  limpiarMensaje(): void {
+    this.mensaje = '';
+  }
+
+  // ============================================================
+  // CERRAR SUGERENCIAS AL HACER CLICK DENTRO DEL MODAL
+  // ============================================================
+  manejarClickDentroDelModal(event: MouseEvent): void {
+    // Evitar que el clic cierre el modal desde el fondo.
+    event.stopPropagation();
+
+    const objetivo = event.target;
+
+    if (!(objetivo instanceof Element)) {
+      return;
+    }
+
+    // Mantener las sugerencias abiertas al interactuar
+    // con el buscador o seleccionar una sugerencia.
+    const dentroDelBuscador =
+      objetivo.closest('.product-picker-input');
+
+    const dentroDeLasSugerencias =
+      objetivo.closest('.product-suggestions');
+
+    // Al pulsar "Cambiar", se debe permitir abrir de nuevo la búsqueda.
+    const botonCambiarProducto =
+      objetivo.closest('.selected-product .text-button');
+
+    if (
+      dentroDelBuscador ||
+      dentroDeLasSugerencias ||
+      botonCambiarProducto
+    ) {
+      return;
+    }
+
+    // Cualquier otro clic dentro del modal cierra las sugerencias.
+    this.mostrarOpcionesProductoIngreso = false;
+  }
+
+
 }
 
 

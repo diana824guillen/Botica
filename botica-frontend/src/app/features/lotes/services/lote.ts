@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../../../environments/environment';
+
 import {
   Lote,
-  LoteRequest,
-  LoteAjusteRequest
+  LoteAjusteRequest,
+  LoteRequest
 } from '../../../core/models/lote.model';
-
-import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -20,20 +20,19 @@ export class LoteService {
 
   constructor(private http: HttpClient) {}
 
+  // Listado general de lotes.
   listarLotes(): Observable<Lote[]> {
     return this.http.get<Lote[]>(this.apiUrl);
   }
 
+  // Listado de lotes correspondientes a un producto.
   listarLotesPorProducto(idProducto: number): Observable<Lote[]> {
     return this.http.get<Lote[]>(
       `${this.productosUrl}/${idProducto}/lotes`
     );
   }
 
-  obtenerLote(id: number): Observable<Lote> {
-    return this.http.get<Lote>(`${this.apiUrl}/${id}`);
-  }
-
+  // Registrar un ingreso de lote.
   crearLote(
     idProducto: number,
     request: LoteRequest
@@ -44,38 +43,32 @@ export class LoteService {
     );
   }
 
-  listarLotesPorVencer(dias = 30): Observable<Lote[]> {
-    return this.http.get<Lote[]>(
-      `${this.apiUrl}/por-vencer?dias=${dias}`
-    );
-  }
-
-  listarLotesVencidos(): Observable<Lote[]> {
-    return this.http.get<Lote[]>(
-      `${this.apiUrl}/vencidos`
-    );
-  }
-
+  // Ajustar o reducir las existencias de un lote.
   ajustarLote(
-    id: number,
+    idLote: number,
     request: LoteAjusteRequest
   ): Observable<Lote> {
     return this.http.patch<Lote>(
-      `${this.apiUrl}/${id}/ajustar`,
+      `${this.apiUrl}/${idLote}/ajustar`,
       request
     );
   }
 
-  cambiarEstado(id: number, estado: number): Observable<Lote> {
+  // Activar o desactivar un lote.
+  cambiarEstado(
+    idLote: number,
+    estado: number
+  ): Observable<Lote> {
     return this.http.patch<Lote>(
-      `${this.apiUrl}/${id}/estado?estado=${estado}`,
+      `${this.apiUrl}/${idLote}/estado?estado=${estado}`,
       {}
     );
   }
 
-  eliminarLote(id: number): Observable<void> {
+  // Eliminación lógica del lote.
+  eliminarLote(idLote: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.apiUrl}/${id}`
+      `${this.apiUrl}/${idLote}`
     );
   }
 }

@@ -6,10 +6,10 @@ export interface Lote {
   fechaVencimiento: string;
   cantidad: number;
   estado: number;
-  fechaIngreso: string | null;
+  fechaIngreso: string;
 }
 
-export interface DetalleIngreso {
+export interface DetalleIngresoRequest {
   idPresentacion: number;
   cantidadPresentacion: number;
 }
@@ -17,12 +17,12 @@ export interface DetalleIngreso {
 export interface LoteRequest {
   numeroLote: string;
   fechaVencimiento: string;
-  detallesIngreso: DetalleIngreso[];
+  detallesIngreso: DetalleIngresoRequest[];
 }
 
 export type MotivoAjuste =
   | 'PRODUCTO_VENCIDO'
-  | 'PRODUCTO_DAÑADO'
+  | 'PRODUCTO_DANADO'
   | 'PERDIDA_ROBO'
   | 'DEVOLUCION_PROVEEDOR'
   | 'USO_INTERNO_DONACION'
@@ -34,7 +34,7 @@ export interface LoteAjusteRequest {
   idPresentacion: number;
   cantidadAjuste: number;
   motivo: MotivoAjuste;
-  observacion: string | null;
+  observacion?: string | null;
 }
 
 
