@@ -1484,4 +1484,47 @@
   font-size: 0.82rem;
 }
 
+/* ==========================================================
+   CAMPOS OBLIGATORIOS
+   ========================================================== */
+
+.required-mark {
+  display: inline-block;
+  margin-left: 0.15rem;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* ==========================================================
+   ALERTAS DENTRO DE LOS MODALES
+   ========================================================== */
+
+.modal-form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+
+  margin: 0 0 1rem;
+  padding: 0.8rem 0.9rem;
+
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: v.$radius-md;
+
+  font-size: 0.875rem;
+  line-height: 1.45;
+
+  i {
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    font-size: 1rem;
+  }
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
 

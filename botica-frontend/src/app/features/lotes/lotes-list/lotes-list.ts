@@ -10,19 +10,16 @@ import { FormsModule } from '@angular/forms';
 import { Observable, finalize } from 'rxjs';
 
 import { LoteService } from '../services/lote';
-
 import {
   Lote,
   LoteAjusteRequest,
   LoteRequest,
   MotivoAjuste
 } from '../../../core/models/lote.model';
-
 import {
   Producto,
   Presentacion
 } from '../../../core/models/producto.model';
-
 import { ProductoService } from '../../productos/services/producto';
 import { HasPermissionDirective } from '../../../core/directives/has-permission';
 
@@ -34,11 +31,7 @@ interface OpcionMotivoAjuste {
 
 type FiltroEstado = 'todos' | 'activo' | 'inactivo';
 type FiltroVencimiento = 'todos' | 'vencidos' | 'rango';
-
-type TipoConfirmacionLote =
-  | 'activar'
-  | 'desactivar'
-  | 'eliminar';
+type TipoConfirmacionLote = 'activar' | 'desactivar' | 'eliminar';
 
 interface ConfirmacionLote {
   id: number;
@@ -62,7 +55,6 @@ interface ConfirmacionLote {
   styleUrls: ['./lotes-list.scss']
 })
 export class LotesListComponent implements OnInit {
-
   private loteService = inject(LoteService);
   private productoService = inject(ProductoService);
   private cdr = inject(ChangeDetectorRef);
@@ -76,37 +68,31 @@ export class LotesListComponent implements OnInit {
   procesando = false;
 
   errorCarga = '';
-  mensaje = '';
-  tipoMensaje: 'exito' | 'error' = 'exito';
+  errorIngresoModal = '';
+  errorAjusteModal = '';
 
   // Búsqueda y filtros de la tabla.
   busqueda = '';
   filtroEstado: FiltroEstado = 'todos';
   filtroVencimiento: FiltroVencimiento = 'todos';
-
   fechaDesde = '';
   fechaHasta = '';
 
   // Registro de ingreso.
   mostrarModalIngreso = false;
-
   busquedaProductoIngreso = '';
   mostrarOpcionesProductoIngreso = false;
   productoIngresoSeleccionado: Producto | null = null;
-
   numeroLote = '';
   fechaVencimiento = '';
-
   cantidadesIngreso: Record<number, number> = {};
 
   // Ajuste de existencias.
   mostrarModalAjuste = false;
   loteAjuste: Lote | null = null;
-
   idPresentacionAjuste: number | null = null;
   cantidadAjuste: number | null = null;
-
-  motivoAjuste: MotivoAjuste = 'ERROR_CONTEO_FISICO';
+  motivoAjuste: MotivoAjuste | null = null;
   observacionAjuste = '';
 
   // Confirmación de acciones.
@@ -172,7 +158,6 @@ export class LotesListComponent implements OnInit {
   get fechaMinimaVencimiento(): string {
     const fecha = new Date();
     fecha.setDate(fecha.getDate() + 1);
-
     return this.convertirFechaAString(fecha);
   }
 
@@ -180,14 +165,20 @@ export class LotesListComponent implements OnInit {
     const anio = fecha.getFullYear();
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
     const dia = String(fecha.getDate()).padStart(2, '0');
-
     return `${anio}-${mes}-${dia}`;
   }
 
   get rangoFechasValido(): boolean {
-    return !!this.fechaDesde
-      && !!this.fechaHasta
-      && this.fechaDesde <= this.fechaHasta;
+    return !!this.fechaDesde &&
+      !!this.fechaHasta &&
+      this.fechaDesde <= this.fechaHasta;
+  }
+
+  cambiarFiltroVencimiento(tipo: FiltroVencimiento): void {
+    this.filtroVencimiento = tipo;
+    // Las fechas anteriores no deben mantenerse al cambiar de filtro.
+    this.fechaDesde = '';
+    this.fechaHasta = '';
   }
 
   // ============================================================
@@ -198,15 +189,12 @@ export class LotesListComponent implements OnInit {
     return [...this.lotes].sort((a, b) => {
       const fechaA = a.fechaIngreso || '';
       const fechaB = b.fechaIngreso || '';
-
-      // Primero la fecha de ingreso más reciente.
       const comparacionFecha = fechaB.localeCompare(fechaA);
 
       if (comparacionFecha !== 0) {
         return comparacionFecha;
       }
 
-      // Si el ingreso tiene la misma fecha, usar el ID descendente.
       return b.id - a.id;
     });
   }
@@ -215,7 +203,6 @@ export class LotesListComponent implements OnInit {
     const termino = this.busqueda.trim().toLocaleLowerCase();
 
     return this.lotesOrdenados.filter(lote => {
-
       const coincideBusqueda =
         !termino ||
         (lote.numeroLote || '').toLocaleLowerCase().includes(termino) ||
@@ -227,7 +214,6 @@ export class LotesListComponent implements OnInit {
         (this.filtroEstado === 'inactivo' && lote.estado === 0);
 
       const fecha = (lote.fechaVencimiento || '').slice(0, 10);
-
       let coincideVencimiento = true;
 
       if (this.filtroVencimiento === 'vencidos') {
@@ -269,9 +255,8 @@ export class LotesListComponent implements OnInit {
         next: respuesta => {
           this.lotes = respuesta || [];
         },
-        error: err => {
+        error: (err: any) => {
           console.error('Error al cargar los lotes:', err);
-
           this.errorCarga = this.obtenerMensajeError(
             err,
             'No se pudieron cargar los lotes.'
@@ -300,10 +285,7 @@ export class LotesListComponent implements OnInit {
       });
   }
 
-  private obtenerMensajeError(
-    err: any,
-    mensajePredeterminado: string
-  ): string {
+  private obtenerMensajeError(err: any, mensajePredeterminado: string): string {
     if (err?.status === 0) {
       return 'No se pudo conectar con el servidor.';
     }
@@ -318,26 +300,15 @@ export class LotesListComponent implements OnInit {
       mensajePredeterminado;
   }
 
-  private mostrarMensaje(
-    texto: string,
-    tipo: 'exito' | 'error'
-  ): void {
-    this.mensaje = texto;
-    this.tipoMensaje = tipo;
-  }
-
   // ============================================================
-  // FILTRO DE PRODUCTOS PARA EL INGRESO
+  // BÚSQUEDA DE PRODUCTOS PARA EL INGRESO
   // ============================================================
 
   get productosCoincidentesIngreso(): Producto[] {
-    const termino = this.busquedaProductoIngreso
-      .trim()
-      .toLocaleLowerCase();
+    const termino = this.busquedaProductoIngreso.trim().toLocaleLowerCase();
 
     return this.productos
       .filter(producto => {
-
         const tienePresentacionActiva =
           (producto.presentaciones || []).some(
             presentacion => presentacion.estado === 1
@@ -348,12 +319,8 @@ export class LotesListComponent implements OnInit {
 
         const coincideTexto =
           !termino ||
-          (producto.nombre || '')
-            .toLocaleLowerCase()
-            .includes(termino) ||
-          (producto.categoriaNombre || '')
-            .toLocaleLowerCase()
-            .includes(termino);
+          (producto.nombre || '').toLocaleLowerCase().includes(termino) ||
+          (producto.categoriaNombre || '').toLocaleLowerCase().includes(termino);
 
         return productoDisponible && coincideTexto;
       })
@@ -366,9 +333,7 @@ export class LotesListComponent implements OnInit {
     if (
       this.productoIngresoSeleccionado &&
       valor.trim().toLocaleLowerCase() !==
-        this.productoIngresoSeleccionado.nombre
-          .trim()
-          .toLocaleLowerCase()
+        this.productoIngresoSeleccionado.nombre.trim().toLocaleLowerCase()
     ) {
       this.productoIngresoSeleccionado = null;
       this.cantidadesIngreso = {};
@@ -381,7 +346,6 @@ export class LotesListComponent implements OnInit {
     this.productoIngresoSeleccionado = producto;
     this.busquedaProductoIngreso = producto.nombre;
     this.mostrarOpcionesProductoIngreso = false;
-
     this.cantidadesIngreso = {};
 
     for (const presentacion of this.presentacionesIngreso) {
@@ -409,18 +373,17 @@ export class LotesListComponent implements OnInit {
     };
 
     const nombre = nombres[presentacion.tipo] || presentacion.tipo;
-
     return `${nombre} · ${presentacion.factorConversion} unidad(es) base`;
   }
 
   // ============================================================
-  // MODAL DE NUEVO INGRESO
+  // MODAL: REGISTRO DE INGRESO
   // ============================================================
 
   abrirModalIngreso(): void {
     this.limpiarFormularioIngreso();
+    this.errorIngresoModal = '';
     this.mostrarModalIngreso = true;
-
     this.mostrarOpcionesProductoIngreso = false;
   }
 
@@ -431,20 +394,21 @@ export class LotesListComponent implements OnInit {
 
     this.mostrarModalIngreso = false;
     this.limpiarFormularioIngreso();
+    this.errorIngresoModal = '';
   }
 
   private limpiarFormularioIngreso(): void {
     this.busquedaProductoIngreso = '';
     this.mostrarOpcionesProductoIngreso = false;
     this.productoIngresoSeleccionado = null;
-
     this.numeroLote = '';
     this.fechaVencimiento = '';
-
     this.cantidadesIngreso = {};
   }
 
   registrarIngreso(): void {
+    this.errorIngresoModal = '';
+
     if (this.procesando) {
       return;
     }
@@ -452,64 +416,51 @@ export class LotesListComponent implements OnInit {
     const producto = this.productoIngresoSeleccionado;
 
     if (!producto) {
-      this.mostrarMensaje(
-        'Busca y selecciona un producto antes de registrar el ingreso.',
-        'error'
-      );
+      this.errorIngresoModal =
+        'Busca y selecciona un producto antes de registrar el ingreso.';
       return;
     }
 
     if (!this.numeroLote.trim()) {
-      this.mostrarMensaje(
-        'Ingresa el número de lote que aparece en el envase.',
-        'error'
-      );
+      this.errorIngresoModal =
+        'Ingresa el número de lote que aparece en el envase.';
       return;
     }
 
     if (!this.fechaVencimiento) {
-      this.mostrarMensaje(
-        'Selecciona la fecha de vencimiento.',
-        'error'
-      );
+      this.errorIngresoModal = 'Selecciona la fecha de vencimiento.';
       return;
     }
 
     if (this.fechaVencimiento <= this.fechaHoy) {
-      this.mostrarMensaje(
-        'La fecha de vencimiento debe ser posterior a hoy.',
-        'error'
-      );
+      this.errorIngresoModal =
+        'La fecha de vencimiento debe ser posterior a hoy.';
       return;
     }
 
-    const detallesIngreso = this.presentacionesIngreso
-      .map(presentacion => ({
-        idPresentacion: presentacion.id,
-        cantidadPresentacion:
-          Number(this.cantidadesIngreso[presentacion.id] || 0)
-      }))
-      .filter(detalle => detalle.cantidadPresentacion > 0);
+    const cantidades = this.presentacionesIngreso.map(presentacion => ({
+      idPresentacion: presentacion.id,
+      cantidadPresentacion: Number(this.cantidadesIngreso[presentacion.id] ?? 0)
+    }));
 
-    if (detallesIngreso.length === 0) {
-      this.mostrarMensaje(
-        'Ingresa una cantidad mayor que cero en al menos una presentación.',
-        'error'
-      );
-      return;
-    }
-
-    const cantidadesValidas = detallesIngreso.every(
-      detalle =>
-        Number.isInteger(detalle.cantidadPresentacion) &&
-        detalle.cantidadPresentacion > 0
+    const cantidadInvalida = cantidades.some(detalle =>
+      !Number.isInteger(detalle.cantidadPresentacion) ||
+      detalle.cantidadPresentacion < 0
     );
 
-    if (!cantidadesValidas) {
-      this.mostrarMensaje(
-        'Las cantidades deben ser números enteros positivos.',
-        'error'
-      );
+    if (cantidadInvalida) {
+      this.errorIngresoModal =
+        'Las cantidades deben ser números enteros iguales o mayores que cero.';
+      return;
+    }
+
+    const detallesIngreso = cantidades.filter(
+      detalle => detalle.cantidadPresentacion > 0
+    );
+
+    if (detallesIngreso.length === 0) {
+      this.errorIngresoModal =
+        'Ingresa una cantidad mayor que cero en al menos una presentación.';
       return;
     }
 
@@ -532,45 +483,31 @@ export class LotesListComponent implements OnInit {
         next: () => {
           this.mostrarModalIngreso = false;
           this.limpiarFormularioIngreso();
-
-          this.mostrarMensaje(
-            'El ingreso del lote se registró correctamente.',
-            'exito'
-          );
-
+          this.errorIngresoModal = '';
+          // No se muestra una notificación de éxito en la pantalla principal.
           this.cargarLotes();
           this.cargarProductos();
         },
-        error: err => {
-          this.mostrarMensaje(
-            this.obtenerMensajeError(
-              err,
-              'No se pudo registrar el ingreso del lote.'
-            ),
-            'error'
+        error: (err: any) => {
+          this.errorIngresoModal = this.obtenerMensajeError(
+            err,
+            'No se pudo registrar el ingreso del lote.'
           );
         }
       });
   }
 
   // ============================================================
-  // AJUSTE DE EXISTENCIAS
+  // MODAL: AJUSTE DE EXISTENCIAS
   // ============================================================
 
   abrirModalAjuste(lote: Lote): void {
     this.loteAjuste = lote;
     this.idPresentacionAjuste = null;
     this.cantidadAjuste = null;
-
-    this.motivoAjuste = 'ERROR_CONTEO_FISICO';
+    this.motivoAjuste = null;
     this.observacionAjuste = '';
-
-    const presentaciones = this.presentacionesDelLote;
-
-    if (presentaciones.length > 0) {
-      this.idPresentacionAjuste = presentaciones[0].id;
-    }
-
+    this.errorAjusteModal = '';
     this.mostrarModalAjuste = true;
   }
 
@@ -581,6 +518,11 @@ export class LotesListComponent implements OnInit {
 
     this.mostrarModalAjuste = false;
     this.loteAjuste = null;
+    this.idPresentacionAjuste = null;
+    this.cantidadAjuste = null;
+    this.motivoAjuste = null;
+    this.observacionAjuste = '';
+    this.errorAjusteModal = '';
   }
 
   get presentacionesDelLote(): Presentacion[] {
@@ -597,6 +539,10 @@ export class LotesListComponent implements OnInit {
   }
 
   get motivoSeleccionado(): OpcionMotivoAjuste | undefined {
+    if (!this.motivoAjuste) {
+      return undefined;
+    }
+
     return this.motivosAjuste.find(
       motivo => motivo.valor === this.motivoAjuste
     );
@@ -607,15 +553,21 @@ export class LotesListComponent implements OnInit {
   }
 
   guardarAjuste(): void {
+    this.errorAjusteModal = '';
+
     if (!this.loteAjuste || this.procesando) {
       return;
     }
 
-    if (!this.idPresentacionAjuste) {
-      this.mostrarMensaje(
-        'Selecciona la presentación para realizar el ajuste.',
-        'error'
-      );
+    if (this.idPresentacionAjuste === null) {
+      this.errorAjusteModal =
+        'Selecciona la presentación para realizar el ajuste.';
+      return;
+    }
+
+    if (this.motivoAjuste === null) {
+      this.errorAjusteModal =
+        'Selecciona un motivo para realizar el ajuste.';
       return;
     }
 
@@ -625,33 +577,29 @@ export class LotesListComponent implements OnInit {
       !Number.isInteger(Number(this.cantidadAjuste)) ||
       Number(this.cantidadAjuste) === 0
     ) {
-      this.mostrarMensaje(
-        'Ingresa una cantidad entera distinta de cero.',
-        'error'
-      );
+      this.errorAjusteModal =
+        'Ingresa una cantidad entera distinta de cero.';
       return;
     }
 
+    const motivoSeleccionado = this.motivoAjuste;
     let cantidadEnviar = Number(this.cantidadAjuste);
 
-    // La interfaz solicita una cantidad positiva para una merma.
-    // El backend recibe la cantidad negativa que debe descontar.
     if (this.esMotivoMerma) {
       if (cantidadEnviar <= 0) {
-        this.mostrarMensaje(
-          'Para una merma, ingresa la cantidad a descontar como positiva.',
-          'error'
-        );
+        this.errorAjusteModal =
+          'Para una merma, ingresa la cantidad a descontar como positiva.';
         return;
       }
 
+      // El backend recibe las mermas como cantidades negativas.
       cantidadEnviar = -Math.abs(cantidadEnviar);
     }
 
     const request: LoteAjusteRequest = {
       idPresentacion: this.idPresentacionAjuste,
       cantidadAjuste: cantidadEnviar,
-      motivo: this.motivoAjuste,
+      motivo: motivoSeleccionado,
       observacion: this.observacionAjuste.trim() || null
     };
 
@@ -668,22 +616,15 @@ export class LotesListComponent implements OnInit {
         next: () => {
           this.mostrarModalAjuste = false;
           this.loteAjuste = null;
-
-          this.mostrarMensaje(
-            'Las existencias del lote se actualizaron correctamente.',
-            'exito'
-          );
-
+          this.errorAjusteModal = '';
+          // No se muestra una notificación de éxito en la pantalla principal.
           this.cargarLotes();
           this.cargarProductos();
         },
-        error: err => {
-          this.mostrarMensaje(
-            this.obtenerMensajeError(
-              err,
-              'No se pudo ajustar el stock del lote.'
-            ),
-            'error'
+        error: (err: any) => {
+          this.errorAjusteModal = this.obtenerMensajeError(
+            err,
+            'No se pudo ajustar el stock del lote.'
           );
         }
       });
@@ -701,15 +642,10 @@ export class LotesListComponent implements OnInit {
       tipo: activar ? 'activar' : 'desactivar',
       numeroLote: lote.numeroLote,
       nombreProducto: lote.nombreProducto,
-
-      titulo: activar
-        ? 'Activar lote'
-        : 'Desactivar lote',
-
+      titulo: activar ? 'Activar lote' : 'Desactivar lote',
       mensaje: activar
         ? '¿Deseas activar este lote para que vuelva a estar disponible en el inventario?'
         : '¿Deseas desactivar este lote? Se conservará su registro, pero dejará de estar disponible como lote activo.',
-
       textoBoton: activar ? 'Activar lote' : 'Desactivar lote'
     };
 
@@ -722,12 +658,9 @@ export class LotesListComponent implements OnInit {
       tipo: 'eliminar',
       numeroLote: lote.numeroLote,
       nombreProducto: lote.nombreProducto,
-
       titulo: 'Eliminar lote',
-
       mensaje:
         '¿Estás seguro de eliminar este lote? Esta acción lo retirará de los lotes disponibles y se conservará el registro de la operación.',
-
       textoBoton: 'Eliminar lote'
     };
 
@@ -770,15 +703,11 @@ export class LotesListComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          // Cerrar la confirmación sin mostrar mensajes de éxito.
           this.confirmacionLote = null;
           this.errorConfirmacionLote = '';
-
-          // Actualizar la tabla y los datos de productos.
           this.cargarLotes();
           this.cargarProductos();
         },
-
         error: (err: any) => {
           this.errorConfirmacionLote = this.obtenerMensajeError(
             err,
@@ -789,7 +718,7 @@ export class LotesListComponent implements OnInit {
   }
 
   // ============================================================
-  // INDICADORES Y UTILIDADES DE LA TABLA
+  // INDICADORES DE VENCIMIENTO
   // ============================================================
 
   esVencido(lote: Lote): boolean {
@@ -809,40 +738,26 @@ export class LotesListComponent implements OnInit {
 
     const limite = new Date();
     limite.setDate(limite.getDate() + 30);
-
     const fechaLimite = this.convertirFechaAString(limite);
 
     return lote.fechaVencimiento <= fechaLimite;
   }
 
-  limpiarMensaje(): void {
-    this.mensaje = '';
-  }
+  // ============================================================
+  // CERRAR SUGERENCIAS AL HACER CLIC DENTRO DEL MODAL
+  // ============================================================
 
-  // ============================================================
-  // CERRAR SUGERENCIAS AL HACER CLICK DENTRO DEL MODAL
-  // ============================================================
   manejarClickDentroDelModal(event: MouseEvent): void {
-    // Evitar que el clic cierre el modal desde el fondo.
     event.stopPropagation();
 
     const objetivo = event.target;
-
     if (!(objetivo instanceof Element)) {
       return;
     }
 
-    // Mantener las sugerencias abiertas al interactuar
-    // con el buscador o seleccionar una sugerencia.
-    const dentroDelBuscador =
-      objetivo.closest('.product-picker-input');
-
-    const dentroDeLasSugerencias =
-      objetivo.closest('.product-suggestions');
-
-    // Al pulsar "Cambiar", se debe permitir abrir de nuevo la búsqueda.
-    const botonCambiarProducto =
-      objetivo.closest('.selected-product .text-button');
+    const dentroDelBuscador = objetivo.closest('.product-picker-input');
+    const dentroDeLasSugerencias = objetivo.closest('.product-suggestions');
+    const botonCambiarProducto = objetivo.closest('.selected-product .text-button');
 
     if (
       dentroDelBuscador ||
@@ -852,11 +767,8 @@ export class LotesListComponent implements OnInit {
       return;
     }
 
-    // Cualquier otro clic dentro del modal cierra las sugerencias.
     this.mostrarOpcionesProductoIngreso = false;
   }
-
-
 }
 
 

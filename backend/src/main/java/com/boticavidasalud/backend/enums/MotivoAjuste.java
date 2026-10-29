@@ -4,7 +4,7 @@ public enum MotivoAjuste {
     
     // --- MERMAS (Pérdidas reales) ---
     PRODUCTO_VENCIDO(TipoMovimiento.MERMA, "Producto Vencido"),
-    PRODUCTO_DAÑADO(TipoMovimiento.MERMA, "Producto Dañado o Roto"),
+    PRODUCTO_DANADO(TipoMovimiento.MERMA, "Producto Dañado o Roto"),
     PERDIDA_ROBO(TipoMovimiento.MERMA, "Pérdida por Robo"),
     DEVOLUCION_PROVEEDOR(TipoMovimiento.MERMA, "Devolución a Proveedor"),
     USO_INTERNO_DONACION(TipoMovimiento.MERMA, "Uso Interno o Donación"),
