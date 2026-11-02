@@ -1,5 +1,9 @@
 @use '../../../../styles/variables' as v;
 
+/* ==========================================================
+   FONDO Y CONTENEDOR DEL MODAL
+   ========================================================== */
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -10,22 +14,29 @@
   align-items: center;
 
   padding: 1rem;
+  overflow-y: auto;
+
   background: rgba(0, 0, 0, 0.5);
 }
 
 .modal-card {
+  display: flex;
+  flex-direction: column;
+
   width: 100%;
   max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
 
-  display: flex;
-  flex-direction: column;
-
+  color: v.$text-main;
   background: v.$bg-surface;
   border-radius: v.$radius-lg;
   box-shadow: v.$shadow-md;
 }
+
+/* ==========================================================
+   ENCABEZADO
+   ========================================================== */
 
 .modal-header {
   display: flex;
@@ -49,10 +60,17 @@
   }
 
   .close-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 34px;
+    height: 34px;
     flex-shrink: 0;
 
-    background: none;
+    background: transparent;
     border: none;
+    border-radius: v.$radius-md;
 
     color: v.$text-muted;
     font-size: 1.2rem;
@@ -60,6 +78,7 @@
 
     &:hover:not(:disabled) {
       color: v.$danger-color;
+      background: #fef2f2;
     }
 
     &:disabled {
@@ -68,6 +87,10 @@
     }
   }
 }
+
+/* ==========================================================
+   FORMULARIO
+   ========================================================== */
 
 form {
   padding: 1.5rem;
@@ -86,10 +109,11 @@ form {
   margin-bottom: 1.25rem;
 
   label {
+    margin-bottom: 0.5rem;
+
     color: v.$text-main;
     font-size: 0.9rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
   }
 
   input,
@@ -101,7 +125,7 @@ form {
     padding: 0.75rem;
 
     color: v.$text-main;
-    background: white;
+    background: #fff;
 
     border: 1px solid v.$border-color;
     border-radius: v.$radius-md;
@@ -130,8 +154,8 @@ form {
 }
 
 .required {
-  color: v.$danger-color;
   margin-left: 2px;
+  color: v.$danger-color;
 }
 
 .optional {
@@ -142,17 +166,264 @@ form {
 
 .field-hint {
   margin-top: 0.35rem;
+
   color: v.$text-muted;
   font-size: 0.78rem;
   line-height: 1.4;
 }
 
 .error-text {
+  margin-top: 0.3rem;
+
   color: v.$danger-color;
   font-size: 0.8rem;
-  margin-top: 0.3rem;
   line-height: 1.4;
 }
+
+/* ==========================================================
+   BUSCADOR DE PRODUCTOS
+   ========================================================== */
+
+.product-picker {
+  position: relative;
+  z-index: 25;
+  min-width: 0;
+}
+
+.product-picker-control {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.product-picker-input {
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-left: 0.75rem;
+
+  background: #fff;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+
+  > i {
+    flex-shrink: 0;
+    color: v.$text-muted;
+    font-size: 1rem;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+
+    padding: 0.75rem 0.25rem;
+
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+
+    &:focus {
+      border: none;
+      outline: none;
+      box-shadow: none;
+    }
+
+    &:disabled {
+      background: transparent;
+      cursor: not-allowed;
+    }
+  }
+
+  &:focus-within {
+    outline: 2px solid v.$primary-light;
+    border-color: v.$primary-color;
+  }
+}
+
+/* ==========================================================
+   SUGERENCIAS DE PRODUCTOS
+   ========================================================== */
+
+.product-suggestions {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  background: #fff;
+  border: 1px solid v.$border-color;
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.14);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    width: 100%;
+    min-height: 44px;
+    padding: 0.55rem 0.65rem;
+
+    color: v.$text-main;
+    text-align: left;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid #eef2f7;
+
+    cursor: pointer;
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: #f0fdfa;
+      outline: none;
+    }
+  }
+}
+
+.suggestion-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+
+  color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+}
+
+.suggestion-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+
+  strong {
+    display: block;
+    color: v.$text-main;
+    font-size: 0.84rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    display: block;
+    margin-top: 0.15rem;
+    color: v.$text-muted;
+    font-size: 0.75rem;
+  }
+}
+
+.suggestion-arrow {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.suggestions-loading,
+.suggestions-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  margin: 0;
+  padding: 0.8rem;
+
+  color: v.$text-muted;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* ==========================================================
+   PRODUCTO SELECCIONADO
+   ========================================================== */
+
+.selected-product {
+  margin-top: 0.6rem;
+  padding: 0.75rem;
+
+  background: #f8fafc;
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+}
+
+.selected-product-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+
+  > i {
+    flex-shrink: 0;
+    color: #059669;
+    font-size: 1.2rem;
+  }
+
+  > div {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  strong {
+    color: v.$text-main;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    color: v.$text-muted;
+    font-size: 0.8rem;
+  }
+}
+
+.text-button {
+  flex-shrink: 0;
+
+  padding: 0.3rem 0.45rem;
+
+  color: v.$primary-color;
+  background: transparent;
+  border: none;
+
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* ==========================================================
+   MENSAJES DE ERROR
+   ========================================================== */
 
 .error-banner {
   display: flex;
@@ -171,13 +442,19 @@ form {
   overflow-wrap: anywhere;
 
   i {
+    flex-shrink: 0;
     margin-top: 0.1rem;
   }
 
   span {
     flex: 1;
+    min-width: 0;
   }
 }
+
+/* ==========================================================
+   BOTONES DEL FORMULARIO
+   ========================================================== */
 
 .modal-footer {
   display: flex;
@@ -189,11 +466,13 @@ form {
 
   button {
     padding: 0.65rem 1.2rem;
+
     border: none;
     border-radius: v.$radius-md;
 
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
 
     &:disabled {
       opacity: 0.6;
@@ -211,7 +490,7 @@ form {
   }
 
   .btn-primary {
-    color: white;
+    color: #fff;
     background: v.$primary-color;
 
     &:hover:not(:disabled) {
@@ -220,7 +499,17 @@ form {
   }
 }
 
+/* ==========================================================
+   DISEÑO ADAPTABLE
+   ========================================================== */
+
 @media (max-width: 600px) {
+
+  .modal-backdrop {
+    align-items: flex-start;
+    padding: 0.5rem;
+  }
+
   .modal-card {
     max-height: 94vh;
   }
@@ -236,6 +525,10 @@ form {
   .form-grid {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .selected-product-heading {
+    flex-wrap: wrap;
   }
 
   .modal-footer {

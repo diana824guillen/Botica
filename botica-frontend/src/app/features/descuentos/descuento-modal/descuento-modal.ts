@@ -68,6 +68,11 @@ export class DescuentoModalComponent implements OnInit {
 
   productos: Producto[] = [];
 
+  // Datos del buscador de productos
+  busquedaProducto = '';
+  mostrarSugerenciasProducto = false;
+  productoSeleccionado: Producto | null = null;
+
   isSaving = false;
   cargandoProductos = false;
   errorMessage = '';
@@ -217,6 +222,119 @@ export class DescuentoModalComponent implements OnInit {
         }
 
       });
+  }
+
+  // ============================================================
+  // BÚSQUEDA DE PRODUCTOS
+  // ============================================================
+
+  get productosCoincidentes(): Producto[] {
+
+    const termino = this.busquedaProducto
+      .trim()
+      .toLocaleLowerCase();
+
+    return this.productos
+      .filter(producto => {
+
+        const coincideNombre =
+          (producto.nombre || '')
+            .toLocaleLowerCase()
+            .includes(termino);
+
+        const coincideCategoria =
+          (producto.categoriaNombre || '')
+            .toLocaleLowerCase()
+            .includes(termino);
+
+        return coincideNombre || coincideCategoria;
+      })
+      .slice(0, termino ? 8 : 5);
+  }
+
+  buscarProducto(valor: string): void {
+
+    this.busquedaProducto = valor;
+
+    // Si se modifica el texto después de seleccionar,
+    // se limpia el producto anterior del formulario.
+    if (
+      this.productoSeleccionado &&
+      valor.trim().toLocaleLowerCase() !==
+        this.productoSeleccionado.nombre.trim().toLocaleLowerCase()
+    ) {
+
+      this.productoSeleccionado = null;
+
+      this.descuentoForm
+        .get('idProducto')
+        ?.setValue(null);
+    }
+
+    this.mostrarSugerenciasProducto = true;
+  }
+
+  seleccionarProducto(producto: Producto): void {
+
+    this.productoSeleccionado = producto;
+    this.busquedaProducto = producto.nombre;
+    this.mostrarSugerenciasProducto = false;
+
+    const controlProducto = this.descuentoForm.get('idProducto');
+
+    controlProducto?.setValue(producto.id);
+    controlProducto?.markAsTouched();
+    controlProducto?.markAsDirty();
+  }
+
+  cambiarProducto(): void {
+
+    if (this.isSaving) {
+      return;
+    }
+
+    this.productoSeleccionado = null;
+    this.busquedaProducto = '';
+
+    this.descuentoForm
+      .get('idProducto')
+      ?.setValue(null);
+
+    this.mostrarSugerenciasProducto = true;
+  }
+
+  // ============================================================
+  // CERRAR SUGERENCIAS AL INTERACTUAR DENTRO DEL MODAL
+  // ============================================================
+
+  manejarClickDentroDelModal(event: MouseEvent): void {
+
+    event.stopPropagation();
+
+    const objetivo = event.target;
+
+    if (!(objetivo instanceof Element)) {
+      return;
+    }
+
+    const dentroDelBuscador =
+      objetivo.closest('.product-picker-input');
+
+    const dentroDeLasSugerencias =
+      objetivo.closest('.product-suggestions');
+
+    const botonCambiarProducto =
+      objetivo.closest('.selected-product .text-button');
+
+    if (
+      dentroDelBuscador ||
+      dentroDeLasSugerencias ||
+      botonCambiarProducto
+    ) {
+      return;
+    }
+
+    this.mostrarSugerenciasProducto = false;
   }
 
   // ============================================================

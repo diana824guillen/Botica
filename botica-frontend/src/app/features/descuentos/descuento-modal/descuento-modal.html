@@ -9,6 +9,7 @@
         ? 'Editar promoción'
         : 'Registrar nueva promoción'
     "
+    (click)="manejarClickDentroDelModal($event)"
   >
 
     <!-- Encabezado -->
@@ -48,56 +49,171 @@
     >
 
       <!-- Producto -->
-      <div class="form-group">
+      <div
+        class="form-group product-picker"
+        *ngIf="!descuentoEditar"
+      >
+
+        <label for="buscarProductoDescuento">
+          Producto
+          <span class="required">*</span>
+        </label>
+
+        <div class="product-picker-control">
+
+          <!-- Campo de búsqueda -->
+          <div class="product-picker-input">
+
+            <i class="bi bi-search"></i>
+
+            <input
+              id="buscarProductoDescuento"
+              type="text"
+              [value]="busquedaProducto"
+              (input)="buscarProducto($any($event.target).value)"
+              (focus)="mostrarSugerenciasProducto = true"
+              placeholder="Buscar producto..."
+              autocomplete="off"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="sugerenciasProductosDescuento"
+              [attr.aria-expanded]="
+                mostrarSugerenciasProducto &&
+                !productoSeleccionado
+              "
+              [disabled]="cargandoProductos || isSaving"
+            />
+
+          </div>
+
+          <!-- Sugerencias de productos -->
+          <div
+            id="sugerenciasProductosDescuento"
+            class="product-suggestions"
+            role="listbox"
+            *ngIf="
+              mostrarSugerenciasProducto &&
+              !productoSeleccionado
+            "
+          >
+
+            <!-- Cargando productos -->
+            <div
+              class="suggestions-loading"
+              *ngIf="cargandoProductos"
+            >
+              <i class="bi bi-arrow-repeat"></i>
+              Cargando productos...
+            </div>
+
+            <!-- Resultados -->
+            <button
+              type="button"
+              role="option"
+              *ngFor="let producto of productosCoincidentes"
+              (click)="seleccionarProducto(producto)"
+            >
+
+              <span class="suggestion-icon">
+                <i class="bi bi-capsule"></i>
+              </span>
+
+              <span class="suggestion-details">
+                <strong>{{ producto.nombre }}</strong>
+                <small>{{ producto.categoriaNombre }}</small>
+              </span>
+
+              <i class="bi bi-chevron-right suggestion-arrow"></i>
+
+            </button>
+
+            <!-- Sin coincidencias -->
+            <p
+              class="suggestions-empty"
+              *ngIf="
+                !cargandoProductos &&
+                productosCoincidentes.length === 0
+              "
+            >
+              <i class="bi bi-search"></i>
+              No se encontraron productos coincidentes.
+            </p>
+
+          </div>
+
+        </div>
+
+        <!-- Producto seleccionado -->
+        <div
+          class="selected-product"
+          *ngIf="productoSeleccionado"
+        >
+
+          <div class="selected-product-heading">
+
+            <i class="bi bi-check-circle-fill"></i>
+
+            <div>
+              <strong>{{ productoSeleccionado.nombre }}</strong>
+              <small>
+                {{ productoSeleccionado.categoriaNombre }}
+              </small>
+            </div>
+
+            <button
+              type="button"
+              class="text-button"
+              [disabled]="isSaving"
+              (click)="cambiarProducto()"
+            >
+              Cambiar
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- Ayuda de selección -->
+        <span
+          class="field-hint"
+          *ngIf="!productoSeleccionado"
+        >
+          Escribe el nombre del producto o su categoría para encontrarlo.
+        </span>
+
+        <!-- Validación del producto -->
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('idProducto')?.touched &&
+            descuentoForm.get('idProducto')?.hasError('required')
+          "
+        >
+          Debe buscar y seleccionar un producto.
+        </span>
+
+      </div>
+
+      <!-- Producto al editar -->
+      <div
+        class="form-group"
+        *ngIf="descuentoEditar"
+      >
 
         <label for="productoDescuento">
           Producto
           <span class="required">*</span>
         </label>
 
-        <!-- Al editar, el producto no se puede cambiar -->
         <input
-          *ngIf="descuentoEditar"
           id="productoDescuento"
           type="text"
           [value]="descuentoEditar.productoNombre"
           readonly
         />
 
-        <!-- Al crear, seleccionar un producto activo -->
-        <select
-          *ngIf="!descuentoEditar"
-          id="productoDescuento"
-          formControlName="idProducto"
-          [disabled]="cargandoProductos || productos.length === 0"
-        >
-
-          <option [ngValue]="null">
-            {{
-              cargandoProductos
-                ? 'Cargando productos...'
-                : 'Seleccione un producto'
-            }}
-          </option>
-
-          <option
-            *ngFor="let producto of productos"
-            [ngValue]="producto.id"
-          >
-            {{ producto.nombre }}
-          </option>
-
-        </select>
-
-        <span
-          class="error-text"
-          *ngIf="
-            !descuentoEditar
-            && descuentoForm.get('idProducto')?.touched
-            && descuentoForm.get('idProducto')?.hasError('required')
-          "
-        >
-          Debe seleccionar un producto.
+        <span class="field-hint">
+          El producto asociado a una promoción existente no se puede cambiar.
         </span>
 
       </div>
