@@ -1,0 +1,251 @@
+@use '../../../../styles/variables' as v;
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+
+  background: v.$bg-surface;
+  border-radius: v.$radius-lg;
+  box-shadow: v.$shadow-md;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+
+  padding: 1.5rem;
+  border-bottom: 1px solid v.$border-color;
+
+  h3 {
+    margin: 0 0 0.35rem;
+    color: v.$primary-color;
+  }
+
+  p {
+    margin: 0;
+    color: v.$text-muted;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .close-btn {
+    flex-shrink: 0;
+
+    background: none;
+    border: none;
+
+    color: v.$text-muted;
+    font-size: 1.2rem;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: v.$danger-color;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+form {
+  padding: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-bottom: 1.25rem;
+
+  label {
+    color: v.$text-main;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  input,
+  select {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+
+    padding: 0.75rem;
+
+    color: v.$text-main;
+    background: white;
+
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius-md;
+
+    font-family: inherit;
+    font-size: 0.95rem;
+
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      border-color: v.$primary-color;
+      box-shadow: 0 0 0 2px v.$primary-light;
+    }
+
+    &:disabled,
+    &[readonly] {
+      background: #f1f5f9;
+      cursor: not-allowed;
+    }
+  }
+
+  select:disabled {
+    color: v.$text-muted;
+  }
+}
+
+.required {
+  color: v.$danger-color;
+  margin-left: 2px;
+}
+
+.optional {
+  color: v.$text-muted;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.field-hint {
+  margin-top: 0.35rem;
+  color: v.$text-muted;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.error-text {
+  color: v.$danger-color;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: v.$radius-md;
+
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+
+  i {
+    margin-top: 0.1rem;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+
+  padding-top: 1rem;
+  border-top: 1px solid v.$border-color;
+
+  button {
+    padding: 0.65rem 1.2rem;
+    border: none;
+    border-radius: v.$radius-md;
+
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-secondary {
+    color: v.$text-main;
+    background: v.$bg-body;
+
+    &:hover:not(:disabled) {
+      background: #e5e7eb;
+    }
+  }
+
+  .btn-primary {
+    color: white;
+    background: v.$primary-color;
+
+    &:hover:not(:disabled) {
+      background: v.$primary-hover;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .modal-card {
+    max-height: 94vh;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  form {
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+
+

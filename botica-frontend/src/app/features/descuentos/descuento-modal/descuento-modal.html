@@ -1,0 +1,449 @@
+<div class="modal-backdrop">
+
+  <section
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="
+      descuentoEditar
+        ? 'Editar promoción'
+        : 'Registrar nueva promoción'
+    "
+  >
+
+    <!-- Encabezado -->
+    <div class="modal-header">
+
+      <div>
+        <h3>
+          {{
+            descuentoEditar
+              ? 'Editar Promoción'
+              : 'Registrar Nueva Promoción'
+          }}
+        </h3>
+
+        <p>
+          Configura la condición y el porcentaje de descuento.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrar.emit()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <!-- Formulario -->
+    <form
+      [formGroup]="descuentoForm"
+      (ngSubmit)="guardar()"
+      novalidate
+    >
+
+      <!-- Producto -->
+      <div class="form-group">
+
+        <label for="productoDescuento">
+          Producto
+          <span class="required">*</span>
+        </label>
+
+        <!-- Al editar, el producto no se puede cambiar -->
+        <input
+          *ngIf="descuentoEditar"
+          id="productoDescuento"
+          type="text"
+          [value]="descuentoEditar.productoNombre"
+          readonly
+        />
+
+        <!-- Al crear, seleccionar un producto activo -->
+        <select
+          *ngIf="!descuentoEditar"
+          id="productoDescuento"
+          formControlName="idProducto"
+          [disabled]="cargandoProductos || productos.length === 0"
+        >
+
+          <option [ngValue]="null">
+            {{
+              cargandoProductos
+                ? 'Cargando productos...'
+                : 'Seleccione un producto'
+            }}
+          </option>
+
+          <option
+            *ngFor="let producto of productos"
+            [ngValue]="producto.id"
+          >
+            {{ producto.nombre }}
+          </option>
+
+        </select>
+
+        <span
+          class="error-text"
+          *ngIf="
+            !descuentoEditar
+            && descuentoForm.get('idProducto')?.touched
+            && descuentoForm.get('idProducto')?.hasError('required')
+          "
+        >
+          Debe seleccionar un producto.
+        </span>
+
+      </div>
+
+      <!-- Nombre de la promoción -->
+      <div class="form-group">
+
+        <label for="nombreDescuento">
+          Nombre de la promoción
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="nombreDescuento"
+          type="text"
+          formControlName="nombre"
+          maxlength="100"
+          autocomplete="off"
+          placeholder="Ej. Descuento por compra"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('nombre')?.touched
+            && descuentoForm.get('nombre')?.hasError('required')
+          "
+        >
+          El nombre de la promoción es obligatorio.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('nombre')?.touched
+            && descuentoForm.get('nombre')?.hasError('pattern')
+          "
+        >
+          El nombre no puede contener solamente espacios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('nombre')?.touched
+            && descuentoForm.get('nombre')?.hasError('maxlength')
+          "
+        >
+          El nombre no puede superar los 100 caracteres.
+        </span>
+
+      </div>
+
+      <!-- Condición y valor -->
+      <div class="form-grid">
+
+        <div class="form-group">
+
+          <label for="tipoCondicion">
+            Tipo de condición
+            <span class="required">*</span>
+          </label>
+
+          <select
+            id="tipoCondicion"
+            formControlName="tipoCondicion"
+          >
+
+            <option [ngValue]="null">
+              Seleccione una condición
+            </option>
+
+            <option
+              *ngFor="let tipo of tiposCondicion"
+              [ngValue]="tipo.value"
+            >
+              {{ tipo.label }}
+            </option>
+
+          </select>
+
+          <span
+            class="error-text"
+            *ngIf="
+              descuentoForm.get('tipoCondicion')?.touched
+              && descuentoForm.get('tipoCondicion')?.hasError('required')
+            "
+          >
+            Debe seleccionar un tipo de condición.
+          </span>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="valorCondicion">
+            {{
+              descuentoForm.get('tipoCondicion')?.value === 'MONTO_MINIMO'
+                ? 'Monto mínimo (S/)'
+                : descuentoForm.get('tipoCondicion')?.value === 'CANTIDAD_MINIMA'
+                  ? 'Cantidad mínima (unidades base)'
+                  : 'Valor de la condición'
+            }}
+            <span class="required">*</span>
+          </label>
+
+          <input
+            id="valorCondicion"
+            type="number"
+            formControlName="valorCondicion"
+            min="0.01"
+            max="99999999.99"
+            step="0.01"
+            placeholder="Ej. 50.00"
+          />
+
+          <span
+            class="field-hint"
+            *ngIf="
+              descuentoForm.get('tipoCondicion')?.value === 'MONTO_MINIMO'
+            "
+          >
+            La compra debe alcanzar el monto establecido.
+          </span>
+
+          <span
+            class="field-hint"
+            *ngIf="
+              descuentoForm.get('tipoCondicion')?.value === 'CANTIDAD_MINIMA'
+            "
+          >
+            La cantidad se considera en unidades base.
+          </span>
+
+          <span
+            class="error-text"
+            *ngIf="
+              descuentoForm.get('valorCondicion')?.touched
+              && descuentoForm.get('valorCondicion')?.hasError('required')
+            "
+          >
+            El valor de la condición es obligatorio.
+          </span>
+
+          <span
+            class="error-text"
+            *ngIf="
+              descuentoForm.get('valorCondicion')?.touched
+              && descuentoForm.get('valorCondicion')?.hasError('min')
+            "
+          >
+            El valor debe ser mayor que cero.
+          </span>
+
+          <span
+            class="error-text"
+            *ngIf="
+              descuentoForm.get('valorCondicion')?.touched
+              && descuentoForm.get('valorCondicion')?.hasError('max')
+            "
+          >
+            El valor supera el límite permitido.
+          </span>
+
+          <span
+            class="error-text"
+            *ngIf="
+              descuentoForm.get('valorCondicion')?.touched
+              && descuentoForm.get('valorCondicion')?.hasError('pattern')
+            "
+          >
+            Ingrese un valor con máximo dos decimales.
+          </span>
+
+        </div>
+
+      </div>
+
+      <!-- Porcentaje -->
+      <div class="form-group">
+
+        <label for="porcentajeDescuento">
+          Porcentaje de descuento (%)
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="porcentajeDescuento"
+          type="number"
+          formControlName="porcentaje"
+          min="0.01"
+          max="100"
+          step="0.01"
+          placeholder="Ej. 10"
+        />
+
+        <span class="field-hint">
+          Ingrese un porcentaje mayor que 0 y hasta 100%.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('porcentaje')?.touched
+            && descuentoForm.get('porcentaje')?.hasError('required')
+          "
+        >
+          El porcentaje es obligatorio.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('porcentaje')?.touched
+            && descuentoForm.get('porcentaje')?.hasError('min')
+          "
+        >
+          El porcentaje debe ser mayor que 0.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('porcentaje')?.touched
+            && descuentoForm.get('porcentaje')?.hasError('max')
+          "
+        >
+          El porcentaje no puede superar el 100%.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            descuentoForm.get('porcentaje')?.touched
+            && descuentoForm.get('porcentaje')?.hasError('pattern')
+          "
+        >
+          Ingrese un porcentaje con máximo dos decimales.
+        </span>
+
+      </div>
+
+      <!-- Vigencia -->
+      <div class="form-grid">
+
+        <div class="form-group">
+
+          <label for="fechaInicio">
+            Fecha de inicio
+            <span class="optional">(Opcional)</span>
+          </label>
+
+          <input
+            id="fechaInicio"
+            type="date"
+            formControlName="fechaInicio"
+          />
+
+          <span class="field-hint">
+            Sin fecha de inicio, no se establece un límite inicial.
+          </span>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="fechaFin">
+            Fecha de fin
+            <span class="optional">(Opcional)</span>
+          </label>
+
+          <input
+            id="fechaFin"
+            type="date"
+            formControlName="fechaFin"
+          />
+
+          <span class="field-hint">
+            Sin fecha de fin, no se establece un límite final.
+          </span>
+
+          <span
+            class="error-text"
+            *ngIf="
+              descuentoForm.hasError('rangoFechasInvalido')
+              && descuentoForm.get('fechaFin')?.touched
+            "
+          >
+            La fecha de fin no puede ser anterior a la fecha de inicio.
+          </span>
+
+        </div>
+
+      </div>
+
+      <!-- Error del backend -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+
+        <i class="bi bi-exclamation-circle"></i>
+
+        <span>{{ errorMessage }}</span>
+
+      </div>
+
+      <!-- Acciones -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isSaving"
+          (click)="cerrar.emit()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="
+            descuentoForm.invalid
+            || isSaving
+            || cargandoProductos
+            || (!descuentoEditar && productos.length === 0)
+          "
+        >
+          {{
+            isSaving
+              ? 'Guardando...'
+              : descuentoEditar
+                ? 'Actualizar promoción'
+                : 'Guardar promoción'
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  </section>
+
+</div>
+
+

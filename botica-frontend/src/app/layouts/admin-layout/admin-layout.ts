@@ -75,6 +75,14 @@ export class AdminLayoutComponent {
     },
 
     {
+      label: 'Descuentos',
+      route: '/descuentos',
+      icon: 'bi-percent',
+      roles: ['ADMIN'],
+      permission: 'DESCUENTO_LEER'
+    },
+
+    {
       label: 'Reportes',
       route: '/reportes',
       icon: 'bi-bar-chart',
@@ -126,15 +134,12 @@ export class AdminLayoutComponent {
 
     return this.menuItems.filter(item => {
 
-      // Si el menú requiere un permiso específico,
-      // comprobar ese permiso en lugar de depender solo del rol.
       if (item.permission) {
 
         return this.userRole === 'ADMIN' ||
           this.userPermissions.includes(item.permission);
       }
 
-      // Mantener el comportamiento actual del resto de menús.
       return item.roles.includes(this.userRole);
     });
   }

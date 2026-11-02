@@ -13,6 +13,8 @@ import com.boticavidasalud.backend.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,20 +25,41 @@ public class DescuentoService {
     private final DescuentoRepository descuentoRepository;
     private final ProductoRepository productoRepository;
 
-    public DescuentoService(DescuentoRepository descuentoRepository, ProductoRepository productoRepository) {
+    public DescuentoService(
+            DescuentoRepository descuentoRepository,
+            ProductoRepository productoRepository) {
+
         this.descuentoRepository = descuentoRepository;
         this.productoRepository = productoRepository;
     }
 
-    public DescuentoResponseDTO crearDescuento(DescuentoRequestDTO request) {
-        Producto producto = productoRepository.findByIdActivo(request.getIdProducto())
-                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado o eliminado"));
+    // ============================================================
+    // CREAR DESCUENTO
+    // ============================================================
+
+    public DescuentoResponseDTO crearDescuento(
+            DescuentoRequestDTO request) {
 
         validarFechas(request.getFechaInicio(), request.getFechaFin());
 
+        Producto producto = productoRepository
+                .findByIdActivo(request.getIdProducto())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Producto no encontrado o eliminado"
+                        )
+                );
+
+        if (!EstadoRegistro.ACTIVO.getValor().equals(producto.getEstado())) {
+            throw new BusinessException(
+                    "Solo se pueden crear promociones para productos activos"
+            );
+        }
+
         Descuento descuento = new Descuento();
+
         descuento.setProducto(producto);
-        descuento.setNombre(request.getNombre());
+        descuento.setNombre(normalizarNombre(request.getNombre()));
         descuento.setTipoCondicion(request.getTipoCondicion());
         descuento.setValorCondicion(request.getValorCondicion());
         descuento.setPorcentaje(request.getPorcentaje());
@@ -44,96 +67,191 @@ public class DescuentoService {
         descuento.setFechaFin(request.getFechaFin());
         descuento.setEstado(EstadoRegistro.ACTIVO.getValor());
 
-        return mapToResponse(descuentoRepository.save(descuento));
+        Descuento guardado = descuentoRepository.save(descuento);
+
+        return mapToResponse(guardado);
     }
 
+    // ============================================================
+    // LISTAR DESCUENTOS
+    // ============================================================
+
     public List<DescuentoResponseDTO> listarDescuentos() {
-        return descuentoRepository.listarActivos().stream()
+
+        return descuentoRepository.listarActivos()
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    // ============================================================
+    // CONSULTAR POR ID
+    // ============================================================
+
     public DescuentoResponseDTO obtenerPorId(Integer id) {
+
         Descuento descuento = descuentoRepository.findByIdActivo(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Descuento no encontrado con ID: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Descuento no encontrado con ID: " + id
+                        )
+                );
+
         return mapToResponse(descuento);
     }
 
-    public DescuentoResponseDTO actualizarDescuento(Integer id, DescuentoUpdateDTO request) {
-        Descuento descuento = descuentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Descuento no encontrado"));
+    // ============================================================
+    // ACTUALIZAR DESCUENTO
+    // El producto asociado no se modifica en esta operación.
+    // ============================================================
 
-        if (descuento.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
-            throw new BusinessException("No se puede actualizar un descuento eliminado");
+    public DescuentoResponseDTO actualizarDescuento(
+            Integer id,
+            DescuentoUpdateDTO request) {
+
+        Descuento descuento = descuentoRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Descuento no encontrado con ID: " + id
+                        )
+                );
+
+        if (EstadoRegistro.ELIMINADO.getValor().equals(
+                descuento.getEstado())) {
+
+            throw new BusinessException(
+                    "No se puede actualizar una promoción eliminada"
+            );
         }
 
         validarFechas(request.getFechaInicio(), request.getFechaFin());
 
-        descuento.setNombre(request.getNombre());
+        descuento.setNombre(normalizarNombre(request.getNombre()));
         descuento.setTipoCondicion(request.getTipoCondicion());
         descuento.setValorCondicion(request.getValorCondicion());
         descuento.setPorcentaje(request.getPorcentaje());
         descuento.setFechaInicio(request.getFechaInicio());
         descuento.setFechaFin(request.getFechaFin());
 
-        return mapToResponse(descuentoRepository.save(descuento));
+        Descuento actualizado = descuentoRepository.save(descuento);
+
+        return mapToResponse(actualizado);
     }
 
-    public DescuentoResponseDTO cambiarEstado(Integer id, Short nuevoEstado) {
-        if (nuevoEstado == null || (nuevoEstado != 0 && nuevoEstado != 1)) {
-            throw new BusinessException("Estado inválido. Debe ser 0 (Inactivo) o 1 (Activo)");
-        }
-        Descuento descuento = descuentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Descuento no encontrado"));
+    // ============================================================
+    // ACTIVAR / DESACTIVAR
+    // ============================================================
 
-        if (descuento.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
-            throw new BusinessException("No se puede cambiar el estado de un descuento eliminado");
+    public DescuentoResponseDTO cambiarEstado(
+            Integer id,
+            Short nuevoEstado) {
+
+        if (nuevoEstado == null
+                || (nuevoEstado != 0 && nuevoEstado != 1)) {
+
+            throw new BusinessException(
+                    "Estado inválido. Debe ser 0 (Inactivo) o 1 (Activo)"
+            );
+        }
+
+        Descuento descuento = descuentoRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Descuento no encontrado con ID: " + id
+                        )
+                );
+
+        if (EstadoRegistro.ELIMINADO.getValor().equals(
+                descuento.getEstado())) {
+
+            throw new BusinessException(
+                    "No se puede cambiar el estado de una promoción eliminada"
+            );
         }
 
         descuento.setEstado(nuevoEstado);
-        
-        // Lógica de fechas
-        if (nuevoEstado.equals(EstadoRegistro.INACTIVO.getValor())) {
-            descuento.setFechaDesactivacion(java.time.LocalDateTime.now());
+
+        if (EstadoRegistro.INACTIVO.getValor().equals(nuevoEstado)) {
+            descuento.setFechaDesactivacion(LocalDateTime.now());
         } else {
             descuento.setFechaDesactivacion(null);
         }
 
-        return mapToResponse(descuentoRepository.save(descuento));
+        Descuento actualizado = descuentoRepository.save(descuento);
+
+        return mapToResponse(actualizado);
     }
 
-    public void eliminarLogicamente(Integer id) {
-        Descuento descuento = descuentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Descuento no encontrado"));
+    // ============================================================
+    // ELIMINACIÓN LÓGICA
+    // ============================================================
 
-        if (descuento.getEstado().equals(EstadoRegistro.ELIMINADO.getValor())) {
-            throw new BusinessException("El descuento ya está eliminado");
+    public void eliminarLogicamente(Integer id) {
+
+        Descuento descuento = descuentoRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Descuento no encontrado con ID: " + id
+                        )
+                );
+
+        if (EstadoRegistro.ELIMINADO.getValor().equals(
+                descuento.getEstado())) {
+
+            throw new BusinessException(
+                    "La promoción ya está eliminada"
+            );
         }
 
         descuento.setEstado(EstadoRegistro.ELIMINADO.getValor());
-        // Lógica de fecha
-        descuento.setFechaEliminacion(java.time.LocalDateTime.now());
-        
+        descuento.setFechaEliminacion(LocalDateTime.now());
+
         descuentoRepository.save(descuento);
     }
 
-    private void validarFechas(java.time.LocalDate inicio, java.time.LocalDate fin) {
+    // ============================================================
+    // VALIDAR VIGENCIA
+    // ============================================================
+
+    private void validarFechas(LocalDate inicio, LocalDate fin) {
+
         if (inicio != null && fin != null && fin.isBefore(inicio)) {
-            throw new BusinessException("La fecha de fin no puede ser anterior a la fecha de inicio");
+
+            throw new BusinessException(
+                    "La fecha de fin no puede ser anterior a la fecha de inicio"
+            );
         }
     }
 
-    private DescuentoResponseDTO mapToResponse(Descuento d) {
+    // ============================================================
+    // NORMALIZAR NOMBRE
+    // ============================================================
+
+    private String normalizarNombre(String nombre) {
+
+        if (nombre == null) {
+            return "";
+        }
+
+        return nombre.trim().replaceAll("\\s+", " ");
+    }
+
+    // ============================================================
+    // MAPEAR RESPUESTA
+    // ============================================================
+
+    private DescuentoResponseDTO mapToResponse(Descuento descuento) {
+
         return new DescuentoResponseDTO(
-                d.getId(),
-                d.getProducto().getNombre(),
-                d.getNombre(),
-                d.getTipoCondicion(),
-                d.getValorCondicion(),
-                d.getPorcentaje(),
-                d.getFechaInicio(),
-                d.getFechaFin(),
-                d.getEstado()
+                descuento.getId(),
+                descuento.getProducto().getNombre(),
+                descuento.getNombre(),
+                descuento.getTipoCondicion(),
+                descuento.getValorCondicion(),
+                descuento.getPorcentaje(),
+                descuento.getFechaInicio(),
+                descuento.getFechaFin(),
+                descuento.getEstado()
         );
     }
 }

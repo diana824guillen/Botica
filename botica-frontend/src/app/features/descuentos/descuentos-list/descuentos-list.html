@@ -1,0 +1,349 @@
+<!-- Encabezado -->
+<div class="page-header">
+
+  <div>
+    <h2>Gestión de Descuentos y Promociones</h2>
+
+    <p class="page-description">
+      Administra las promociones por producto, sus condiciones
+      y sus fechas de vigencia.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    class="btn-primary"
+    *appHasPermission="'DESCUENTO_CREAR'"
+    (click)="abrirModal()"
+  >
+    <i class="bi bi-plus-circle"></i>
+    Nueva Promoción
+  </button>
+
+</div>
+
+<!-- Buscador -->
+<div class="search-bar card">
+
+  <i class="bi bi-search"></i>
+
+  <input
+    type="text"
+    [value]="searchTerm"
+    (input)="onSearchInput($event)"
+    placeholder="Buscar por promoción, producto o condición..."
+    aria-label="Buscar promociones"
+  />
+
+</div>
+
+<!-- Error de carga -->
+<div
+  class="load-error"
+  *ngIf="errorCarga && !isLoading"
+  role="alert"
+  aria-live="polite"
+>
+
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarDescuentos()"
+  >
+    Reintentar
+  </button>
+
+</div>
+
+<!-- Tabla de promociones -->
+<div class="table-container card">
+
+  <table class="responsive-table">
+
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Promoción</th>
+        <th>Condición</th>
+        <th>Descuento</th>
+        <th>Vigencia</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <!-- Cargando -->
+      <tr *ngIf="isLoading">
+        <td colspan="7" class="text-center">
+          Cargando promociones...
+        </td>
+      </tr>
+
+      <!-- Error -->
+      <tr *ngIf="!isLoading && errorCarga">
+        <td colspan="7" class="text-center">
+          No se pudo cargar la información.
+        </td>
+      </tr>
+
+      <!-- Sin resultados -->
+      <tr
+        *ngIf="
+          !isLoading
+          && !errorCarga
+          && descuentosFiltrados.length === 0
+        "
+      >
+        <td colspan="7" class="text-center">
+          {{
+            searchTerm
+              ? 'No se encontraron promociones con esa búsqueda.'
+              : 'Todavía no hay promociones registradas.'
+          }}
+        </td>
+      </tr>
+
+      <!-- Registros -->
+      <tr *ngFor="let descuento of descuentosPaginados">
+
+        <td data-label="Producto">
+          {{ descuento.productoNombre }}
+        </td>
+
+        <td data-label="Promoción">
+          {{ descuento.nombre }}
+        </td>
+
+        <td data-label="Condición">
+          <span class="condition-name">
+            {{ obtenerTipoCondicion(descuento.tipoCondicion) }}
+          </span>
+
+          <small class="condition-detail">
+            {{ obtenerDetalleCondicion(descuento) }}
+          </small>
+        </td>
+
+        <td data-label="Descuento">
+          <span class="percentage">
+            {{ descuento.porcentaje | number:'1.0-2' }}%
+          </span>
+        </td>
+
+        <td data-label="Vigencia">
+          {{ obtenerVigencia(descuento) }}
+        </td>
+
+        <td data-label="Estado">
+
+          <span
+            class="badge"
+            [ngClass]="
+              descuento.estado === 1
+                ? 'bg-success'
+                : 'bg-warning'
+            "
+          >
+            {{
+              descuento.estado === 1
+                ? 'Activa'
+                : 'Inactiva'
+            }}
+          </span>
+
+        </td>
+
+        <td data-label="Acciones" class="actions-cell">
+
+          <!-- Editar -->
+          <button
+            type="button"
+            class="action-btn edit"
+            *appHasPermission="'DESCUENTO_EDITAR'"
+            title="Editar promoción"
+            aria-label="Editar promoción"
+            (click)="abrirModal(descuento)"
+          >
+            <i class="bi bi-pencil-square"></i>
+          </button>
+
+          <!-- Activar o desactivar -->
+          <button
+            type="button"
+            class="action-btn toggle"
+            *appHasPermission="'DESCUENTO_EDITAR'"
+            [title]="
+              descuento.estado === 1
+                ? 'Desactivar promoción'
+                : 'Activar promoción'
+            "
+            [attr.aria-label]="
+              descuento.estado === 1
+                ? 'Desactivar promoción'
+                : 'Activar promoción'
+            "
+            (click)="
+              solicitarCambioEstado(
+                descuento,
+                descuento.estado === 1 ? 0 : 1
+              )
+            "
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                descuento.estado === 1
+                  ? 'bi-x-circle'
+                  : 'bi-check-circle'
+              "
+            ></i>
+          </button>
+
+          <!-- Eliminar -->
+          <button
+            type="button"
+            class="action-btn delete"
+            *appHasPermission="'DESCUENTO_ELIMINAR'"
+            title="Eliminar promoción"
+            aria-label="Eliminar promoción"
+            (click)="solicitarEliminacion(descuento)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+  <!-- Paginación -->
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0 && !isLoading"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
+    </button>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
+
+</div>
+
+<!-- Modal de registro y edición -->
+<app-descuento-modal
+  *ngIf="mostrarModal"
+  [descuentoEditar]="descuentoSeleccionado"
+  (cerrar)="cerrarModal()"
+  (guardado)="cargarDescuentos()"
+>
+</app-descuento-modal>
+
+<!-- Confirmación de acciones -->
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+
+    </div>
+
+    <h3>{{ confirmacion.titulo }}</h3>
+
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <p class="confirm-item-name">
+      {{ confirmacion.nombre }}
+    </p>
+
+    <div
+      class="confirm-error"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-cancel"
+        [disabled]="procesandoConfirmacion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoConfirmacion"
+        (click)="confirmarAccion()"
+      >
+        {{
+          procesandoConfirmacion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+

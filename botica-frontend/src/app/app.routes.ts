@@ -10,6 +10,7 @@ import { ClientesListComponent } from './features/clientes/clientes-list/cliente
 import { CategoriasListComponent } from './features/categorias/categorias-list/categorias-list';
 import { ProductosListComponent } from './features/productos/productos-list/productos-list';
 import { LotesListComponent } from './features/lotes/lotes-list/lotes-list';
+import { DescuentosListComponent } from './features/descuentos/descuentos-list/descuentos-list';
 
 export const routes: Routes = [
 
@@ -47,13 +48,18 @@ export const routes: Routes = [
       },
 
       {
+        path: 'productos',
+        component: ProductosListComponent
+      },
+
+      {
         path: 'lotes',
         component: LotesListComponent
       },
 
       {
-        path: 'productos',
-        component: ProductosListComponent
+        path: 'descuentos',
+        component: DescuentosListComponent
       }
 
     ]
