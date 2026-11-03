@@ -1,7 +1,12 @@
+
 package com.boticavidasalud.backend.repository;
 
 import com.boticavidasalud.backend.entity.Lote;
+
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,7 +16,10 @@ import java.util.Optional;
 
 public interface LoteRepository extends JpaRepository<Lote, Integer> {
 
-    // Listado general: los ingresos más recientes aparecen primero.
+    // ============================================================
+    // CONSULTAS GENERALES
+    // ============================================================
+
     @Query("""
         SELECT l FROM Lote l
         WHERE l.estado IN (0, 1)
@@ -19,7 +27,6 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
         """)
     List<Lote> listarTodos();
 
-    // Listado de lotes de un producto: más recientes primero.
     @Query("""
         SELECT l FROM Lote l
         WHERE l.producto.id = :idProducto
@@ -30,7 +37,6 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
             @Param("idProducto") Integer idProducto
     );
 
-    // Buscar un lote que no esté eliminado.
     @Query("""
         SELECT l FROM Lote l
         WHERE l.id = :id
@@ -40,8 +46,23 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
             @Param("id") Integer id
     );
 
-    // Verificar si ya existe el número de lote para el producto,
-    // ignorando diferencias de mayúsculas y espacios externos.
+    // ============================================================
+    // BLOQUEO DE LOTE PARA OPERACIONES DE INVENTARIO
+    // ============================================================
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT l FROM Lote l
+        WHERE l.id = :id
+        """)
+    Optional<Lote> findByIdForUpdate(
+            @Param("id") Integer id
+    );
+
+    // ============================================================
+    // VALIDACIÓN DE NÚMERO DE LOTE
+    // ============================================================
+
     @Query("""
         SELECT l FROM Lote l
         WHERE l.producto.id = :idProducto
@@ -53,7 +74,6 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
             @Param("numeroLote") String numeroLote
     );
 
-    // Comprobación de duplicidad al actualizar, excluyendo el mismo lote.
     @Query("""
         SELECT l FROM Lote l
         WHERE l.producto.id = :idProducto
@@ -67,7 +87,10 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
             @Param("id") Integer id
     );
 
-    // Lotes activos con existencias cuyo vencimiento está dentro del rango.
+    // ============================================================
+    // CONSULTAS DE VENCIMIENTO
+    // ============================================================
+
     @Query("""
         SELECT l FROM Lote l
         WHERE l.estado = 1
@@ -80,7 +103,6 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
             @Param("limite") LocalDate limite
     );
 
-    // Lotes activos con existencias cuya fecha de vencimiento ya pasó.
     @Query("""
         SELECT l FROM Lote l
         WHERE l.estado = 1
@@ -92,15 +114,38 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
             @Param("hoy") LocalDate hoy
     );
 
-    // IMPORTANTE:
-    // Para las ventas se conserva el criterio de vencimiento más próximo.
-    // No cambiar este orden por fecha de ingreso.
+    // ============================================================
+    // LOTES ACTIVOS PARA VENTA
+    // CRITERIO FEFO: PRIMERO VENCE, PRIMERO SALE
+    // ============================================================
+
+    // Consulta principal utilizada cuando se conoce la fecha actual.
     @Query("""
         SELECT l FROM Lote l
         WHERE l.producto.id = :idProducto
           AND l.estado = 1
           AND l.cantidad > 0
-        ORDER BY l.fechaVencimiento ASC, l.fechaIngreso ASC, l.id ASC
+          AND l.fechaVencimiento >= :hoy
+        ORDER BY l.fechaVencimiento ASC,
+                 l.fechaIngreso ASC,
+                 l.id ASC
+        """)
+    List<Lote> findLotesActivosParaVenta(
+            @Param("idProducto") Integer idProducto,
+            @Param("hoy") LocalDate hoy
+    );
+
+    // Consulta de compatibilidad para llamadas que utilizan
+    // la firma anterior de un solo parámetro.
+    @Query("""
+        SELECT l FROM Lote l
+        WHERE l.producto.id = :idProducto
+          AND l.estado = 1
+          AND l.cantidad > 0
+          AND l.fechaVencimiento >= CURRENT_DATE
+        ORDER BY l.fechaVencimiento ASC,
+                 l.fechaIngreso ASC,
+                 l.id ASC
         """)
     List<Lote> findLotesActivosParaVenta(
             @Param("idProducto") Integer idProducto

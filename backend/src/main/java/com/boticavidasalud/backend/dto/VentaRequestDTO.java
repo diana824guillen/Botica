@@ -1,24 +1,33 @@
+
 package com.boticavidasalud.backend.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 public class VentaRequestDTO {
-    private Integer idCliente; // Opcional
 
+    // Opcional: puede ser una venta a cliente no registrado.
+    private Integer idCliente;
+
+    @Size(
+        max = 255,
+        message = "La observación no puede superar los 255 caracteres"
+    )
     private String observacion;
 
     @NotEmpty(message = "La venta debe tener al menos un producto")
     @Valid
     private List<DetalleVentaRequestDTO> detalles;
 
-    @NotEmpty(message = "Debe registrar al menos un método de pago")
+    // Puede estar vacío cuando el total de la venta sea cero.
     @Valid
-    private List<PagoRequestDTO> pagos;
+    private List<PagoRequestDTO> pagos = new ArrayList<>();
 }
 
 

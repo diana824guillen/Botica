@@ -73,7 +73,7 @@ public class LoteService {
     // ============================================================
     // CREAR LOTE
     // ============================================================
-
+    
     public LoteResponseDTO crearLote(
             Integer idProducto,
             LoteRequestDTO request) {
@@ -283,7 +283,7 @@ public class LoteService {
             Integer id,
             LoteAjusteDTO request) {
 
-        Lote lote = loteRepository.findById(id)
+        Lote lote = loteRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Lote no encontrado con ID: " + id
@@ -458,7 +458,7 @@ public class LoteService {
             );
         }
 
-        Lote lote = loteRepository.findById(id)
+        Lote lote = loteRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Lote no encontrado con ID: " + id
@@ -489,10 +489,9 @@ public class LoteService {
     // ELIMINACIÓN LÓGICA DEL LOTE
     // ============================================================
 
-    
     public void eliminarLogicamente(Integer id) {
 
-        Lote lote = loteRepository.findById(id)
+        Lote lote = loteRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Lote no encontrado con ID: " + id
