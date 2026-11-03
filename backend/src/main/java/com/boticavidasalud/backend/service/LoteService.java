@@ -1,12 +1,14 @@
+
 package com.boticavidasalud.backend.service;
 
 import com.boticavidasalud.backend.dto.DetalleIngresoDTO;
 import com.boticavidasalud.backend.dto.LoteAjusteDTO;
+import com.boticavidasalud.backend.dto.LotePresentacionInfoDTO;
 import com.boticavidasalud.backend.dto.LoteRequestDTO;
 import com.boticavidasalud.backend.dto.LoteResponseDTO;
 
 import com.boticavidasalud.backend.entity.Lote;
-import com.boticavidasalud.backend.entity.MovimientoInventario;
+import com.boticavidasalud.backend.entity.LotePresentacion;
 import com.boticavidasalud.backend.entity.Presentacion;
 import com.boticavidasalud.backend.entity.Producto;
 import com.boticavidasalud.backend.entity.Usuario;
@@ -17,11 +19,14 @@ import com.boticavidasalud.backend.enums.TipoMovimiento;
 import com.boticavidasalud.backend.exception.BusinessException;
 import com.boticavidasalud.backend.exception.ResourceNotFoundException;
 
+import com.boticavidasalud.backend.repository.LotePresentacionRepository;
 import com.boticavidasalud.backend.repository.LoteRepository;
 import com.boticavidasalud.backend.repository.MovimientoInventarioRepository;
 import com.boticavidasalud.backend.repository.PresentacionRepository;
 import com.boticavidasalud.backend.repository.ProductoRepository;
 import com.boticavidasalud.backend.repository.UsuarioRepository;
+
+import com.boticavidasalud.backend.entity.MovimientoInventario;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,9 +36,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,6 +48,7 @@ import java.util.stream.Collectors;
 public class LoteService {
 
     private final LoteRepository loteRepository;
+    private final LotePresentacionRepository lotePresentacionRepository;
     private final ProductoRepository productoRepository;
     private final UsuarioRepository usuarioRepository;
     private final MovimientoInventarioRepository movimientoRepository;
@@ -49,12 +56,14 @@ public class LoteService {
 
     public LoteService(
             LoteRepository loteRepository,
+            LotePresentacionRepository lotePresentacionRepository,
             ProductoRepository productoRepository,
             UsuarioRepository usuarioRepository,
             MovimientoInventarioRepository movimientoRepository,
             PresentacionRepository presentacionRepository) {
 
         this.loteRepository = loteRepository;
+        this.lotePresentacionRepository = lotePresentacionRepository;
         this.productoRepository = productoRepository;
         this.usuarioRepository = usuarioRepository;
         this.movimientoRepository = movimientoRepository;
@@ -75,7 +84,6 @@ public class LoteService {
             );
         }
 
-        // Normalizar el número de lote.
         String numeroLote = normalizarNumeroLote(
                 request.getNumeroLote()
         );
@@ -109,7 +117,6 @@ public class LoteService {
                         )
                 );
 
-        // Solo se permiten ingresos a productos activos.
         if (!EstadoRegistro.ACTIVO.getValor().equals(
                 producto.getEstado())) {
             throw new BusinessException(
@@ -117,8 +124,7 @@ public class LoteService {
             );
         }
 
-        // Validar que no exista otro lote con el mismo número
-        // para este producto.
+        // Validar que no exista otro lote con el mismo número.
         loteRepository.findByProductoAndNumeroLote(
                 idProducto,
                 numeroLote
@@ -136,13 +142,12 @@ public class LoteService {
             );
         }
 
-        // Validar las presentaciones y calcular el stock total
-        // convertido a la unidad base del producto.
         BigDecimal cantidadTotalBase = BigDecimal.ZERO;
 
         Set<Integer> presentacionesProcesadas = new HashSet<>();
-        List<Presentacion> presentacionesIngreso = new ArrayList<>();
+        Map<Integer, Presentacion> presentacionesIngreso = new HashMap<>();
 
+        // 1. Validar presentaciones y calcular el total en unidad base.
         for (DetalleIngresoDTO detalle : detalles) {
 
             if (detalle == null
@@ -191,7 +196,6 @@ public class LoteService {
                 );
             }
 
-            // No se permiten presentaciones inactivas o eliminadas.
             if (!EstadoRegistro.ACTIVO.getValor().equals(
                     presentacion.getEstado())) {
                 throw new BusinessException(
@@ -199,8 +203,7 @@ public class LoteService {
                 );
             }
 
-            Integer factorConversion =
-                    presentacion.getFactorConversion();
+            Integer factorConversion = presentacion.getFactorConversion();
 
             if (factorConversion == null || factorConversion <= 0) {
                 throw new BusinessException(
@@ -208,18 +211,19 @@ public class LoteService {
                 );
             }
 
-            BigDecimal factor = BigDecimal.valueOf(factorConversion);
+            BigDecimal cantidadBase = cantidadPresentacion.multiply(
+                    BigDecimal.valueOf(factorConversion)
+            );
 
-            BigDecimal cantidadBase =
-                    cantidadPresentacion.multiply(factor);
+            cantidadTotalBase = cantidadTotalBase.add(cantidadBase);
 
-            cantidadTotalBase =
-                    cantidadTotalBase.add(cantidadBase);
-
-            presentacionesIngreso.add(presentacion);
+            presentacionesIngreso.put(
+                    presentacion.getId(),
+                    presentacion
+            );
         }
 
-        // Crear el lote con la suma total expresada en unidad base.
+        // 2. Crear el lote con el stock total en unidad base.
         Lote lote = new Lote();
 
         lote.setProducto(producto);
@@ -230,37 +234,42 @@ public class LoteService {
 
         Lote guardado = loteRepository.save(lote);
 
-        // Registrar el movimiento de cada presentación recibida.
-        // El stock anterior y nuevo se acumulan correctamente.
+        // 3. Guardar el saldo real de cada presentación.
         BigDecimal stockAcumulado = BigDecimal.ZERO;
 
-        for (DetalleIngresoDTO detalle : request.getDetallesIngreso()) {
+        for (DetalleIngresoDTO detalle : detalles) {
 
-        Presentacion presentacion = presentacionRepository
-                .findById(detalle.getIdPresentacion())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                                "Presentación no encontrada ID: "
-                                + detalle.getIdPresentacion()
-                                )
-                );
+            Presentacion presentacion = presentacionesIngreso.get(
+                    detalle.getIdPresentacion()
+            );
 
-        BigDecimal factor = BigDecimal.valueOf(presentacion.getFactorConversion());
+            LotePresentacion saldo = new LotePresentacion();
 
-        BigDecimal cantidadBase = detalle.getCantidadPresentacion().multiply(factor);
+            saldo.setLote(guardado);
+            saldo.setPresentacion(presentacion);
+            saldo.setCantidad(detalle.getCantidadPresentacion());
 
-        BigDecimal stockAnterior = stockAcumulado;
-        stockAcumulado = stockAcumulado.add(cantidadBase);
+            lotePresentacionRepository.save(saldo);
 
-        registrarMovimiento(
-                guardado,
-                presentacion.getId(),
-                detalle.getCantidadPresentacion(),
-                TipoMovimiento.INGRESO,
-                stockAnterior,
-                cantidadBase,
-                stockAcumulado,
-                "Ingreso inicial de lote en " + presentacion.getTipo()
-        );
+            // 4. Registrar el movimiento expresado en unidad base.
+            BigDecimal cantidadBase = detalle.getCantidadPresentacion()
+                    .multiply(BigDecimal.valueOf(
+                            presentacion.getFactorConversion()
+                    ));
+
+            BigDecimal stockAnterior = stockAcumulado;
+            stockAcumulado = stockAcumulado.add(cantidadBase);
+
+            registrarMovimiento(
+                    guardado,
+                    presentacion.getId(),
+                    detalle.getCantidadPresentacion(),
+                    TipoMovimiento.INGRESO,
+                    stockAnterior,
+                    cantidadBase,
+                    stockAcumulado,
+                    "Ingreso inicial de lote en " + presentacion.getTipo()
+            );
         }
 
         return mapToResponse(guardado);
@@ -349,33 +358,70 @@ public class LoteService {
             );
         }
 
-        BigDecimal factor = BigDecimal.valueOf(factorConversion);
+        // Buscar las existencias de esa presentación dentro del lote.
+        LotePresentacion saldo = lotePresentacionRepository
+                .findByLote_IdAndPresentacion_Id(
+                        id,
+                        presentacion.getId()
+                )
+                .orElse(null);
 
-        // La cantidad está expresada en la presentación seleccionada.
-        // Se convierte a la unidad base, conservando el signo.
-        BigDecimal cantidadBaseAjuste =
-                cantidadAjuste.multiply(factor);
-
-        BigDecimal stockAnterior = lote.getCantidad();
-
-        BigDecimal stockNuevo =
-                stockAnterior.add(cantidadBaseAjuste);
-
-        if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
+        // No permitir descontar una presentación que no tiene saldo.
+        if (saldo == null
+                && cantidadAjuste.compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessException(
-                    "El ajuste dejaría el stock en negativo"
+                    "No existen unidades disponibles de esta presentación en el lote"
             );
         }
 
-        lote.setCantidad(stockNuevo);
+        // Si el ajuste es positivo y no existe saldo, se crea.
+        if (saldo == null) {
+            saldo = new LotePresentacion();
+            saldo.setLote(lote);
+            saldo.setPresentacion(presentacion);
+            saldo.setCantidad(BigDecimal.ZERO);
+        }
 
+        BigDecimal stockPresentacionAnterior = saldo.getCantidad();
+
+        BigDecimal stockPresentacionNuevo =
+                stockPresentacionAnterior.add(cantidadAjuste);
+
+        if (stockPresentacionNuevo.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException(
+                    "No hay suficientes existencias de esta presentación en el lote"
+            );
+        }
+
+        // Convertir el ajuste a unidad base para actualizar el lote.
+        BigDecimal cantidadBaseAjuste = cantidadAjuste.multiply(
+                BigDecimal.valueOf(factorConversion)
+        );
+
+        BigDecimal stockAnterior = lote.getCantidad() != null
+                ? lote.getCantidad()
+                : BigDecimal.ZERO;
+
+        BigDecimal stockNuevo = stockAnterior.add(cantidadBaseAjuste);
+
+        if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException(
+                    "El ajuste dejaría el stock total en negativo"
+            );
+        }
+
+        // Actualizar el saldo por presentación.
+        saldo.setCantidad(stockPresentacionNuevo);
+        lotePresentacionRepository.save(saldo);
+
+        // Actualizar el stock total en unidad base.
+        lote.setCantidad(stockNuevo);
         Lote actualizado = loteRepository.save(lote);
 
         TipoMovimiento tipoMovimiento =
                 request.getMotivo().getTipoMovimiento();
 
-        String motivoFinal =
-                request.getMotivo().getDescripcion();
+        String motivoFinal = request.getMotivo().getDescripcion();
 
         if (request.getObservacion() != null
                 && !request.getObservacion().isBlank()) {
@@ -443,6 +489,7 @@ public class LoteService {
     // ELIMINACIÓN LÓGICA DEL LOTE
     // ============================================================
 
+    
     public void eliminarLogicamente(Integer id) {
 
         Lote lote = loteRepository.findById(id)
@@ -452,35 +499,83 @@ public class LoteService {
                         )
                 );
 
-        if (EstadoRegistro.ELIMINADO.getValor().equals(
-                lote.getEstado())) {
-            throw new BusinessException(
-                    "El lote ya está eliminado"
-            );
+        if (EstadoRegistro.ELIMINADO.getValor().equals(lote.getEstado())) {
+                throw new BusinessException("El lote ya está eliminado");
         }
 
-        BigDecimal cantidadAnterior = lote.getCantidad();
+        BigDecimal stockTotalAnterior = lote.getCantidad() != null
+                ? lote.getCantidad()
+                : BigDecimal.ZERO;
+
+        List<LotePresentacion> saldos =
+                lotePresentacionRepository.findByLote_IdOrderByIdAsc(id);
+
+        BigDecimal stockRestante = stockTotalAnterior;
+
+        for (LotePresentacion saldo : saldos) {
+
+                BigDecimal cantidadPresentacion = saldo.getCantidad() != null
+                        ? saldo.getCantidad()
+                        : BigDecimal.ZERO;
+
+                if (cantidadPresentacion.compareTo(BigDecimal.ZERO) > 0) {
+
+                Presentacion presentacion = saldo.getPresentacion();
+
+                BigDecimal cantidadBase = cantidadPresentacion.multiply(
+                        BigDecimal.valueOf(presentacion.getFactorConversion())
+                );
+
+                BigDecimal stockNuevo = stockRestante.subtract(cantidadBase);
+
+                if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
+                        throw new BusinessException(
+                                "Las existencias por presentación no coinciden "
+                                + "con el stock total del lote. Revise el inventario."
+                        );
+                }
+
+                registrarMovimiento(
+                        lote,
+                        presentacion.getId(),
+                        cantidadPresentacion.negate(),
+                        TipoMovimiento.MERMA,
+                        stockRestante,
+                        cantidadBase.negate(),
+                        stockNuevo,
+                        "Eliminación lógica de lote"
+                );
+
+                stockRestante = stockNuevo;
+                }
+
+                saldo.setCantidad(BigDecimal.ZERO);
+        }
+
+        lotePresentacionRepository.saveAll(saldos);
+
+        // Si quedó una diferencia, se registra como retiro general.
+        if (stockRestante.compareTo(BigDecimal.ZERO) > 0) {
+
+                registrarMovimiento(
+                        lote,
+                        null,
+                        null,
+                        TipoMovimiento.MERMA,
+                        stockRestante,
+                        stockRestante.negate(),
+                        BigDecimal.ZERO,
+                        "Retiro de diferencia al eliminar lote"
+                );
+        }
 
         lote.setEstado(EstadoRegistro.ELIMINADO.getValor());
         lote.setFechaEliminacion(LocalDateTime.now());
         lote.setCantidad(BigDecimal.ZERO);
 
-        Lote eliminado = loteRepository.save(lote);
-
-        // Registrar el retiro de existencias en el historial.
-        if (cantidadAnterior.compareTo(BigDecimal.ZERO) > 0) {
-            registrarMovimiento(
-                    eliminado,
-                    null,
-                    null,
-                    TipoMovimiento.MERMA,
-                    cantidadAnterior,
-                    cantidadAnterior.negate(),
-                    BigDecimal.ZERO,
-                    "Eliminación lógica de lote"
-            );
-        }
+        loteRepository.save(lote);
     }
+
 
     // ============================================================
     // CONSULTAS
@@ -617,6 +712,18 @@ public class LoteService {
 
     private LoteResponseDTO mapToResponse(Lote lote) {
 
+        List<LotePresentacionInfoDTO> existencias =
+                lotePresentacionRepository
+                        .findByLote_IdOrderByIdAsc(lote.getId())
+                        .stream()
+                        .map(saldo -> new LotePresentacionInfoDTO(
+                                saldo.getPresentacion().getId(),
+                                saldo.getPresentacion().getTipo(),
+                                saldo.getPresentacion().getFactorConversion(),
+                                saldo.getCantidad()
+                        ))
+                        .collect(Collectors.toList());
+
         return new LoteResponseDTO(
                 lote.getId(),
                 lote.getProducto().getId(),
@@ -624,6 +731,7 @@ public class LoteService {
                 lote.getNumeroLote(),
                 lote.getFechaVencimiento(),
                 lote.getCantidad(),
+                existencias,
                 lote.getEstado(),
                 lote.getFechaIngreso()
         );

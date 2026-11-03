@@ -1,3 +1,4 @@
+
 package com.boticavidasalud.backend.entity;
 
 import com.boticavidasalud.backend.enums.TipoPresentacion;
@@ -36,6 +37,9 @@ public class Presentacion {
     @Column(name = "precio_venta", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioVenta;
 
+    @Column(name = "stock_minimo", nullable = false, precision = 10, scale = 2)
+    private BigDecimal stockMinimo = BigDecimal.ZERO;
+
     @Column(nullable = false)
     private Short estado = 1;
 
@@ -54,12 +58,27 @@ public class Presentacion {
     @PrePersist
     protected void onCreate() {
         fechaCreacion = LocalDateTime.now();
-        if (estado == null) estado = 1;
+
+        if (estado == null) {
+            estado = 1;
+        }
+
+        if (factorConversion == null) {
+            factorConversion = 1;
+        }
+
+        if (stockMinimo == null) {
+            stockMinimo = BigDecimal.ZERO;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         fechaActualizacion = LocalDateTime.now();
+
+        if (stockMinimo == null) {
+            stockMinimo = BigDecimal.ZERO;
+        }
     }
 }
 

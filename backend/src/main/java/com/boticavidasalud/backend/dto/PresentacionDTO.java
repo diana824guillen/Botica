@@ -1,9 +1,11 @@
+
 package com.boticavidasalud.backend.dto;
 
 import com.boticavidasalud.backend.enums.TipoPresentacion;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -28,6 +30,14 @@ public class PresentacionDTO {
         message = "El precio admite hasta dos decimales"
     )
     private BigDecimal precioVenta;
+
+    @PositiveOrZero(message = "El stock mínimo no puede ser negativo")
+    @Digits(
+        integer = 8,
+        fraction = 2,
+        message = "El stock mínimo admite hasta dos decimales"
+    )
+    private BigDecimal stockMinimo;
 }
 
 

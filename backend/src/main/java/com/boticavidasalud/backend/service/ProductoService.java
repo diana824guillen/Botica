@@ -1,3 +1,4 @@
+
 package com.boticavidasalud.backend.service;
 
 import com.boticavidasalud.backend.dto.*;
@@ -8,6 +9,7 @@ import com.boticavidasalud.backend.enums.EstadoRegistro;
 import com.boticavidasalud.backend.exception.BusinessException;
 import com.boticavidasalud.backend.exception.ResourceNotFoundException;
 import com.boticavidasalud.backend.repository.CategoriaRepository;
+import com.boticavidasalud.backend.repository.LotePresentacionRepository;
 import com.boticavidasalud.backend.repository.PresentacionRepository;
 import com.boticavidasalud.backend.repository.ProductoRepository;
 
@@ -30,15 +32,18 @@ public class ProductoService {
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
     private final PresentacionRepository presentacionRepository;
+    private final LotePresentacionRepository lotePresentacionRepository;
 
     public ProductoService(
             ProductoRepository productoRepository,
             CategoriaRepository categoriaRepository,
-            PresentacionRepository presentacionRepository) {
+            PresentacionRepository presentacionRepository,
+            LotePresentacionRepository lotePresentacionRepository) {
 
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
         this.presentacionRepository = presentacionRepository;
+        this.lotePresentacionRepository = lotePresentacionRepository;
     }
 
     // ============================================================
@@ -86,7 +91,7 @@ public class ProductoService {
             );
         }
 
-        // Evitar presentaciones duplicadas dentro del mismo producto nuevo.
+        // Evitar presentaciones duplicadas dentro del producto nuevo.
         Set<String> combinaciones = new HashSet<>();
 
         for (PresentacionDTO dto : solicitudes) {
@@ -134,6 +139,11 @@ public class ProductoService {
             presentacion.setTipo(dto.getTipo());
             presentacion.setFactorConversion(dto.getFactorConversion());
             presentacion.setPrecioVenta(dto.getPrecioVenta());
+            presentacion.setStockMinimo(
+                    dto.getStockMinimo() != null
+                            ? dto.getStockMinimo()
+                            : BigDecimal.ZERO
+            );
             presentacion.setEstado(EstadoRegistro.ACTIVO.getValor());
 
             presentaciones.add(presentacion);
@@ -254,7 +264,8 @@ public class ProductoService {
                         )
                 );
 
-        // Si la categoría está inactiva o eliminada, solo se permite conservarla si ya era la categoría del producto.
+        // Si la categoría está inactiva o eliminada, solo se permite
+        // conservarla si ya era la categoría del producto.
         boolean mismaCategoria = producto.getCategoria() != null
                 && producto.getCategoria().getId()
                         .equals(categoria.getId());
@@ -282,7 +293,7 @@ public class ProductoService {
                         : BigDecimal.ZERO
         );
 
-        // Si se envían presentaciones con ID, actualizar esos registros.
+        // Actualizar presentaciones existentes mediante sus IDs.
         // Las nuevas presentaciones se gestionan mediante su endpoint POST.
         if (request.getPresentaciones() != null) {
 
@@ -312,9 +323,15 @@ public class ProductoService {
                         existente.getId()
                 );
 
+                validarCambioEstructuraPresentacion(existente, dto);
+
                 existente.setTipo(dto.getTipo());
                 existente.setFactorConversion(dto.getFactorConversion());
                 existente.setPrecioVenta(dto.getPrecioVenta());
+
+                if (dto.getStockMinimo() != null) {
+                    existente.setStockMinimo(dto.getStockMinimo());
+                }
             }
         }
 
@@ -350,10 +367,15 @@ public class ProductoService {
 
             validarDatosPresentacion(dto);
 
-            String clave = crearClavePresentacion(dto.getTipo().name(), dto.getFactorConversion());
+            String clave = crearClavePresentacion(
+                    dto.getTipo().name(),
+                    dto.getFactorConversion()
+            );
 
             if (!combinacionesNuevas.add(clave)) {
-                throw new BusinessException("No puede repetir el mismo tipo y factor de conversión");
+                throw new BusinessException(
+                        "No puede repetir el mismo tipo y factor de conversión"
+                );
             }
 
             validarPresentacionNoDuplicada(
@@ -368,6 +390,11 @@ public class ProductoService {
             nueva.setTipo(dto.getTipo());
             nueva.setFactorConversion(dto.getFactorConversion());
             nueva.setPrecioVenta(dto.getPrecioVenta());
+            nueva.setStockMinimo(
+                    dto.getStockMinimo() != null
+                            ? dto.getStockMinimo()
+                            : BigDecimal.ZERO
+            );
             nueva.setEstado(EstadoRegistro.ACTIVO.getValor());
 
             producto.getPresentaciones().add(nueva);
@@ -414,9 +441,15 @@ public class ProductoService {
                 idPresentacion
         );
 
+        validarCambioEstructuraPresentacion(presentacion, request);
+
         presentacion.setTipo(request.getTipo());
         presentacion.setFactorConversion(request.getFactorConversion());
         presentacion.setPrecioVenta(request.getPrecioVenta());
+
+        if (request.getStockMinimo() != null) {
+            presentacion.setStockMinimo(request.getStockMinimo());
+        }
 
         Presentacion actualizada =
                 presentacionRepository.save(presentacion);
@@ -466,6 +499,7 @@ public class ProductoService {
             dto.setTipo(presentacion.getTipo());
             dto.setFactorConversion(presentacion.getFactorConversion());
             dto.setPrecioVenta(presentacion.getPrecioVenta());
+            dto.setStockMinimo(presentacion.getStockMinimo());
 
             validarPresentacionNoDuplicada(
                     idProducto,
@@ -485,7 +519,8 @@ public class ProductoService {
                 && contarPresentacionesActivas(idProducto) <= 1
         ) {
             throw new BusinessException(
-                    "No se puede desactivar la última presentación activa. Agregue otra presentación primero."
+                    "No se puede desactivar la última presentación activa. "
+                    + "Agregue otra presentación primero."
             );
         }
 
@@ -537,7 +572,8 @@ public class ProductoService {
                 && contarPresentacionesActivas(idProducto) <= 1
         ) {
             throw new BusinessException(
-                    "No se puede eliminar la última presentación activa de un producto. Agregue otra presentación primero."
+                    "No se puede eliminar la última presentación activa "
+                    + "de un producto. Agregue otra presentación primero."
             );
         }
 
@@ -630,9 +666,27 @@ public class ProductoService {
 
     public List<ProductoResponseDTO> listarProductosConStockBajo() {
 
-        return productoRepository.listarConStockBajo()
+        return productoRepository.listarActivos()
                 .stream()
+                .filter(producto ->
+                        EstadoRegistro.ACTIVO.getValor().equals(
+                                producto.getEstado()
+                        )
+                )
                 .map(this::mapToResponse)
+                .filter(producto ->
+                        producto.getPresentaciones() != null
+                        && producto.getPresentaciones().stream().anyMatch(p ->
+                                p.getStockMinimo() != null
+                                && p.getStockMinimo().compareTo(
+                                        BigDecimal.ZERO
+                                ) > 0
+                                && p.getStockDisponible() != null
+                                && p.getStockDisponible().compareTo(
+                                        p.getStockMinimo()
+                                ) <= 0
+                        )
+                )
                 .collect(Collectors.toList());
     }
 
@@ -676,17 +730,45 @@ public class ProductoService {
             );
         }
 
-        if (dto.getFactorConversion() == null ||
-                dto.getFactorConversion() <= 0) {
+        if (dto.getFactorConversion() == null
+                || dto.getFactorConversion() <= 0) {
             throw new BusinessException(
                     "El factor de conversión debe ser mayor a 0"
             );
         }
 
-        if (dto.getPrecioVenta() == null ||
-                dto.getPrecioVenta().compareTo(BigDecimal.ZERO) <= 0) {
+        if (dto.getPrecioVenta() == null
+                || dto.getPrecioVenta().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException(
                     "El precio de venta debe ser mayor a 0"
+            );
+        }
+
+        if (dto.getStockMinimo() != null
+                && dto.getStockMinimo().compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException(
+                    "El stock mínimo no puede ser negativo"
+            );
+        }
+    }
+
+    private void validarCambioEstructuraPresentacion(
+            Presentacion existente,
+            PresentacionDTO request) {
+
+        boolean cambioTipo = !existente.getTipo().equals(request.getTipo());
+
+        boolean cambioFactor = !existente.getFactorConversion()
+                .equals(request.getFactorConversion());
+
+        if ((cambioTipo || cambioFactor)
+                && lotePresentacionRepository.existsByPresentacion_Id(
+                        existente.getId())) {
+
+            throw new BusinessException(
+                    "No se puede modificar el tipo ni el factor de conversión "
+                    + "porque esta presentación ya tiene historial de inventario. "
+                    + "Registre una nueva presentación para utilizar otro formato."
             );
         }
     }
@@ -702,12 +784,15 @@ public class ProductoService {
                 .anyMatch(p ->
                         !p.getId().equals(idPresentacionExcluir)
                         && p.getTipo().equals(dto.getTipo())
-                        && p.getFactorConversion().equals(dto.getFactorConversion())
+                        && p.getFactorConversion().equals(
+                                dto.getFactorConversion()
+                        )
                 );
 
         if (duplicada) {
             throw new BusinessException(
-                    "Ya existe una presentación con ese tipo y factor de conversión para este producto"
+                    "Ya existe una presentación con ese tipo y factor "
+                    + "de conversión para este producto"
             );
         }
     }
@@ -788,19 +873,25 @@ public class ProductoService {
         dto.setEstado(producto.getEstado());
         dto.setFechaCreacion(producto.getFechaCreacion());
 
+        // El stock actual se conserva expresado en unidad base.
         BigDecimal stockActual = BigDecimal.ZERO;
 
         if (producto.getLotes() != null) {
-        stockActual = producto.getLotes()
-                .stream()
-                .filter(l ->
-                        EstadoRegistro.ACTIVO.getValor().equals(l.getEstado())
-                )
-                .map(l -> l.getCantidad() == null
-                        ? BigDecimal.ZERO
-                        : l.getCantidad())
-                .reduce(BigDecimal.ZERO,
-                        (acumulado, valor) -> acumulado.add(valor));
+
+            stockActual = producto.getLotes()
+                    .stream()
+                    .filter(l ->
+                            EstadoRegistro.ACTIVO.getValor().equals(
+                                    l.getEstado()
+                            )
+                    )
+                    .map(l -> l.getCantidad() == null
+                            ? BigDecimal.ZERO
+                            : l.getCantidad())
+                    .reduce(
+                            BigDecimal.ZERO,
+                            (acumulado, valor) -> acumulado.add(valor)
+                    );
         }
 
         dto.setStockActual(stockActual);
@@ -831,7 +922,20 @@ public class ProductoService {
         dto.setTipo(presentacion.getTipo());
         dto.setFactorConversion(presentacion.getFactorConversion());
         dto.setPrecioVenta(presentacion.getPrecioVenta());
+        dto.setStockMinimo(presentacion.getStockMinimo());
         dto.setEstado(presentacion.getEstado());
+
+        BigDecimal stockDisponible =
+                lotePresentacionRepository.sumarStockDisponible(
+                        presentacion.getId(),
+                        LocalDate.now()
+                );
+
+        dto.setStockDisponible(
+                stockDisponible != null
+                        ? stockDisponible
+                        : BigDecimal.ZERO
+        );
 
         return dto;
     }

@@ -1,3 +1,4 @@
+
 package com.boticavidasalud.backend.dto;
 
 import com.boticavidasalud.backend.enums.TipoPresentacion;
@@ -17,6 +18,9 @@ public class PresentacionInfoDTO {
 
     private Integer factorConversion;
     private BigDecimal precioVenta;
+
+    private BigDecimal stockMinimo;
+    private BigDecimal stockDisponible;
 
     private Short estado;
 }
