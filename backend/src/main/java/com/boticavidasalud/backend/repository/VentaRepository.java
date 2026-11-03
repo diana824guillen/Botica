@@ -1,3 +1,4 @@
+
 package com.boticavidasalud.backend.repository;
 
 import com.boticavidasalud.backend.entity.Venta;
@@ -10,11 +11,11 @@ import java.util.Optional;
 
 public interface VentaRepository extends JpaRepository<Venta, Integer> {
 
-    // Obtener la última venta para generar el correlativo
-    @Query("SELECT v FROM Venta v ORDER BY v.id DESC")
+    // Obtener únicamente la última venta para generar el correlativo.
+    @Query("SELECT v FROM Venta v WHERE v.id = (SELECT MAX(v2.id) FROM Venta v2)")
     Optional<Venta> findUltimaVenta();
 
-    // Historial de compras por cliente
+    // Historial de compras por cliente.
     @Query("SELECT v FROM Venta v WHERE v.cliente.id = :idCliente ORDER BY v.fechaVenta DESC")
     List<Venta> findByClienteId(@Param("idCliente") Integer idCliente);
 }

@@ -1,9 +1,13 @@
+
 package com.boticavidasalud.backend.controller;
 
 import com.boticavidasalud.backend.dto.HistorialCompraDTO;
+import com.boticavidasalud.backend.dto.VentaPrevisualizacionRequestDTO;
+import com.boticavidasalud.backend.dto.VentaPrevisualizacionResponseDTO;
 import com.boticavidasalud.backend.dto.VentaRequestDTO;
 import com.boticavidasalud.backend.dto.VentaResponseDTO;
 import com.boticavidasalud.backend.service.VentaService;
+
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -23,19 +27,49 @@ public class VentaController {
         this.ventaService = ventaService;
     }
 
-    // Permitimos que tanto ADMIN como VENDEDOR registren ventas
+    // ============================================================
+    // PREVISUALIZAR VENTA
+    // No registra ni modifica el inventario.
+    // ============================================================
+
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
-    @PostMapping
-    public ResponseEntity<VentaResponseDTO> registrarVenta(@Valid @RequestBody VentaRequestDTO request) {
-        VentaResponseDTO response = ventaService.registrarVenta(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @PostMapping("/previsualizacion")
+    public ResponseEntity<VentaPrevisualizacionResponseDTO> previsualizarVenta(
+            @Valid @RequestBody VentaPrevisualizacionRequestDTO request) {
+
+        return ResponseEntity.ok(
+                ventaService.previsualizarVenta(request)
+        );
     }
 
-    // HISTORIAL DE COMPRAS tanto para ADMIN como para VENDEDOR
+    // ============================================================
+    // REGISTRAR VENTA
+    // ============================================================
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PostMapping
+    public ResponseEntity<VentaResponseDTO> registrarVenta(
+            @Valid @RequestBody VentaRequestDTO request) {
+
+        VentaResponseDTO response =
+                ventaService.registrarVenta(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    // ============================================================
+    // HISTORIAL DE COMPRAS DE UN CLIENTE
+    // ============================================================
+
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     @GetMapping("/cliente/{idCliente}")
-    public ResponseEntity<List<HistorialCompraDTO>> obtenerHistorialCompras(@PathVariable Integer idCliente) {
-        return ResponseEntity.ok(ventaService.obtenerHistorialCompras(idCliente));
+    public ResponseEntity<List<HistorialCompraDTO>> obtenerHistorialCompras(
+            @PathVariable Integer idCliente) {
+
+        return ResponseEntity.ok(
+                ventaService.obtenerHistorialCompras(idCliente)
+        );
     }
 }
 

@@ -64,6 +64,140 @@ public class VentaService {
     }
 
     // ============================================================
+    // PREVISUALIZAR VENTA
+    // ============================================================
+
+    @Transactional(readOnly = true)
+    public VentaPrevisualizacionResponseDTO previsualizarVenta(
+            VentaPrevisualizacionRequestDTO request) {
+
+        if (request == null
+                || request.getDetalles() == null
+                || request.getDetalles().isEmpty()) {
+            throw new BusinessException(
+                    "Debe agregar al menos un producto al carrito"
+            );
+        }
+
+        // Preparar las líneas con precios obtenidos de la base de datos.
+        List<LineaVenta> lineas = prepararLineasVenta(
+                request.getDetalles()
+        );
+
+        // Calcular los mismos importes y promociones de la venta final.
+        ResumenVenta resumen = calcularResumenVenta(lineas);
+
+        VentaPrevisualizacionResponseDTO response =
+                new VentaPrevisualizacionResponseDTO();
+
+        response.setSubtotal(resumen.subtotal);
+        response.setDescuentoTotal(resumen.descuentoTotal);
+        response.setTotal(resumen.total);
+
+        // Consultar el stock disponible de cada presentación.
+        List<VentaPrevisualizacionResponseDTO.DetalleInfoDTO>
+                detallesResponse = new ArrayList<>();
+
+        boolean todasLasPresentacionesTienenStock = true;
+
+        for (LineaVenta linea : lineas) {
+
+            BigDecimal stockDisponible =
+                    lotePresentacionRepository.sumarStockDisponible(
+                            linea.presentacion.getId(),
+                            LocalDate.now()
+                    );
+
+            if (stockDisponible == null) {
+                stockDisponible = BigDecimal.ZERO;
+            }
+
+            boolean tieneStockSuficiente =
+                    stockDisponible.compareTo(
+                            linea.cantidadPresentacion
+                    ) >= 0;
+
+            if (!tieneStockSuficiente) {
+                todasLasPresentacionesTienenStock = false;
+            }
+
+            VentaPrevisualizacionResponseDTO.DetalleInfoDTO detalleResponse =
+                    new VentaPrevisualizacionResponseDTO.DetalleInfoDTO();
+
+            detalleResponse.setIdProducto(
+                    linea.producto.getId()
+            );
+
+            detalleResponse.setIdPresentacion(
+                    linea.presentacion.getId()
+            );
+
+            detalleResponse.setProductoNombre(
+                    linea.producto.getNombre()
+            );
+
+            detalleResponse.setPresentacionTipo(
+                    linea.presentacion.getTipo().name()
+            );
+
+            detalleResponse.setFactorConversion(
+                    linea.factorConversion
+            );
+
+            detalleResponse.setCantidad(
+                    linea.cantidadPresentacion
+            );
+
+            detalleResponse.setPrecioUnitario(
+                    linea.precioUnitario
+            );
+
+            detalleResponse.setSubtotal(
+                    linea.subtotal
+            );
+
+            detalleResponse.setStockDisponible(
+                    stockDisponible
+            );
+
+            detalleResponse.setStockSuficiente(
+                    tieneStockSuficiente
+            );
+
+            detallesResponse.add(detalleResponse);
+        }
+
+        response.setDetalles(detallesResponse);
+
+        // Devolver las promociones aplicadas.
+        List<VentaPrevisualizacionResponseDTO.DescuentoInfoDTO>
+                descuentosResponse = new ArrayList<>();
+
+        for (DescuentoAplicado descuento : resumen.descuentosAplicados) {
+
+            VentaPrevisualizacionResponseDTO.DescuentoInfoDTO info =
+                    new VentaPrevisualizacionResponseDTO.DescuentoInfoDTO();
+
+            info.setIdDescuento(descuento.idDescuento);
+            info.setNombre(descuento.nombre);
+            info.setProductoNombre(descuento.productoNombre);
+            info.setTipoCondicion(descuento.tipoCondicion);
+            info.setValorCondicion(descuento.valorCondicion);
+            info.setPorcentaje(descuento.porcentaje);
+            info.setMontoDescuento(descuento.montoDescuento);
+
+            descuentosResponse.add(info);
+        }
+
+        response.setDescuentosAplicados(descuentosResponse);
+        response.setStockSuficiente(
+                todasLasPresentacionesTienenStock
+        );
+
+        return response;
+    }
+
+    // ============================================================
     // REGISTRAR VENTA
     // ============================================================
 
@@ -109,10 +243,11 @@ public class VentaService {
                 request.getDetalles()
         );
 
-        // 3. Calcular subtotal, descuentos y total.
+        // 3. Recalcular subtotal, descuentos y total.
+        // No se confía en los datos de una previsualización anterior.
         ResumenVenta resumen = calcularResumenVenta(lineas);
 
-        // 4. Validar pagos antes de modificar el inventario.
+        // 4. Validar los pagos antes de modificar el inventario.
         List<PagoRequestDTO> pagosValidos = validarPagos(
                 request.getPagos(),
                 resumen.total
@@ -156,8 +291,8 @@ public class VentaService {
 
         venta.setPagos(pagosVenta);
 
-        // 8. Guardar venta, detalles y pagos mediante cascade.
-        // Cualquier error revierte también los cambios de inventario.
+        // 8. Guardar venta, detalles y pagos.
+        // Si ocurre un error, se revierten también los cambios de stock.
         Venta ventaGuardada = ventaRepository.save(venta);
 
         return mapToResponse(ventaGuardada, resumen.subtotal);
@@ -170,11 +305,10 @@ public class VentaService {
     private List<LineaVenta> prepararLineasVenta(
             List<DetalleVentaRequestDTO> detallesRequest) {
 
-        // Agrupar cantidades repetidas de una misma presentación.
-        // No se utiliza Map.merge para evitar advertencias de null safety.
         Map<Integer, BigDecimal> cantidadesPorPresentacion =
                 new TreeMap<>();
 
+        // Agrupar cantidades repetidas de una misma presentación.
         for (DetalleVentaRequestDTO detalle : detallesRequest) {
 
             if (detalle == null
@@ -343,6 +477,9 @@ public class VentaService {
         Map<Integer, BigDecimal> descuentosPorProducto =
                 new HashMap<>();
 
+        List<DescuentoAplicado> descuentosAplicados =
+                new ArrayList<>();
+
         for (Descuento descuento : descuentos) {
 
             if (descuento.getProducto() == null
@@ -376,8 +513,8 @@ public class VentaService {
             } else if (descuento.getTipoCondicion()
                     == TipoCondicionDescuento.CANTIDAD_MINIMA) {
 
-                // La cantidad mínima se expresa en unidades base
-                // del producto asociado al descuento.
+                // La cantidad mínima se expresa en unidad base
+                // del producto asociado a la promoción.
                 BigDecimal cantidadBaseProducto =
                         cantidadBasePorProducto.get(idProducto);
 
@@ -400,8 +537,7 @@ public class VentaService {
                 continue;
             }
 
-            // El descuento se aplica sobre el subtotal del producto
-            // asociado a la promoción.
+            // El descuento se aplica sobre el subtotal del producto.
             BigDecimal descuentoPropuesto = subtotalProducto
                     .multiply(porcentaje)
                     .divide(
@@ -417,8 +553,8 @@ public class VentaService {
                 descuentoAcumulado = BigDecimal.ZERO;
             }
 
-            // Impedir que las promociones superen el subtotal
-            // del producto.
+            // Los descuentos acumulados no pueden superar
+            // el subtotal del producto.
             BigDecimal descuentoRestante = subtotalProducto
                     .subtract(descuentoAcumulado)
                     .max(BigDecimal.ZERO);
@@ -426,17 +562,40 @@ public class VentaService {
             BigDecimal descuentoAplicado = descuentoPropuesto
                     .min(descuentoRestante);
 
-            acumularValor(
-                    descuentosPorProducto,
-                    idProducto,
-                    descuentoAplicado
-            );
+            if (descuentoAplicado.compareTo(BigDecimal.ZERO) > 0) {
+
+                acumularValor(
+                        descuentosPorProducto,
+                        idProducto,
+                        descuentoAplicado
+                );
+
+                DescuentoAplicado aplicado = new DescuentoAplicado();
+
+                aplicado.idDescuento = descuento.getId();
+                aplicado.nombre = descuento.getNombre();
+                aplicado.productoNombre =
+                        descuento.getProducto().getNombre();
+
+                aplicado.tipoCondicion =
+                        descuento.getTipoCondicion();
+
+                aplicado.valorCondicion =
+                        descuento.getValorCondicion();
+
+                aplicado.porcentaje = porcentaje;
+
+                aplicado.montoDescuento = descuentoAplicado;
+
+                descuentosAplicados.add(aplicado);
+            }
         }
 
-        // Sumar los descuentos sin utilizar referencias a métodos.
+        // Sumar descuentos aplicados.
         BigDecimal descuentoTotal = BigDecimal.ZERO;
 
         for (BigDecimal descuento : descuentosPorProducto.values()) {
+
             if (descuento != null) {
                 descuentoTotal = descuentoTotal.add(descuento);
             }
@@ -458,7 +617,8 @@ public class VentaService {
         return new ResumenVenta(
                 subtotal,
                 descuentoTotal,
-                total
+                total,
+                descuentosAplicados
         );
     }
 
@@ -544,10 +704,9 @@ public class VentaService {
 
         LocalDate hoy = LocalDate.now();
 
-        // TreeSet mantiene los IDs en orden ascendente.
         TreeSet<Integer> idsLotes = new TreeSet<>();
 
-        // Obtener los lotes que contienen las presentaciones solicitadas.
+        // Obtener los lotes que tienen existencias de las presentaciones.
         for (LineaVenta linea : lineas) {
 
             List<Integer> idsEncontrados =
@@ -560,10 +719,10 @@ public class VentaService {
             idsLotes.addAll(idsEncontrados);
         }
 
-        // TreeMap conserva el orden ascendente de los lotes bloqueados.
         Map<Integer, Lote> lotesBloqueados = new TreeMap<>();
 
-        // Bloquear cada lote antes de modificar cualquiera de sus saldos.
+        // Bloquear los lotes en orden ascendente para reducir
+        // el riesgo de bloqueos cruzados.
         for (Integer idLote : idsLotes) {
 
             Optional<Lote> loteOptional =
@@ -575,7 +734,6 @@ public class VentaService {
 
             Lote lote = loteOptional.get();
 
-            // Volver a comprobar que el lote continúa disponible.
             if (!EstadoRegistro.ACTIVO.getValor().equals(
                     lote.getEstado())) {
                 continue;
@@ -610,7 +768,6 @@ public class VentaService {
 
         List<DetalleVenta> detallesVenta = new ArrayList<>();
 
-        // 1. Bloquear todos los lotes candidatos.
         Map<Integer, Lote> lotesBloqueados =
                 bloquearLotesCandidatos(lineas);
 
@@ -619,7 +776,6 @@ public class VentaService {
 
         LocalDate hoy = LocalDate.now();
 
-        // 2. Procesar cada presentación solicitada.
         for (LineaVenta linea : lineas) {
 
             Integer idPresentacion = linea.presentacion.getId();
@@ -633,8 +789,7 @@ public class VentaService {
                 );
             }
 
-            // 3. Recuperar y bloquear los saldos de la presentación.
-            // El repositorio devuelve las filas ordenadas por FEFO.
+            // Consultar los saldos bloqueados en orden FEFO.
             List<LotePresentacion> saldos =
                     lotePresentacionRepository
                             .findSaldosDisponiblesParaVentaForUpdate(
@@ -643,7 +798,6 @@ public class VentaService {
                                     idsLotesBloqueados
                             );
 
-            // Sumar el stock real de esa presentación.
             BigDecimal stockDisponiblePresentacion = BigDecimal.ZERO;
 
             for (LotePresentacion saldo : saldos) {
@@ -656,7 +810,7 @@ public class VentaService {
                 }
             }
 
-            // 4. Validar la presentación específica.
+            // Validar stock de la presentación específica.
             if (stockDisponiblePresentacion.compareTo(
                     linea.cantidadPresentacion
             ) < 0) {
@@ -680,7 +834,7 @@ public class VentaService {
                     linea.factorConversion
             );
 
-            // 5. Distribuir la salida entre los lotes según FEFO.
+            // Distribuir la salida entre lotes según FEFO.
             for (LotePresentacion saldo : saldos) {
 
                 if (cantidadRestante.compareTo(
@@ -717,7 +871,6 @@ public class VentaService {
                     );
                 }
 
-                // 6. Calcular salida en unidad base.
                 BigDecimal cantidadBaseADescontar =
                         cantidadADescontar.multiply(factor);
 
@@ -737,7 +890,7 @@ public class VentaService {
                     );
                 }
 
-                // 7. Actualizar saldo por presentación.
+                // Actualizar saldo de la presentación.
                 BigDecimal nuevoStockPresentacion =
                         stockPresentacion.subtract(cantidadADescontar);
 
@@ -745,14 +898,12 @@ public class VentaService {
 
                 lotePresentacionRepository.save(saldo);
 
-                // 8. Actualizar stock total del lote en unidad base.
+                // Actualizar stock total en unidad base.
                 lote.setCantidad(stockNuevo);
 
                 loteRepository.save(lote);
 
-                // 9. Crear el detalle de venta.
-                // La cantidad se almacena en unidad base.
-                // El precio corresponde a la presentación comercial.
+                // Crear detalle de venta.
                 DetalleVenta detalleVenta = new DetalleVenta();
 
                 detalleVenta.setVenta(venta);
@@ -766,7 +917,7 @@ public class VentaService {
 
                 detallesVenta.add(detalleVenta);
 
-                // 10. Registrar movimiento de salida.
+                // Registrar movimiento de salida.
                 MovimientoInventario movimiento =
                         new MovimientoInventario();
 
@@ -797,7 +948,6 @@ public class VentaService {
 
                 movimientoRepository.save(movimiento);
 
-                // 11. Reducir la cantidad pendiente de salida.
                 cantidadRestante = cantidadRestante.subtract(
                         cantidadADescontar
                 );
@@ -816,7 +966,6 @@ public class VentaService {
 
     // ============================================================
     // ACUMULAR VALORES EN MAPAS
-    // Evita Map.merge() y las advertencias de BiFunction.
     // ============================================================
 
     private void acumularValor(
@@ -960,7 +1109,6 @@ public class VentaService {
         dto.setDescuentoTotal(venta.getDescuentoTotal());
         dto.setTotal(venta.getTotal());
 
-        // Cada fila representa la cantidad retirada de un lote.
         List<VentaResponseDTO.DetalleVentaInfoDTO> detallesDto =
                 new ArrayList<>();
 
@@ -1016,7 +1164,6 @@ public class VentaService {
 
         dto.setDetalles(detallesDto);
 
-        // Mapear pagos.
         List<VentaResponseDTO.PagoInfoDTO> pagosDto =
                 new ArrayList<>();
 
@@ -1053,6 +1200,23 @@ public class VentaService {
     }
 
     // ============================================================
+    // CLASE AUXILIAR: DESCUENTO APLICADO
+    // ============================================================
+
+    private static class DescuentoAplicado {
+
+        private Integer idDescuento;
+        private String nombre;
+        private String productoNombre;
+
+        private TipoCondicionDescuento tipoCondicion;
+        private BigDecimal valorCondicion;
+        private BigDecimal porcentaje;
+
+        private BigDecimal montoDescuento;
+    }
+
+    // ============================================================
     // CLASE AUXILIAR: RESUMEN DE VENTA
     // ============================================================
 
@@ -1062,14 +1226,18 @@ public class VentaService {
         private final BigDecimal descuentoTotal;
         private final BigDecimal total;
 
+        private final List<DescuentoAplicado> descuentosAplicados;
+
         private ResumenVenta(
                 BigDecimal subtotal,
                 BigDecimal descuentoTotal,
-                BigDecimal total) {
+                BigDecimal total,
+                List<DescuentoAplicado> descuentosAplicados) {
 
             this.subtotal = subtotal;
             this.descuentoTotal = descuentoTotal;
             this.total = total;
+            this.descuentosAplicados = descuentosAplicados;
         }
     }
 }
