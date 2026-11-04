@@ -12,6 +12,8 @@ import { ProductosListComponent } from './features/productos/productos-list/prod
 import { LotesListComponent } from './features/lotes/lotes-list/lotes-list';
 import { DescuentosListComponent } from './features/descuentos/descuentos-list/descuentos-list';
 
+import { VentasPosComponent } from './features/ventas/ventas-pos/ventas-pos';
+
 export const routes: Routes = [
 
   {
@@ -35,6 +37,11 @@ export const routes: Routes = [
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'
+      },
+
+      {
+        path: 'ventas',
+        component: VentasPosComponent
       },
 
       {

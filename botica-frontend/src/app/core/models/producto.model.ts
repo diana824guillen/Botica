@@ -11,6 +11,8 @@ export interface Presentacion {
   tipo: TipoPresentacion;
   factorConversion: number;
   precioVenta: number;
+  stockMinimo?: number;
+  stockDisponible?: number;
   estado: number;
 }
 
@@ -19,6 +21,7 @@ export interface PresentacionRequest {
   tipo: TipoPresentacion;
   factorConversion: number;
   precioVenta: number;
+  stockMinimo?: number;
 }
 
 export interface Producto {

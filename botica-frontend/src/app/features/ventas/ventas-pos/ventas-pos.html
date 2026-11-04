@@ -1,0 +1,588 @@
+<div class="pos-container">
+
+  <!-- ENCABEZADO -->
+  <header class="pos-header">
+
+    <div>
+      <h1>Punto de Venta</h1>
+
+      <p>
+        Selecciona los productos y presentaciones para realizar una venta.
+      </p>
+    </div>
+
+    <div class="pos-header-icon">
+      <i class="bi bi-cart-check"></i>
+    </div>
+
+  </header>
+
+  <!-- NOTIFICACIÓN TEMPORAL -->
+  <div
+    class="pos-toast"
+    *ngIf="mensajeCarrito()"
+    [ngClass]="tipoMensaje()"
+    role="status"
+    aria-live="polite"
+  >
+
+    <i
+      class="bi"
+      [ngClass]="
+        tipoMensaje() === 'success'
+          ? 'bi-check-circle'
+          : 'bi-exclamation-triangle'
+      "
+    ></i>
+
+    {{ mensajeCarrito() }}
+
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="pos-layout">
+
+    <!-- ======================================== -->
+    <!-- CATÁLOGO -->
+    <!-- ======================================== -->
+
+    <section class="catalog-section">
+
+      <div class="section-header">
+
+        <div>
+          <h2>Catálogo de productos</h2>
+
+          <p>
+            {{ productosFiltrados().length }}
+            {{
+              mostrarSinStock
+                ? 'productos encontrados'
+                : 'productos con stock'
+            }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="btn-refresh"
+          (click)="cargarProductos()"
+          [disabled]="cargandoProductos()"
+          title="Actualizar catálogo"
+        >
+          <i
+            class="bi bi-arrow-clockwise"
+            [class.spinning]="cargandoProductos()"
+          ></i>
+        </button>
+
+      </div>
+
+      <!-- BÚSQUEDA Y FILTROS -->
+      <div class="catalog-toolbar">
+
+        <div class="toolbar-main">
+
+          <!-- BÚSQUEDA -->
+          <div class="search-input">
+
+            <i class="bi bi-search"></i>
+
+            <input
+              type="text"
+              [ngModel]="busqueda"
+              (ngModelChange)="cambiarBusqueda($event)"
+              placeholder="Buscar producto o categoría..."
+              aria-label="Buscar productos"
+            />
+
+            <button
+              *ngIf="busqueda"
+              type="button"
+              (click)="cambiarBusqueda('')"
+              aria-label="Limpiar búsqueda"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+
+          </div>
+
+          <!-- CATEGORÍAS -->
+          <div class="category-select">
+
+            <select
+              [ngModel]="categoriaSeleccionada"
+              (ngModelChange)="cambiarCategoria($event)"
+              [ngModelOptions]="{ standalone: true }"
+              aria-label="Filtrar por categoría"
+            >
+
+              <option [ngValue]="null">
+                Todas las categorías
+              </option>
+
+              <option
+                *ngFor="
+                  let categoria of categoriasDisponibles();
+                  trackBy: trackByCategoriaId
+                "
+                [ngValue]="categoria.id"
+              >
+                {{ categoria.nombre }}
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <!-- INCLUIR PRODUCTOS AGOTADOS -->
+        <label class="stock-filter">
+
+          <input
+            type="checkbox"
+            [ngModel]="mostrarSinStock"
+            (ngModelChange)="cambiarMostrarSinStock($event)"
+          />
+
+          <span>Incluir productos agotados</span>
+
+        </label>
+
+      </div>
+
+      <!-- ERROR DE CARGA -->
+      <div
+        class="catalog-message error-message"
+        *ngIf="errorCarga()"
+        role="alert"
+      >
+
+        <i class="bi bi-exclamation-circle"></i>
+
+        <span>{{ errorCarga() }}</span>
+
+        <button
+          type="button"
+          (click)="cargarProductos()"
+        >
+          Reintentar
+        </button>
+
+      </div>
+
+      <!-- CARGANDO -->
+      <div
+        class="catalog-state"
+        *ngIf="cargandoProductos()"
+      >
+
+        <i class="bi bi-arrow-repeat spinning"></i>
+
+        <p>Cargando catálogo...</p>
+
+      </div>
+
+      <!-- LISTADO COMPACTO -->
+      <div
+        class="product-list"
+        *ngIf="!cargandoProductos() && !errorCarga()"
+      >
+
+        <article
+          class="product-option"
+          *ngFor="
+            let producto of productosFiltrados();
+            trackBy: trackByProductoId
+          "
+          [class.expanded]="productoExpandidoId === producto.id"
+        >
+
+          <!-- RESUMEN DEL PRODUCTO -->
+          <button
+            type="button"
+            class="product-summary"
+            (click)="alternarProducto(producto.id)"
+            [attr.aria-expanded]="productoExpandidoId === producto.id"
+          >
+
+            <div class="product-icon">
+              <i class="bi bi-capsule"></i>
+            </div>
+
+            <div class="product-main">
+
+              <strong>{{ producto.nombre }}</strong>
+
+              <div class="product-secondary">
+
+                <span>{{ producto.categoriaNombre }}</span>
+
+                <span class="product-separator">·</span>
+
+                <span>
+                  {{ obtenerPresentacionesDisponibles(producto) }}
+                  de {{ producto.presentaciones.length }}
+                  presentaciones disponibles
+                </span>
+
+              </div>
+
+            </div>
+
+            <span
+              class="stock-badge"
+              [ngClass]="
+                tieneStock(producto)
+                  ? 'available'
+                  : 'unavailable'
+              "
+            >
+              {{ tieneStock(producto) ? 'Con stock' : 'Agotado' }}
+            </span>
+
+            <i
+              class="bi product-chevron"
+              [ngClass]="
+                productoExpandidoId === producto.id
+                  ? 'bi-chevron-up'
+                  : 'bi-chevron-down'
+              "
+            ></i>
+
+          </button>
+
+          <!-- PRESENTACIONES DESPLEGADAS -->
+          <div
+            class="product-expanded"
+            *ngIf="productoExpandidoId === producto.id"
+          >
+
+            <div class="expanded-title">
+
+              <span>Presentación</span>
+
+              <span>Precio y disponibilidad</span>
+
+            </div>
+
+            <div
+              class="presentation-row"
+              *ngFor="
+                let presentacion of producto.presentaciones;
+                trackBy: trackByPresentacionId
+              "
+            >
+
+              <div class="presentation-information">
+
+                <strong>
+                  {{ obtenerNombrePresentacion(presentacion.tipo) }}
+                </strong>
+
+                <small>
+                  Factor {{ presentacion.factorConversion }}
+                </small>
+
+              </div>
+
+              <div class="presentation-actions">
+
+                <div class="presentation-stock">
+
+                  <strong>
+                    S/ {{ presentacion.precioVenta | number:'1.2-2' }}
+                  </strong>
+
+                  <span
+                    [class.stock-empty]="obtenerStock(presentacion) <= 0"
+                  >
+                    {{
+                      obtenerStock(presentacion) > 0
+                        ? obtenerStock(presentacion) + ' disponibles'
+                        : 'Sin existencias'
+                    }}
+                  </span>
+
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-add-product"
+                  [disabled]="
+                    obtenerStock(presentacion)
+                    <= obtenerCantidadEnCarrito(presentacion.id)
+                  "
+                  (click)="agregarPresentacion(producto, presentacion)"
+                  [title]="
+                    obtenerStock(presentacion) <= 0
+                      ? 'Sin stock'
+                      : 'Agregar al carrito'
+                  "
+                  aria-label="Agregar presentación al carrito"
+                >
+
+                  <i class="bi bi-plus-lg"></i>
+
+                </button>
+
+              </div>
+
+            </div>
+
+            <!-- DESCRIPCIÓN -->
+            <div
+              class="product-description"
+              *ngIf="producto.descripcion"
+            >
+              {{ producto.descripcion }}
+            </div>
+
+            <!-- REQUIERE RECETA -->
+            <div
+              class="prescription-label"
+              *ngIf="producto.requiereReceta"
+            >
+
+              <i class="bi bi-prescription2"></i>
+
+              Este producto requiere receta.
+
+            </div>
+
+            <!-- SIN PRESENTACIONES -->
+            <div
+              class="no-presentations"
+              *ngIf="producto.presentaciones.length === 0"
+            >
+              Este producto no tiene presentaciones activas.
+            </div>
+
+          </div>
+
+        </article>
+
+        <!-- SIN RESULTADOS -->
+        <div
+          class="empty-catalog"
+          *ngIf="productosFiltrados().length === 0"
+        >
+
+          <i class="bi bi-search"></i>
+
+          <h3>No se encontraron productos</h3>
+
+          <p>
+            {{
+              !mostrarSinStock
+                ? 'No hay productos disponibles con stock para esta búsqueda.'
+                : 'Prueba con otro nombre o selecciona una categoría diferente.'
+            }}
+          </p>
+
+          <button
+            type="button"
+            (click)="limpiarFiltros()"
+          >
+            Limpiar filtros
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ======================================== -->
+    <!-- CARRITO -->
+    <!-- ======================================== -->
+
+    <aside class="cart-section">
+
+      <div class="cart-header">
+
+        <div>
+
+          <h2>
+            <i class="bi bi-cart3"></i>
+            Carrito de venta
+          </h2>
+
+          <p>
+            {{ cantidadTotalProductos }}
+            unidades seleccionadas
+          </p>
+
+        </div>
+
+        <span class="cart-count">
+          {{ cantidadTiposProductos }}
+        </span>
+
+      </div>
+
+      <!-- CARRITO VACÍO -->
+      <div
+        class="empty-cart"
+        *ngIf="carrito.length === 0"
+      >
+
+        <i class="bi bi-cart-x"></i>
+
+        <h3>Tu carrito está vacío</h3>
+
+        <p>
+          Selecciona una presentación del catálogo para agregar productos.
+        </p>
+
+      </div>
+
+      <!-- PRODUCTOS DEL CARRITO -->
+      <div
+        class="cart-items"
+        *ngIf="carrito.length > 0"
+      >
+
+        <article
+          class="cart-item"
+          *ngFor="
+            let item of carrito;
+            trackBy: trackByCarritoId
+          "
+        >
+
+          <div class="cart-item-top">
+
+            <div class="cart-item-information">
+
+              <strong>{{ item.productoNombre }}</strong>
+
+              <span>
+                {{ obtenerNombrePresentacion(item.presentacionTipo) }}
+                · Factor {{ item.factorConversion }}
+              </span>
+
+              <small>
+                S/ {{ item.precioUnitario | number:'1.2-2' }}
+                por presentación
+              </small>
+
+            </div>
+
+            <button
+              type="button"
+              class="btn-remove"
+              title="Quitar producto"
+              aria-label="Quitar producto del carrito"
+              (click)="quitarProducto(item.idPresentacion)"
+            >
+
+              <i class="bi bi-trash"></i>
+
+            </button>
+
+          </div>
+
+          <div class="cart-item-bottom">
+
+            <div class="quantity-control">
+
+              <button
+                type="button"
+                (click)="disminuirCantidad(item.idPresentacion)"
+                aria-label="Disminuir cantidad"
+              >
+                <i class="bi bi-dash"></i>
+              </button>
+
+              <span>{{ item.cantidad }}</span>
+
+              <button
+                type="button"
+                (click)="aumentarCantidad(item.idPresentacion)"
+                [disabled]="item.cantidad >= item.stockDisponible"
+                aria-label="Aumentar cantidad"
+              >
+                <i class="bi bi-plus"></i>
+              </button>
+
+            </div>
+
+            <strong class="cart-item-subtotal">
+
+              S/ {{ calcularSubtotalItem(item) | number:'1.2-2' }}
+
+            </strong>
+
+          </div>
+
+          <div class="cart-item-availability">
+
+            {{ item.stockDisponible }} disponibles en inventario
+
+          </div>
+
+        </article>
+
+      </div>
+
+      <!-- RESUMEN DEL CARRITO -->
+      <div class="cart-summary">
+
+        <div class="summary-row">
+
+          <span>Presentaciones diferentes</span>
+
+          <strong>{{ cantidadTiposProductos }}</strong>
+
+        </div>
+
+        <div class="summary-row">
+
+          <span>Cantidad total</span>
+
+          <strong>{{ cantidadTotalProductos }}</strong>
+
+        </div>
+
+        <div class="summary-total">
+
+          <span>Subtotal estimado</span>
+
+          <strong>
+            S/ {{ subtotalCarrito | number:'1.2-2' }}
+          </strong>
+
+        </div>
+
+        <p class="cart-disclaimer">
+
+          Los importes son referenciales. El servidor validará nuevamente
+          precios, descuentos y existencias antes de registrar la venta.
+
+        </p>
+
+        <!-- VACIAR CARRITO -->
+        <button
+          type="button"
+          class="btn-clear-cart"
+          *ngIf="carrito.length > 0"
+          (click)="limpiarCarrito()"
+        >
+
+          <i class="bi bi-trash"></i>
+
+          Vaciar carrito
+
+        </button>
+
+      </div>
+
+    </aside>
+
+  </div>
+
+</div>
+
+
