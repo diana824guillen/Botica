@@ -401,9 +401,7 @@
     <aside class="cart-section">
 
       <div class="cart-header">
-
         <div>
-
           <h2>
             <i class="bi bi-cart3"></i>
             Carrito de venta
@@ -413,16 +411,331 @@
             {{ cantidadTotalProductos }}
             unidades seleccionadas
           </p>
-
         </div>
 
         <span class="cart-count">
           {{ cantidadTiposProductos }}
         </span>
-
       </div>
 
-      <!-- CARRITO VACÍO -->
+      <!-- ======================================== -->
+      <!-- CLIENTE DE LA VENTA -->
+      <!-- ======================================== -->
+
+      <section class="customer-panel">
+
+        <div class="panel-title">
+          <h3>
+            <i class="bi bi-person"></i>
+            Cliente
+          </h3>
+
+          <span>Opcional</span>
+        </div>
+
+        <p class="customer-description">
+          Puedes asociar un cliente registrado, ingresar uno nuevo
+          o realizar la venta sin datos de cliente.
+        </p>
+
+        <!-- OPCIONES DE CLIENTE -->
+        <div class="customer-mode">
+
+          <button
+            type="button"
+            [class.active]="modoCliente === 'NINGUNO'"
+            (click)="cambiarModoCliente('NINGUNO')"
+          >
+            Sin cliente
+          </button>
+
+          <button
+            type="button"
+            [class.active]="modoCliente === 'EXISTENTE'"
+            (click)="cambiarModoCliente('EXISTENTE')"
+          >
+            Existente
+          </button>
+
+          <button
+            type="button"
+            [class.active]="modoCliente === 'NUEVO'"
+            (click)="cambiarModoCliente('NUEVO')"
+          >
+            Nuevo
+          </button>
+
+        </div>
+
+        <!-- CLIENTE EXISTENTE -->
+        <div
+          class="customer-form"
+          *ngIf="modoCliente === 'EXISTENTE'"
+        >
+
+          <label for="documentoBusqueda">
+            Número de documento
+          </label>
+
+          <div class="customer-search">
+
+            <input
+              id="documentoBusqueda"
+              type="text"
+              [(ngModel)]="documentoBusqueda"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Ingresa DNI, CE o pasaporte"
+              (keyup.enter)="buscarCliente()"
+              maxlength="15"
+            />
+
+            <button
+              type="button"
+              (click)="buscarCliente()"
+              [disabled]="buscandoCliente || !documentoBusqueda.trim()"
+            >
+              <i
+                class="bi"
+                [ngClass]="
+                  buscandoCliente
+                    ? 'bi-arrow-repeat spinning'
+                    : 'bi-search'
+                "
+              ></i>
+
+              {{ buscandoCliente ? 'Buscando' : 'Buscar' }}
+            </button>
+
+          </div>
+
+          <!-- MENSAJE DE BÚSQUEDA -->
+          <div
+            class="customer-message"
+            *ngIf="mensajeBusquedaCliente"
+            [ngClass]="tipoMensajeBusqueda"
+          >
+            {{ mensajeBusquedaCliente }}
+          </div>
+
+          <!-- CLIENTE ENCONTRADO -->
+          <div
+            class="selected-customer"
+            *ngIf="clienteSeleccionado"
+          >
+
+            <div class="selected-customer-icon">
+              <i class="bi bi-person-check"></i>
+            </div>
+
+            <div class="selected-customer-information">
+
+              <strong>
+                {{ clienteSeleccionado.nombres }}
+                {{ clienteSeleccionado.apellidos }}
+              </strong>
+
+              <span>
+                {{ clienteSeleccionado.tipoDocumento }}:
+                {{ clienteSeleccionado.numeroDocumento }}
+              </span>
+
+              <small *ngIf="clienteSeleccionado.correo">
+                {{ clienteSeleccionado.correo }}
+              </small>
+
+            </div>
+
+            <button
+              type="button"
+              class="btn-remove-customer"
+              title="Quitar cliente"
+              aria-label="Quitar cliente"
+              (click)="quitarClienteSeleccionado()"
+            >
+              <i class="bi bi-x-lg"></i>
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- CLIENTE NUEVO -->
+        <div
+          class="customer-form"
+          *ngIf="modoCliente === 'NUEVO'"
+        >
+
+          <div class="form-field">
+
+            <label for="tipoDocumentoNuevo">
+              Tipo de documento
+            </label>
+
+            <select
+              id="tipoDocumentoNuevo"
+              [ngModel]="nuevoCliente.tipoDocumento"
+              (ngModelChange)="cambiarTipoDocumentoNuevo($event)"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option value="DNI">DNI</option>
+              <option value="CE">Carné de extranjería</option>
+              <option value="PASAPORTE">Pasaporte</option>
+            </select>
+
+          </div>
+
+          <div class="form-field">
+
+            <label for="documentoNuevo">
+              Número de documento
+            </label>
+
+            <input
+              id="documentoNuevo"
+              type="text"
+              [(ngModel)]="nuevoCliente.numeroDocumento"
+              [ngModelOptions]="{ standalone: true }"
+              (input)="normalizarDocumentoNuevo($event)"
+              placeholder="Ingresa el documento"
+              [attr.maxlength]="
+                nuevoCliente.tipoDocumento === 'DNI'
+                  ? 8
+                  : nuevoCliente.tipoDocumento === 'CE'
+                    ? 11
+                    : 15
+              "
+            />
+
+          </div>
+
+          <!-- MODALIDAD DE REGISTRO -->
+          <div class="registration-mode">
+
+            <span>Datos del cliente</span>
+
+            <div class="registration-options">
+
+              <button
+                *ngIf="nuevoCliente.tipoDocumento === 'DNI'"
+                type="button"
+                [class.active]="modoRegistroNuevo === 'AUTO'"
+                (click)="cambiarModoRegistroNuevo('AUTO')"
+              >
+                Consulta RENIEC
+              </button>
+
+              <button
+                type="button"
+                [class.active]="modoRegistroNuevo === 'MANUAL'"
+                (click)="cambiarModoRegistroNuevo('MANUAL')"
+              >
+                Manual
+              </button>
+
+            </div>
+
+          </div>
+
+          <!-- DATOS MANUALES -->
+          <ng-container *ngIf="modoRegistroNuevo === 'MANUAL'">
+
+            <div class="form-field">
+
+              <label for="nombresNuevo">
+                Nombres
+              </label>
+
+              <input
+                id="nombresNuevo"
+                type="text"
+                [(ngModel)]="nuevoCliente.nombres"
+                [ngModelOptions]="{ standalone: true }"
+                (input)="normalizarNombreNuevo($event, 'nombres')"
+                placeholder="Nombres del cliente"
+              />
+
+            </div>
+
+            <div class="form-field">
+
+              <label for="apellidosNuevo">
+                Apellidos
+              </label>
+
+              <input
+                id="apellidosNuevo"
+                type="text"
+                [(ngModel)]="nuevoCliente.apellidos"
+                [ngModelOptions]="{ standalone: true }"
+                (input)="normalizarNombreNuevo($event, 'apellidos')"
+                placeholder="Apellidos del cliente"
+              />
+
+            </div>
+
+          </ng-container>
+
+          <div class="form-field">
+
+            <label for="correoNuevo">
+              Correo electrónico
+              <span>(opcional)</span>
+            </label>
+
+            <input
+              id="correoNuevo"
+              type="email"
+              [(ngModel)]="nuevoCliente.correo"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="correo@ejemplo.com"
+            />
+
+          </div>
+
+          <div
+            class="customer-message error"
+            *ngIf="errorNuevoCliente"
+          >
+            {{ errorNuevoCliente }}
+          </div>
+
+          <div
+            class="customer-info"
+            *ngIf="modoRegistroNuevo === 'AUTO'"
+          >
+            <i class="bi bi-info-circle"></i>
+
+            Los datos se consultarán al confirmar la venta.
+            Si la consulta no está disponible, podrás cambiar al registro manual.
+          </div>
+
+          <div class="customer-info">
+            <i class="bi bi-shield-check"></i>
+
+            El cliente se registrará junto con la venta.
+            No se realizará un registro independiente.
+          </div>
+
+        </div>
+
+        <!-- SIN CLIENTE -->
+        <div
+          class="customer-no-selection"
+          *ngIf="modoCliente === 'NINGUNO'"
+        >
+          <i class="bi bi-person-dash"></i>
+
+          <span>
+            La venta se realizará sin asociar un cliente.
+          </span>
+        </div>
+
+      </section>
+
+      <!-- ======================================== -->
+      <!-- PRODUCTOS DEL CARRITO -->
+      <!-- ======================================== -->
+
       <div
         class="empty-cart"
         *ngIf="carrito.length === 0"
@@ -438,7 +751,6 @@
 
       </div>
 
-      <!-- PRODUCTOS DEL CARRITO -->
       <div
         class="cart-items"
         *ngIf="carrito.length > 0"
@@ -477,9 +789,7 @@
               aria-label="Quitar producto del carrito"
               (click)="quitarProducto(item.idPresentacion)"
             >
-
               <i class="bi bi-trash"></i>
-
             </button>
 
           </div>
@@ -510,57 +820,203 @@
             </div>
 
             <strong class="cart-item-subtotal">
-
               S/ {{ calcularSubtotalItem(item) | number:'1.2-2' }}
-
             </strong>
 
           </div>
 
           <div class="cart-item-availability">
-
             {{ item.stockDisponible }} disponibles en inventario
-
           </div>
 
         </article>
 
       </div>
 
-      <!-- RESUMEN DEL CARRITO -->
+      <!-- ======================================== -->
+      <!-- RESUMEN Y PREVISUALIZACIÓN -->
+      <!-- ======================================== -->
+
       <div class="cart-summary">
 
         <div class="summary-row">
-
           <span>Presentaciones diferentes</span>
-
           <strong>{{ cantidadTiposProductos }}</strong>
-
         </div>
 
         <div class="summary-row">
-
           <span>Cantidad total</span>
-
           <strong>{{ cantidadTotalProductos }}</strong>
-
         </div>
 
-        <div class="summary-total">
-
+        <!-- TOTAL REFERENCIAL -->
+        <div
+          class="summary-total"
+          *ngIf="!previsualizacion()"
+        >
           <span>Subtotal estimado</span>
 
           <strong>
             S/ {{ subtotalCarrito | number:'1.2-2' }}
           </strong>
-
         </div>
 
+        <!-- RESULTADO DEL SERVIDOR -->
+        <ng-container *ngIf="previsualizacion() as vista">
+
+          <div class="server-preview">
+
+            <div class="summary-row">
+              <span>Subtotal</span>
+
+              <strong>
+                S/ {{ vista.subtotal | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div class="summary-row discount-row">
+              <span>Descuentos aplicados</span>
+
+              <strong>
+                - S/ {{ vista.descuentoTotal | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div class="summary-total">
+              <span>Total calculado</span>
+
+              <strong>
+                S/ {{ vista.total | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <!-- DESCUENTOS -->
+            <div
+              class="discount-list"
+              *ngIf="vista.descuentosAplicados.length > 0"
+            >
+
+              <h4>
+                <i class="bi bi-tag"></i>
+                Descuentos aplicados
+              </h4>
+
+              <div
+                class="discount-item"
+                *ngFor="let descuento of vista.descuentosAplicados"
+              >
+
+                <div>
+                  <strong>{{ descuento.nombre }}</strong>
+
+                  <small>
+                    {{ descuento.productoNombre }}
+                    · {{ descuento.porcentaje }}%
+                  </small>
+                </div>
+
+                <strong>
+                  - S/ {{ descuento.montoDescuento | number:'1.2-2' }}
+                </strong>
+
+              </div>
+
+            </div>
+
+            <!-- DISPONIBILIDAD -->
+            <div
+              class="stock-validation"
+              [class.stock-validation-error]="!vista.stockSuficiente"
+            >
+
+              <i
+                class="bi"
+                [ngClass]="
+                  vista.stockSuficiente
+                    ? 'bi-check-circle'
+                    : 'bi-exclamation-triangle'
+                "
+              ></i>
+
+              {{
+                vista.stockSuficiente
+                  ? 'Existencias verificadas correctamente.'
+                  : 'Hay productos con stock insuficiente.'
+              }}
+
+            </div>
+
+            <div
+              class="preview-detail"
+              *ngFor="let detalle of vista.detalles"
+              [class.preview-detail-error]="!detalle.stockSuficiente"
+            >
+
+              <div>
+                <strong>{{ detalle.productoNombre }}</strong>
+
+                <small>
+                  {{ detalle.cantidad }}
+                  × {{ detalle.presentacionTipo }}
+                </small>
+              </div>
+
+              <div class="preview-detail-amount">
+                <strong>
+                  S/ {{ detalle.subtotal | number:'1.2-2' }}
+                </strong>
+
+                <small>
+                  Stock: {{ detalle.stockDisponible }}
+                </small>
+              </div>
+
+            </div>
+
+          </div>
+
+        </ng-container>
+
+        <!-- ERROR DE PREVISUALIZACIÓN -->
+        <div
+          class="preview-error"
+          *ngIf="errorPrevisualizacion()"
+          role="alert"
+        >
+          <i class="bi bi-exclamation-circle"></i>
+          {{ errorPrevisualizacion() }}
+        </div>
+
+        <!-- BOTÓN DE PREVISUALIZACIÓN -->
+        <button
+          type="button"
+          class="btn-preview-sale"
+          (click)="previsualizarVenta()"
+          [disabled]="carrito.length === 0 || cargandoPrevisualizacion()"
+        >
+
+          <i
+            class="bi"
+            [ngClass]="
+              cargandoPrevisualizacion()
+                ? 'bi-arrow-repeat spinning'
+                : 'bi-calculator'
+            "
+          ></i>
+
+          {{
+            cargandoPrevisualizacion()
+              ? 'Calculando venta...'
+              : previsualizacion()
+                ? 'Actualizar cálculo'
+                : 'Calcular venta'
+          }}
+
+        </button>
+
         <p class="cart-disclaimer">
-
-          Los importes son referenciales. El servidor validará nuevamente
-          precios, descuentos y existencias antes de registrar la venta.
-
+          El importe del carrito es referencial. El cálculo del servidor
+          considera los precios, descuentos y existencias vigentes.
         </p>
 
         <!-- VACIAR CARRITO -->
@@ -570,11 +1026,8 @@
           *ngIf="carrito.length > 0"
           (click)="limpiarCarrito()"
         >
-
           <i class="bi bi-trash"></i>
-
           Vaciar carrito
-
         </button>
 
       </div>
