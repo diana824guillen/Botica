@@ -1,4 +1,3 @@
-
 package com.boticavidasalud.backend.dto;
 
 import jakarta.validation.Valid;
@@ -12,8 +11,13 @@ import java.util.List;
 @Data
 public class VentaRequestDTO {
 
-    // Opcional: puede ser una venta a cliente no registrado.
+    // Cliente que ya existe en la base de datos. Es opcional.
     private Integer idCliente;
+
+    // Datos de un cliente nuevo que se registrará dentro de la misma transacción de la venta.
+    // Es opcional.
+    @Valid
+    private ClienteRequestDTO nuevoCliente;
 
     @Size(
         max = 255,

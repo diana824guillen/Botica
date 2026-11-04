@@ -42,6 +42,7 @@ public class VentaService {
     private final LotePresentacionRepository lotePresentacionRepository;
     private final DescuentoRepository descuentoRepository;
     private final MovimientoInventarioRepository movimientoRepository;
+    private final ClienteService clienteService;
 
     public VentaService(
             VentaRepository ventaRepository,
@@ -51,7 +52,8 @@ public class VentaService {
             LoteRepository loteRepository,
             LotePresentacionRepository lotePresentacionRepository,
             DescuentoRepository descuentoRepository,
-            MovimientoInventarioRepository movimientoRepository) {
+            MovimientoInventarioRepository movimientoRepository,
+            ClienteService clienteService) {
 
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
@@ -61,6 +63,7 @@ public class VentaService {
         this.lotePresentacionRepository = lotePresentacionRepository;
         this.descuentoRepository = descuentoRepository;
         this.movimientoRepository = movimientoRepository;
+        this.clienteService = clienteService;
     }
 
     // ============================================================
@@ -192,15 +195,26 @@ public class VentaService {
 
         Usuario cajero = getUsuarioAutenticado();
 
+        // No se permite enviar un cliente existente y uno nuevo en la misma solicitud.
+        if (request.getIdCliente() != null
+                && request.getNuevoCliente() != null) {
+
+        throw new BusinessException(
+                "Seleccione un cliente existente o registre uno nuevo, no ambos"
+        );
+        }
+
         Cliente cliente = null;
 
+        // Cliente que ya existe.
         if (request.getIdCliente() != null) {
-            cliente = clienteRepository.findById(request.getIdCliente())
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException(
-                                    "Cliente no encontrado"
-                            )
-                    );
+
+        cliente = clienteRepository.findById(request.getIdCliente())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Cliente no encontrado"
+                        )
+                );
         }
 
         List<LineaVenta> lineas = prepararLineasVenta(
@@ -214,6 +228,22 @@ public class VentaService {
                 request.getPagos(),
                 resumen.total
         );
+
+        // Registrar un cliente nuevo dentro de la misma transacción de la venta.
+        if (request.getNuevoCliente() != null) {
+                ClienteResponseDTO clienteRegistrado =
+                        clienteService.registrarCliente(
+                                request.getNuevoCliente()
+                        );
+
+                cliente = clienteRepository.findById(
+                        clienteRegistrado.getId()
+                ).orElseThrow(() ->
+                        new BusinessException(
+                                "No se pudo recuperar el cliente registrado"
+                        )
+                );
+        }
 
         Venta venta = new Venta();
 
@@ -1087,11 +1117,21 @@ public class VentaService {
         dto.setNumeroNotaVenta(venta.getNumeroNotaVenta());
         dto.setFechaVenta(venta.getFechaVenta());
 
-        dto.setClienteNombre(
-                venta.getCliente() != null
-                        ? venta.getCliente().getNombres()
-                        : "Cliente Varios"
-        );
+        if (venta.getCliente() != null) {
+                String nombres = venta.getCliente().getNombres();
+                String apellidos = venta.getCliente().getApellidos();
+                String nombreCompleto = (
+                        (nombres == null ? "" : nombres)
+                        + " "
+                        + (apellidos == null ? "" : apellidos)
+                ).trim();
+
+                dto.setClienteNombre(nombreCompleto);
+
+                } else {
+
+                dto.setClienteNombre("");
+        }
 
         dto.setCajeroNombre(venta.getUsuario().getNombres());
 

@@ -5,24 +5,43 @@ export type MetodoPago =
   | 'TARJETA'
   | 'TRANSFERENCIA';
 
-// Detalle enviado al backend.
+export type TipoDocumentoCliente =
+  | 'DNI'
+  | 'CE'
+  | 'PASAPORTE';
+
+export type OrigenDatosCliente =
+  | 'RENIEC'
+  | 'MANUAL';
+
+// Datos de un producto enviado al backend.
 export interface DetalleVentaRequest {
   idPresentacion: number;
   cantidad: number;
 }
 
-// Pago enviado al backend.
+// Datos de un pago enviado al backend.
 export interface PagoVentaRequest {
   metodoPago: MetodoPago;
   monto: number;
+  montoRecibido?: number | null;
 }
 
-// Datos para previsualizar la venta.
+// Datos de un cliente nuevo que se registrará junto con la venta.
+export interface ClienteVentaRequest {
+  tipoDocumento: TipoDocumentoCliente;
+  numeroDocumento: string;
+  nombres?: string;
+  apellidos?: string;
+  correo?: string | null;
+  origenDatos: OrigenDatosCliente;
+}
+
+// Datos para previsualizar una venta.
 export interface VentaPrevisualizacionRequest {
   detalles: DetalleVentaRequest[];
 }
 
-// Resultado de cada detalle de la previsualización.
 export interface DetalleVentaPrevisualizacion {
   idProducto: number;
   idPresentacion: number;
@@ -36,7 +55,6 @@ export interface DetalleVentaPrevisualizacion {
   stockSuficiente: boolean;
 }
 
-// Promoción aplicada durante la previsualización.
 export interface DescuentoVentaPrevisualizacion {
   idDescuento: number;
   nombre: string;
@@ -47,7 +65,6 @@ export interface DescuentoVentaPrevisualizacion {
   montoDescuento: number;
 }
 
-// Respuesta de la previsualización.
 export interface VentaPrevisualizacionResponse {
   subtotal: number;
   descuentoTotal: number;
@@ -57,15 +74,15 @@ export interface VentaPrevisualizacionResponse {
   descuentosAplicados: DescuentoVentaPrevisualizacion[];
 }
 
-// Solicitud para registrar la venta.
+// Solicitud para registrar definitivamente la venta.
 export interface VentaRequest {
   idCliente: number | null;
+  nuevoCliente?: ClienteVentaRequest | null;
   observacion?: string | null;
   detalles: DetalleVentaRequest[];
   pagos: PagoVentaRequest[];
 }
 
-// Detalle devuelto al registrar una venta.
 export interface DetalleVentaResponse {
   productoNombre: string;
   presentacionTipo: string;
@@ -77,13 +94,13 @@ export interface DetalleVentaResponse {
   numeroLote: string;
 }
 
-// Pago devuelto por el backend.
 export interface PagoVentaResponse {
   metodoPago: MetodoPago;
   monto: number;
+  montoRecibido: number | null;
+  vuelto: number;
 }
 
-// Respuesta del registro definitivo.
 export interface VentaResponse {
   id: number;
   numeroNotaVenta: string;
