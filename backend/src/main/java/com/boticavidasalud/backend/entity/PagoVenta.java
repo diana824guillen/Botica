@@ -28,8 +28,17 @@ public class PagoVenta {
     @Column(name = "metodo_pago", nullable = false)
     private MetodoPago metodoPago;
 
+    // Importe aplicado al total de la venta.
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
+
+    // Dinero recibido del cliente. Solo aplica para efectivo.
+    @Column(name = "monto_recibido", precision = 10, scale = 2)
+    private BigDecimal montoRecibido;
+
+    // Diferencia devuelta al cliente.
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal vuelto = BigDecimal.ZERO;
 
     @Column(name = "fecha_pago", nullable = false)
     private LocalDateTime fechaPago = LocalDateTime.now();

@@ -1,4 +1,3 @@
-
 package com.boticavidasalud.backend.dto;
 
 import com.boticavidasalud.backend.enums.MetodoPago;
@@ -30,14 +29,20 @@ public class VentaResponseDTO {
 
         private String productoNombre;
         private String presentacionTipo;
+
         // Cantidad comercial vendida.
         private BigDecimal cantidad;
+
         private Integer factorConversion;
+
         // Equivalente descontado del inventario.
         private BigDecimal cantidadBase;
+
         // Precio de una presentación completa.
         private BigDecimal precioUnitario;
+
         private BigDecimal subtotal;
+
         // Lote del que se retiraron las existencias.
         private String numeroLote;
     }
@@ -46,7 +51,15 @@ public class VentaResponseDTO {
     public static class PagoInfoDTO {
 
         private MetodoPago metodoPago;
+
+        // Importe aplicado al total de la venta.
         private BigDecimal monto;
+
+        // Dinero recibido del cliente (solo efectivo).
+        private BigDecimal montoRecibido;
+
+        // Vuelto calculado por el backend.
+        private BigDecimal vuelto;
     }
 }
 

@@ -1,9 +1,9 @@
-
 package com.boticavidasalud.backend.service;
 
 import com.boticavidasalud.backend.dto.*;
 import com.boticavidasalud.backend.entity.*;
 import com.boticavidasalud.backend.enums.EstadoRegistro;
+import com.boticavidasalud.backend.enums.MetodoPago;
 import com.boticavidasalud.backend.enums.TipoCondicionDescuento;
 import com.boticavidasalud.backend.enums.TipoMovimiento;
 import com.boticavidasalud.backend.exception.BusinessException;
@@ -79,12 +79,10 @@ public class VentaService {
             );
         }
 
-        // Preparar las líneas con precios obtenidos de la base de datos.
         List<LineaVenta> lineas = prepararLineasVenta(
                 request.getDetalles()
         );
 
-        // Calcular los mismos importes y promociones de la venta final.
         ResumenVenta resumen = calcularResumenVenta(lineas);
 
         VentaPrevisualizacionResponseDTO response =
@@ -94,7 +92,6 @@ public class VentaService {
         response.setDescuentoTotal(resumen.descuentoTotal);
         response.setTotal(resumen.total);
 
-        // Consultar el stock disponible de cada presentación.
         List<VentaPrevisualizacionResponseDTO.DetalleInfoDTO>
                 detallesResponse = new ArrayList<>();
 
@@ -124,52 +121,24 @@ public class VentaService {
             VentaPrevisualizacionResponseDTO.DetalleInfoDTO detalleResponse =
                     new VentaPrevisualizacionResponseDTO.DetalleInfoDTO();
 
-            detalleResponse.setIdProducto(
-                    linea.producto.getId()
-            );
-
-            detalleResponse.setIdPresentacion(
-                    linea.presentacion.getId()
-            );
-
-            detalleResponse.setProductoNombre(
-                    linea.producto.getNombre()
-            );
-
+            detalleResponse.setIdProducto(linea.producto.getId());
+            detalleResponse.setIdPresentacion(linea.presentacion.getId());
+            detalleResponse.setProductoNombre(linea.producto.getNombre());
             detalleResponse.setPresentacionTipo(
                     linea.presentacion.getTipo().name()
             );
-
-            detalleResponse.setFactorConversion(
-                    linea.factorConversion
-            );
-
-            detalleResponse.setCantidad(
-                    linea.cantidadPresentacion
-            );
-
-            detalleResponse.setPrecioUnitario(
-                    linea.precioUnitario
-            );
-
-            detalleResponse.setSubtotal(
-                    linea.subtotal
-            );
-
-            detalleResponse.setStockDisponible(
-                    stockDisponible
-            );
-
-            detalleResponse.setStockSuficiente(
-                    tieneStockSuficiente
-            );
+            detalleResponse.setFactorConversion(linea.factorConversion);
+            detalleResponse.setCantidad(linea.cantidadPresentacion);
+            detalleResponse.setPrecioUnitario(linea.precioUnitario);
+            detalleResponse.setSubtotal(linea.subtotal);
+            detalleResponse.setStockDisponible(stockDisponible);
+            detalleResponse.setStockSuficiente(tieneStockSuficiente);
 
             detallesResponse.add(detalleResponse);
         }
 
         response.setDetalles(detallesResponse);
 
-        // Devolver las promociones aplicadas.
         List<VentaPrevisualizacionResponseDTO.DescuentoInfoDTO>
                 descuentosResponse = new ArrayList<>();
 
@@ -190,9 +159,7 @@ public class VentaService {
         }
 
         response.setDescuentosAplicados(descuentosResponse);
-        response.setStockSuficiente(
-                todasLasPresentacionesTienenStock
-        );
+        response.setStockSuficiente(todasLasPresentacionesTienenStock);
 
         return response;
     }
@@ -223,7 +190,6 @@ public class VentaService {
             );
         }
 
-        // 1. Validar usuario y cliente.
         Usuario cajero = getUsuarioAutenticado();
 
         Cliente cliente = null;
@@ -237,23 +203,18 @@ public class VentaService {
                     );
         }
 
-        // 2. Preparar las líneas de venta.
-        // Los precios siempre se consultan desde la base de datos.
         List<LineaVenta> lineas = prepararLineasVenta(
                 request.getDetalles()
         );
 
-        // 3. Recalcular subtotal, descuentos y total.
-        // No se confía en los datos de una previsualización anterior.
         ResumenVenta resumen = calcularResumenVenta(lineas);
 
-        // 4. Validar los pagos antes de modificar el inventario.
+        // Validar pagos antes de modificar el inventario.
         List<PagoRequestDTO> pagosValidos = validarPagos(
                 request.getPagos(),
                 resumen.total
         );
 
-        // 5. Preparar la cabecera de la venta.
         Venta venta = new Venta();
 
         venta.setCliente(cliente);
@@ -264,7 +225,7 @@ public class VentaService {
         venta.setDescuentoTotal(resumen.descuentoTotal);
         venta.setTotal(resumen.total);
 
-        // 6. Descontar las existencias por presentación y lote.
+        // Descontar existencias por presentación y lote.
         List<DetalleVenta> detallesVenta = descontarExistencias(
                 venta,
                 lineas,
@@ -273,7 +234,7 @@ public class VentaService {
 
         venta.setDetalles(detallesVenta);
 
-        // 7. Registrar los pagos.
+        // Registrar los pagos y calcular el vuelto en el backend.
         List<PagoVenta> pagosVenta = new ArrayList<>();
 
         for (PagoRequestDTO pagoRequest : pagosValidos) {
@@ -286,13 +247,37 @@ public class VentaService {
             pago.setFechaPago(LocalDateTime.now());
             pago.setEstado(EstadoRegistro.ACTIVO.getValor());
 
+            if (pagoRequest.getMetodoPago() == MetodoPago.EFECTIVO) {
+
+                BigDecimal montoRecibido = pagoRequest.getMontoRecibido();
+
+                pago.setMontoRecibido(montoRecibido);
+
+                BigDecimal vuelto = montoRecibido
+                        .subtract(pagoRequest.getMonto())
+                        .setScale(
+                                ESCALA_MONETARIA,
+                                RoundingMode.HALF_UP
+                        );
+
+                pago.setVuelto(vuelto);
+
+            } else {
+
+                // Los métodos no monetarios no generan vuelto.
+                pago.setMontoRecibido(null);
+                pago.setVuelto(BigDecimal.ZERO.setScale(
+                        ESCALA_MONETARIA,
+                        RoundingMode.HALF_UP
+                ));
+            }
+
             pagosVenta.add(pago);
         }
 
         venta.setPagos(pagosVenta);
 
-        // 8. Guardar venta, detalles y pagos.
-        // Si ocurre un error, se revierten también los cambios de stock.
+        // Guardar venta, detalles y pagos en una sola transacción.
         Venta ventaGuardada = ventaRepository.save(venta);
 
         return mapToResponse(ventaGuardada, resumen.subtotal);
@@ -308,7 +293,6 @@ public class VentaService {
         Map<Integer, BigDecimal> cantidadesPorPresentacion =
                 new TreeMap<>();
 
-        // Agrupar cantidades repetidas de una misma presentación.
         for (DetalleVentaRequestDTO detalle : detallesRequest) {
 
             if (detalle == null
@@ -427,7 +411,6 @@ public class VentaService {
         Map<Integer, BigDecimal> cantidadBasePorProducto =
                 new HashMap<>();
 
-        // Agrupar importes y cantidades base por producto.
         for (LineaVenta linea : lineas) {
 
             Integer idProducto = linea.producto.getId();
@@ -457,7 +440,6 @@ public class VentaService {
                 RoundingMode.HALF_UP
         );
 
-        // Recuperar descuentos vigentes.
         List<Descuento> descuentos =
                 new ArrayList<>(
                         descuentoRepository.findDescuentosVigentes(
@@ -465,7 +447,6 @@ public class VentaService {
                         )
                 );
 
-        // Orden estable para aplicar las promociones.
         descuentos.sort(
                 (primero, segundo) ->
                         Integer.compare(
@@ -494,7 +475,6 @@ public class VentaService {
             BigDecimal subtotalProducto =
                     subtotalPorProducto.get(idProducto);
 
-            // El producto de la promoción debe estar en el carrito.
             if (subtotalProducto == null
                     || subtotalProducto.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
@@ -505,7 +485,6 @@ public class VentaService {
             if (descuento.getTipoCondicion()
                     == TipoCondicionDescuento.MONTO_MINIMO) {
 
-                // El monto mínimo se valida con el subtotal del carrito.
                 cumpleCondicion = subtotal.compareTo(
                         descuento.getValorCondicion()
                 ) >= 0;
@@ -513,8 +492,6 @@ public class VentaService {
             } else if (descuento.getTipoCondicion()
                     == TipoCondicionDescuento.CANTIDAD_MINIMA) {
 
-                // La cantidad mínima se expresa en unidad base
-                // del producto asociado a la promoción.
                 BigDecimal cantidadBaseProducto =
                         cantidadBasePorProducto.get(idProducto);
 
@@ -537,7 +514,6 @@ public class VentaService {
                 continue;
             }
 
-            // El descuento se aplica sobre el subtotal del producto.
             BigDecimal descuentoPropuesto = subtotalProducto
                     .multiply(porcentaje)
                     .divide(
@@ -553,8 +529,6 @@ public class VentaService {
                 descuentoAcumulado = BigDecimal.ZERO;
             }
 
-            // Los descuentos acumulados no pueden superar
-            // el subtotal del producto.
             BigDecimal descuentoRestante = subtotalProducto
                     .subtract(descuentoAcumulado)
                     .max(BigDecimal.ZERO);
@@ -576,26 +550,20 @@ public class VentaService {
                 aplicado.nombre = descuento.getNombre();
                 aplicado.productoNombre =
                         descuento.getProducto().getNombre();
-
                 aplicado.tipoCondicion =
                         descuento.getTipoCondicion();
-
                 aplicado.valorCondicion =
                         descuento.getValorCondicion();
-
                 aplicado.porcentaje = porcentaje;
-
                 aplicado.montoDescuento = descuentoAplicado;
 
                 descuentosAplicados.add(aplicado);
             }
         }
 
-        // Sumar descuentos aplicados.
         BigDecimal descuentoTotal = BigDecimal.ZERO;
 
         for (BigDecimal descuento : descuentosPorProducto.values()) {
-
             if (descuento != null) {
                 descuentoTotal = descuentoTotal.add(descuento);
             }
@@ -634,7 +602,6 @@ public class VentaService {
                 ? pagosRequest
                 : List.of();
 
-        // Si el total es cero, no se requieren pagos.
         if (totalVenta.compareTo(BigDecimal.ZERO) == 0) {
 
             if (!pagos.isEmpty()) {
@@ -676,6 +643,45 @@ public class VentaService {
                 );
             }
 
+            // Validaciones específicas para efectivo.
+            if (pago.getMetodoPago() == MetodoPago.EFECTIVO) {
+
+                BigDecimal recibido = pago.getMontoRecibido();
+
+                if (recibido == null) {
+                    throw new BusinessException(
+                            "Debe indicar el monto recibido para el pago en efectivo"
+                    );
+                }
+
+                if (recibido.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessException(
+                            "El monto recibido debe ser mayor a cero"
+                    );
+                }
+
+                if (recibido.stripTrailingZeros().scale() > 2) {
+                    throw new BusinessException(
+                            "El monto recibido admite máximo dos decimales"
+                    );
+                }
+
+                if (recibido.compareTo(pago.getMonto()) < 0) {
+                    throw new BusinessException(
+                            "El monto recibido en efectivo no puede ser menor al importe aplicado"
+                    );
+                }
+
+            } else {
+
+                // Los métodos distintos al efectivo no reciben vuelto.
+                if (pago.getMontoRecibido() != null) {
+                    throw new BusinessException(
+                            "El monto recibido solo debe indicarse para pagos en efectivo"
+                    );
+                }
+            }
+
             totalPagado = totalPagado.add(pago.getMonto());
         }
 
@@ -687,8 +693,8 @@ public class VentaService {
         if (totalPagado.compareTo(totalVenta) != 0) {
             throw new BusinessException(
                     "El monto pagado (" + totalPagado
-                    + ") no coincide con el total de la venta ("
-                    + totalVenta + ")"
+                            + ") no coincide con el total de la venta ("
+                            + totalVenta + ")"
             );
         }
 
@@ -706,7 +712,6 @@ public class VentaService {
 
         TreeSet<Integer> idsLotes = new TreeSet<>();
 
-        // Obtener los lotes que tienen existencias de las presentaciones.
         for (LineaVenta linea : lineas) {
 
             List<Integer> idsEncontrados =
@@ -721,8 +726,6 @@ public class VentaService {
 
         Map<Integer, Lote> lotesBloqueados = new TreeMap<>();
 
-        // Bloquear los lotes en orden ascendente para reducir
-        // el riesgo de bloqueos cruzados.
         for (Integer idLote : idsLotes) {
 
             Optional<Lote> loteOptional =
@@ -783,13 +786,12 @@ public class VentaService {
             if (idsLotesBloqueados.isEmpty()) {
                 throw new BusinessException(
                         "No hay stock disponible de "
-                        + linea.presentacion.getTipo()
-                        + " para el producto: "
-                        + linea.producto.getNombre()
+                                + linea.presentacion.getTipo()
+                                + " para el producto: "
+                                + linea.producto.getNombre()
                 );
             }
 
-            // Consultar los saldos bloqueados en orden FEFO.
             List<LotePresentacion> saldos =
                     lotePresentacionRepository
                             .findSaldosDisponiblesParaVentaForUpdate(
@@ -801,7 +803,6 @@ public class VentaService {
             BigDecimal stockDisponiblePresentacion = BigDecimal.ZERO;
 
             for (LotePresentacion saldo : saldos) {
-
                 if (saldo.getCantidad() != null) {
                     stockDisponiblePresentacion =
                             stockDisponiblePresentacion.add(
@@ -810,20 +811,19 @@ public class VentaService {
                 }
             }
 
-            // Validar stock de la presentación específica.
             if (stockDisponiblePresentacion.compareTo(
                     linea.cantidadPresentacion
             ) < 0) {
 
                 throw new BusinessException(
                         "Stock insuficiente de "
-                        + linea.presentacion.getTipo()
-                        + " para el producto "
-                        + linea.producto.getNombre()
-                        + ". Disponible: "
-                        + stockDisponiblePresentacion
-                        + ", solicitado: "
-                        + linea.cantidadPresentacion
+                                + linea.presentacion.getTipo()
+                                + " para el producto "
+                                + linea.producto.getNombre()
+                                + ". Disponible: "
+                                + stockDisponiblePresentacion
+                                + ", solicitado: "
+                                + linea.cantidadPresentacion
                 );
             }
 
@@ -834,7 +834,6 @@ public class VentaService {
                     linea.factorConversion
             );
 
-            // Distribuir la salida entre lotes según FEFO.
             for (LotePresentacion saldo : saldos) {
 
                 if (cantidadRestante.compareTo(
@@ -858,7 +857,7 @@ public class VentaService {
                 validarCantidadEntera(
                         cantidadADescontar,
                         "El stock de la presentación contiene cantidades "
-                        + "no enteras. Revise el inventario del lote."
+                                + "no enteras. Revise el inventario del lote."
                 );
 
                 Integer idLote = saldo.getLote().getId();
@@ -885,25 +884,20 @@ public class VentaService {
                 if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
                     throw new BusinessException(
                             "El stock total del lote no coincide con "
-                            + "las existencias de sus presentaciones. "
-                            + "Revise el lote: " + lote.getNumeroLote()
+                                    + "las existencias de sus presentaciones. "
+                                    + "Revise el lote: " + lote.getNumeroLote()
                     );
                 }
 
-                // Actualizar saldo de la presentación.
                 BigDecimal nuevoStockPresentacion =
                         stockPresentacion.subtract(cantidadADescontar);
 
                 saldo.setCantidad(nuevoStockPresentacion);
-
                 lotePresentacionRepository.save(saldo);
 
-                // Actualizar stock total en unidad base.
                 lote.setCantidad(stockNuevo);
-
                 loteRepository.save(lote);
 
-                // Crear detalle de venta.
                 DetalleVenta detalleVenta = new DetalleVenta();
 
                 detalleVenta.setVenta(venta);
@@ -917,7 +911,6 @@ public class VentaService {
 
                 detallesVenta.add(detalleVenta);
 
-                // Registrar movimiento de salida.
                 MovimientoInventario movimiento =
                         new MovimientoInventario();
 
@@ -929,15 +922,12 @@ public class VentaService {
                 );
 
                 movimiento.setStockAnterior(stockAnterior);
-
                 movimiento.setCantidad(
                         cantidadBaseADescontar.negate()
                 );
-
                 movimiento.setCantidadPresentacion(
                         cantidadADescontar.negate()
                 );
-
                 movimiento.setStockNuevo(stockNuevo);
 
                 movimiento.setMotivo(
@@ -956,7 +946,7 @@ public class VentaService {
             if (cantidadRestante.compareTo(BigDecimal.ZERO) > 0) {
                 throw new BusinessException(
                         "No se pudo completar la salida del producto: "
-                        + linea.producto.getNombre()
+                                + linea.producto.getNombre()
                 );
             }
         }
@@ -1174,6 +1164,8 @@ public class VentaService {
 
             info.setMetodoPago(pago.getMetodoPago());
             info.setMonto(pago.getMonto());
+            info.setMontoRecibido(pago.getMontoRecibido());
+            info.setVuelto(pago.getVuelto());
 
             pagosDto.add(info);
         }
