@@ -1014,6 +1014,232 @@
 
         </button>
 
+        <!-- ======================================== -->
+        <!-- MÉTODOS DE PAGO -->
+        <!-- ======================================== -->
+         
+        <section
+          class="payment-panel"
+          *ngIf="previsualizacion()?.stockSuficiente"
+        >
+
+          <div class="payment-header">
+            <div>
+              <h3>
+                <i class="bi bi-wallet2"></i>
+                Métodos de pago
+              </h3>
+
+              <p>Selecciona cómo se realizará el pago.</p>
+            </div>
+
+            <span>{{ pagos.length }} pago(s)</span>
+          </div>
+
+          <!-- LISTADO DE PAGOS -->
+          <div
+            class="payment-list"
+            *ngFor="let pago of pagos; let i = index"
+          >
+
+            <div class="payment-item-header">
+
+              <strong>Pago {{ i + 1 }}</strong>
+
+              <button
+                *ngIf="pagos.length > 1"
+                type="button"
+                class="btn-remove-payment"
+                (click)="eliminarPago(i)"
+                title="Eliminar método de pago"
+                aria-label="Eliminar método de pago"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+
+            </div>
+
+            <div class="form-field">
+
+              <label [for]="'metodoPago' + i">
+                Método de pago
+              </label>
+
+              <select
+                [id]="'metodoPago' + i"
+                [ngModel]="pago.metodoPago"
+                (ngModelChange)="cambiarMetodoPago(i, $event)"
+                [ngModelOptions]="{ standalone: true }"
+              >
+
+                <option
+                  *ngFor="let metodo of metodosPago"
+                  [ngValue]="metodo.valor"
+                >
+                  {{ metodo.nombre }}
+                </option>
+
+              </select>
+
+            </div>
+
+            <div class="form-field">
+
+              <label [for]="'montoPago' + i">
+                Importe aplicado (S/)
+              </label>
+
+              <input
+                [id]="'montoPago' + i"
+                type="number"
+                min="0.01"
+                step="0.01"
+                [ngModel]="pago.monto"
+                (ngModelChange)="actualizarMontoPago(i, $event)"
+                [ngModelOptions]="{ standalone: true }"
+              />
+
+            </div>
+
+            <!-- SOLO PARA EFECTIVO -->
+            <ng-container *ngIf="pago.metodoPago === 'EFECTIVO'">
+
+              <div class="form-field">
+
+                <label [for]="'montoRecibido' + i">
+                  Dinero recibido (S/)
+                </label>
+
+                <input
+                  [id]="'montoRecibido' + i"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [ngModel]="pago.montoRecibido"
+                  (ngModelChange)="actualizarMontoRecibido(i, $event)"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+
+              </div>
+
+              <div class="cash-change">
+                <span>Vuelto</span>
+
+                <strong>
+                  S/ {{ calcularVuelto(pago) | number:'1.2-2' }}
+                </strong>
+              </div>
+
+            </ng-container>
+
+          </div>
+
+          <!-- AGREGAR OTRO MÉTODO -->
+          <button
+            type="button"
+            class="btn-add-payment"
+            (click)="agregarPago()"
+            [disabled]="saldoPendiente <= 0"
+          >
+            <i class="bi bi-plus-circle"></i>
+            Agregar otro método de pago
+          </button>
+
+          <!-- RESUMEN DE PAGOS -->
+          <div class="payment-summary">
+
+            <div class="payment-summary-row">
+              <span>Total de la venta</span>
+
+              <strong>
+                S/ {{ totalVenta | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div class="payment-summary-row">
+              <span>Total pagado</span>
+
+              <strong>
+                S/ {{ totalPagado | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div
+              class="payment-balance"
+              [class.balance-paid]="saldoPendiente <= 0 && excesoPago <= 0"
+              [class.balance-error]="excesoPago > 0"
+            >
+
+              <span>
+                {{
+                  excesoPago > 0
+                    ? 'Importe excedente'
+                    : saldoPendiente > 0
+                      ? 'Saldo pendiente'
+                      : 'Pago completado'
+                }}
+              </span>
+
+              <strong>
+                S/ {{
+                  excesoPago > 0
+                    ? excesoPago
+                    : saldoPendiente
+                    | number:'1.2-2'
+                }}
+              </strong>
+
+            </div>
+
+            <div
+              class="payment-total-change"
+              *ngIf="vueltoTotal > 0"
+            >
+              <span>Vuelto total</span>
+
+              <strong>
+                S/ {{ vueltoTotal | number:'1.2-2' }}
+              </strong>
+            </div>
+
+          </div>
+
+          <!-- ERRORES -->
+          <div
+            class="payment-error"
+            *ngIf="errorPagos"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-circle"></i>
+            {{ errorPagos }}
+          </div>
+
+          <!-- ESTADO -->
+          <div
+            class="payment-status"
+            [class.payment-status-valid]="pagosValidos"
+          >
+
+            <i
+              class="bi"
+              [ngClass]="
+                pagosValidos
+                  ? 'bi-check-circle'
+                  : 'bi-info-circle'
+              "
+            ></i>
+
+            {{
+              pagosValidos
+                ? 'Los métodos de pago cubren el total de la venta.'
+                : 'Completa los importes para cubrir el total de la venta.'
+            }}
+
+          </div>
+
+        </section>
+
+
         <p class="cart-disclaimer">
           El importe del carrito es referencial. El cálculo del servidor
           considera los precios, descuentos y existencias vigentes.

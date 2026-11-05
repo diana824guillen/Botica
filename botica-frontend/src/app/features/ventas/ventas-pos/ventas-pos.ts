@@ -24,6 +24,8 @@ import { VentaService } from '../services/venta';
 
 import {
   ClienteVentaRequest,
+  MetodoPago,
+  PagoVentaRequest,
   TipoDocumentoCliente,
   VentaPrevisualizacionRequest,
   VentaPrevisualizacionResponse
@@ -47,6 +49,12 @@ interface CategoriaFiltro {
 
 type ModoClientePOS = 'NINGUNO' | 'EXISTENTE' | 'NUEVO';
 type ModoRegistroNuevo = 'AUTO' | 'MANUAL';
+
+interface PagoFormulario {
+  metodoPago: MetodoPago;
+  monto: number;
+  montoRecibido: number | null;
+}
 
 @Component({
   selector: 'app-ventas-pos',
@@ -125,6 +133,25 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   previsualizacion = signal<VentaPrevisualizacionResponse | null>(null);
   cargandoPrevisualizacion = signal(false);
   errorPrevisualizacion = signal('');
+
+  // ============================================================
+  // MÉTODOS DE PAGO
+  // ============================================================
+
+  pagos: PagoFormulario[] = [];
+
+  readonly metodosPago: {
+    valor: MetodoPago;
+    nombre: string;
+  }[] = [
+    { valor: 'EFECTIVO', nombre: 'Efectivo' },
+    { valor: 'YAPE', nombre: 'Yape' },
+    { valor: 'PLIN', nombre: 'Plin' },
+    { valor: 'TARJETA', nombre: 'Tarjeta' },
+    { valor: 'TRANSFERENCIA', nombre: 'Transferencia' }
+  ];
+
+  errorPagos = '';
 
   // ============================================================
   // NOTIFICACIONES
@@ -895,19 +922,12 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
           this.previsualizacion.set(respuesta);
 
-          if (!respuesta.stockSuficiente) {
-
-            this.mostrarMensaje(
-              'La venta tiene productos con stock insuficiente. Revisa el detalle.',
-              'warning'
-            );
-
+          // Reinicia los pagos usando el total actualizado del servidor.
+          if (respuesta.stockSuficiente) {
+            this.inicializarPagos();
           } else {
-
-            this.mostrarMensaje(
-              'La venta fue calculada correctamente.',
-              'success'
-            );
+            this.pagos = [];
+            this.errorPagos = '';
           }
         },
 
@@ -927,9 +947,340 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
   // El cálculo deja de ser válido cuando se modifica el carrito.
   private invalidarPrevisualizacion(): void {
-
     this.previsualizacion.set(null);
     this.errorPrevisualizacion.set('');
+
+    // Los pagos anteriores dejan de ser válidos.
+    this.pagos = [];
+    this.errorPagos = '';
+  }
+
+  // ============================================================
+  // GESTIÓN DE MÉTODOS DE PAGO
+  // ============================================================
+
+  // Total real calculado por el servidor.
+  get totalVenta(): number {
+    return Number(this.previsualizacion()?.total ?? 0);
+  }
+
+  // Suma de los importes aplicados a la venta.
+  get totalPagado(): number {
+    return Number(
+      this.pagos.reduce(
+        (total, pago) => total + (Number(pago.monto) || 0),
+        0
+      ).toFixed(2)
+    );
+  }
+
+  // Importe que todavía falta pagar.
+  get saldoPendiente(): number {
+    return Number(
+      Math.max(0, this.totalVenta - this.totalPagado).toFixed(2)
+    );
+  }
+
+  // Diferencia si los pagos superan el total.
+  get excesoPago(): number {
+    return Number(
+      Math.max(0, this.totalPagado - this.totalVenta).toFixed(2)
+    );
+  }
+
+  // Verifica si todos los importes son válidos.
+  get pagosValidos(): boolean {
+
+    if (!this.previsualizacion()?.stockSuficiente) {
+      return false;
+    }
+
+    if (this.pagos.length === 0) {
+      return false;
+    }
+
+    if (this.excesoPago > 0.001 || this.saldoPendiente > 0.001) {
+      return false;
+    }
+
+    return this.pagos.every(pago => {
+
+      const monto = Number(pago.monto);
+
+      if (!Number.isFinite(monto) || monto <= 0) {
+        return false;
+      }
+
+      if (pago.metodoPago === 'EFECTIVO') {
+
+        const recibido = Number(pago.montoRecibido);
+
+        if (
+          !Number.isFinite(recibido) ||
+          recibido < monto
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  // Inicializa un pago en efectivo con el total de la venta.
+  inicializarPagos(): void {
+
+    const total = this.totalVenta;
+
+    this.pagos = [{
+      metodoPago: 'EFECTIVO',
+      monto: total,
+      montoRecibido: total
+    }];
+
+    this.errorPagos = '';
+  }
+
+  // Agrega otro método de pago con el saldo pendiente.
+  agregarPago(): void {
+
+    if (this.pagos.length >= this.metodosPago.length) {
+      this.errorPagos = 'Ya se agregaron todos los métodos de pago disponibles.';
+      return;
+    }
+
+    const ultimoPago = this.pagos[this.pagos.length - 1];
+
+    if (!ultimoPago) {
+      return;
+    }
+
+    const montoOriginal = Number(ultimoPago.monto) || 0;
+
+    if (montoOriginal < 0.02) {
+      this.errorPagos = 'El importe debe ser mayor para poder dividir el pago.';
+      return;
+    }
+
+    // Divide el importe actual en dos partes.
+    const montoNuevo = Number((montoOriginal / 2).toFixed(2));
+    const montoActual = Number((montoOriginal - montoNuevo).toFixed(2));
+
+    const recibidoCoincideConMonto =
+      Math.abs(Number(ultimoPago.montoRecibido) - montoOriginal) < 0.001;
+
+    ultimoPago.monto = montoActual;
+
+    if (
+      ultimoPago.metodoPago === 'EFECTIVO' &&
+      recibidoCoincideConMonto
+    ) {
+      ultimoPago.montoRecibido = montoActual;
+    }
+
+    // Busca un método que todavía no esté utilizado.
+    const metodoDisponible = this.metodosPago.find(
+      metodo => !this.pagos.some(
+        pago => pago.metodoPago === metodo.valor
+      )
+    );
+
+    this.pagos.push({
+      metodoPago: metodoDisponible?.valor ?? 'YAPE',
+      monto: montoNuevo,
+      montoRecibido: null
+    });
+
+    this.errorPagos = '';
+  }
+
+  // Elimina un método de pago.
+  eliminarPago(indice: number): void {
+
+    if (this.pagos.length <= 1) {
+      this.errorPagos = 'Debe existir al menos un método de pago.';
+      return;
+    }
+
+    this.pagos.splice(indice, 1);
+
+    // Si queda un solo método, vuelve a cubrir el total completo.
+    if (this.pagos.length === 1) {
+
+      const pago = this.pagos[0];
+
+      pago.monto = this.totalVenta;
+
+      if (pago.metodoPago === 'EFECTIVO') {
+        pago.montoRecibido = this.totalVenta;
+      } else {
+        pago.montoRecibido = null;
+      }
+    }
+
+    this.errorPagos = '';
+  }
+
+  // Cambia el método de pago.
+  cambiarMetodoPago(
+    indice: number,
+    metodo: MetodoPago
+  ): void {
+
+    const pago = this.pagos[indice];
+
+    if (!pago) {
+      return;
+    }
+
+    pago.metodoPago = metodo;
+
+    if (metodo === 'EFECTIVO') {
+      pago.montoRecibido = Number(pago.monto) || 0;
+    } else {
+      pago.montoRecibido = null;
+    }
+
+    this.errorPagos = '';
+  }
+
+  // Actualiza el importe aplicado.
+  actualizarMontoPago(indice: number, valor: number): void {
+
+    const pago = this.pagos[indice];
+
+    if (!pago) {
+      return;
+    }
+
+    const montoAnterior = Number(pago.monto) || 0;
+    const recibidoAnterior = Number(pago.montoRecibido) || 0;
+
+    // Comprueba si el dinero recibido seguía siendo igual al importe anterior del pago.
+    const recibidoIgualAlMonto =
+      Math.abs(recibidoAnterior - montoAnterior) < 0.001;
+
+    pago.monto = Number(valor);
+
+    if (
+      pago.metodoPago === 'EFECTIVO' &&
+      recibidoIgualAlMonto
+    ) {
+      pago.montoRecibido = Number(valor);
+    }
+
+    this.errorPagos = '';
+  }
+
+  // Actualiza el dinero recibido en efectivo.
+  actualizarMontoRecibido(
+    indice: number,
+    valor: number
+  ): void {
+
+    const pago = this.pagos[indice];
+
+    if (!pago || pago.metodoPago !== 'EFECTIVO') {
+      return;
+    }
+
+    pago.montoRecibido = Number(valor);
+    this.errorPagos = '';
+  }
+
+  // Calcula el vuelto de un pago en efectivo.
+  calcularVuelto(pago: PagoFormulario): number {
+
+    if (pago.metodoPago !== 'EFECTIVO') {
+      return 0;
+    }
+
+    const recibido = Number(pago.montoRecibido) || 0;
+    const monto = Number(pago.monto) || 0;
+
+    return Number(
+      Math.max(0, recibido - monto).toFixed(2)
+    );
+  }
+
+  // Total de vuelto de todos los pagos en efectivo.
+  get vueltoTotal(): number {
+
+    return Number(
+      this.pagos.reduce(
+        (total, pago) => total + this.calcularVuelto(pago),
+        0
+      ).toFixed(2)
+    );
+  }
+
+  // Construye los pagos que posteriormente enviaremos al backend.
+  obtenerPagosRequest(): PagoVentaRequest[] | null {
+
+    this.errorPagos = '';
+
+    if (!this.previsualizacion()) {
+      this.errorPagos = 'Primero debes calcular la venta.';
+      return null;
+    }
+
+    if (!this.previsualizacion()!.stockSuficiente) {
+      this.errorPagos = 'No puedes continuar porque hay productos sin stock suficiente.';
+      return null;
+    }
+
+    if (this.pagos.length === 0) {
+      this.errorPagos = 'Agrega al menos un método de pago.';
+      return null;
+    }
+
+    if (this.saldoPendiente > 0.001) {
+      this.errorPagos = `Falta pagar S/ ${this.saldoPendiente.toFixed(2)}.`;
+      return null;
+    }
+
+    if (this.excesoPago > 0.001) {
+      this.errorPagos = 'El total de los pagos no puede superar el importe de la venta.';
+      return null;
+    }
+
+    const pagosRequest: PagoVentaRequest[] = [];
+
+    for (const pago of this.pagos) {
+
+      const monto = Number(pago.monto);
+
+      if (!Number.isFinite(monto) || monto <= 0) {
+        this.errorPagos = 'Todos los importes deben ser mayores a cero.';
+        return null;
+      }
+
+      if (pago.metodoPago === 'EFECTIVO') {
+
+        const recibido = Number(pago.montoRecibido);
+
+        if (!Number.isFinite(recibido) || recibido < monto) {
+          this.errorPagos = 'El dinero recibido en efectivo no puede ser menor al importe aplicado.';
+          return null;
+        }
+
+        pagosRequest.push({
+          metodoPago: pago.metodoPago,
+          monto: Number(monto.toFixed(2)),
+          montoRecibido: Number(recibido.toFixed(2))
+        });
+
+      } else {
+
+        pagosRequest.push({
+          metodoPago: pago.metodoPago,
+          monto: Number(monto.toFixed(2)),
+          montoRecibido: null
+        });
+      }
+    }
+
+    return pagosRequest;
   }
 
   // ============================================================
