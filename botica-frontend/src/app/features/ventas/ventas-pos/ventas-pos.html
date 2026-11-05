@@ -861,7 +861,7 @@
           </strong>
         </div>
 
-        <!-- RESULTADO DEL SERVIDOR -->
+        <!-- RESULTADO DEL CÁLCULO -->
         <ng-container *ngIf="previsualizacion() as vista">
 
           <div class="server-preview">
@@ -883,7 +883,7 @@
             </div>
 
             <div class="summary-total">
-              <span>Total calculado</span>
+              <span>Total a cobrar</span>
 
               <strong>
                 S/ {{ vista.total | number:'1.2-2' }}
@@ -940,8 +940,8 @@
 
               {{
                 vista.stockSuficiente
-                  ? 'Existencias verificadas correctamente.'
-                  : 'Hay productos con stock insuficiente.'
+                  ? 'Todos los productos tienen existencias disponibles.'
+                  : 'No hay cantidad suficiente de algunos productos.'
               }}
 
             </div>
@@ -967,7 +967,7 @@
                 </strong>
 
                 <small>
-                  Stock: {{ detalle.stockDisponible }}
+                  Disponibles: {{ detalle.stockDisponible }}
                 </small>
               </div>
 
@@ -1017,52 +1017,112 @@
         <!-- ======================================== -->
         <!-- MÉTODOS DE PAGO -->
         <!-- ======================================== -->
-         
+
         <section
           class="payment-panel"
           *ngIf="previsualizacion()?.stockSuficiente"
         >
 
+          <!-- ENCABEZADO -->
           <div class="payment-header">
+
             <div>
               <h3>
                 <i class="bi bi-wallet2"></i>
-                Métodos de pago
+                Forma de pago
               </h3>
 
-              <p>Selecciona cómo se realizará el pago.</p>
+              <p>
+                Indica cómo realizará el pago el cliente.
+              </p>
             </div>
 
-            <span>{{ pagos.length }} pago(s)</span>
+            <span>
+              {{ pagos.length }}
+              {{ pagos.length === 1 ? 'método' : 'métodos' }}
+            </span>
+
+          </div>
+
+          <!-- TOTAL DESTACADO -->
+          <div class="payment-total-highlight">
+
+            <div>
+              <span>Total a cobrar</span>
+              <small>Importe de la venta</small>
+            </div>
+
+            <strong>
+              S/ {{ totalVenta | number:'1.2-2' }}
+            </strong>
+
+          </div>
+
+          <!-- AYUDA SEGÚN LA CANTIDAD DE MÉTODOS -->
+          <div
+            class="payment-help"
+            *ngIf="pagos.length === 1"
+          >
+            <i class="bi bi-info-circle"></i>
+
+            <span>
+              Selecciona cómo pagará el cliente. El importe se asigna
+              automáticamente. Si es en efectivo, registra cuánto recibiste
+              para calcular el vuelto.
+            </span>
+          </div>
+
+          <div
+            class="payment-help"
+            *ngIf="pagos.length > 1"
+          >
+            <i class="bi bi-info-circle"></i>
+
+            <span>
+              El pago está dividido entre varios métodos. Indica cuánto
+              corresponde a cada uno hasta completar el total de la venta.
+            </span>
           </div>
 
           <!-- LISTADO DE PAGOS -->
           <div
-            class="payment-list"
+            class="payment-card"
             *ngFor="let pago of pagos; let i = index"
           >
 
-            <div class="payment-item-header">
+            <!-- ENCABEZADO DEL PAGO -->
+            <div class="payment-card-header">
 
-              <strong>Pago {{ i + 1 }}</strong>
+              <div>
+                <span class="payment-number">
+                  PAGO {{ i + 1 }}
+                </span>
+
+                <strong>
+                  {{ pago.metodoPago === 'EFECTIVO'
+                    ? 'Pago en efectivo'
+                    : 'Pago con ' + (metodosPago.find(m => m.valor === pago.metodoPago)?.nombre || pago.metodoPago) }}
+                </strong>
+              </div>
 
               <button
                 *ngIf="pagos.length > 1"
                 type="button"
                 class="btn-remove-payment"
                 (click)="eliminarPago(i)"
-                title="Eliminar método de pago"
-                aria-label="Eliminar método de pago"
+                title="Quitar método de pago"
+                aria-label="Quitar método de pago"
               >
                 <i class="bi bi-trash"></i>
               </button>
 
             </div>
 
+            <!-- SELECCIÓN DEL MÉTODO -->
             <div class="form-field">
 
               <label [for]="'metodoPago' + i">
-                Método de pago
+                ¿Cómo pagará el cliente?
               </label>
 
               <select
@@ -1075,6 +1135,7 @@
                 <option
                   *ngFor="let metodo of metodosPago"
                   [ngValue]="metodo.valor"
+                  [disabled]="metodoYaSeleccionado(metodo.valor, i)"
                 >
                   {{ metodo.nombre }}
                 </option>
@@ -1083,10 +1144,30 @@
 
             </div>
 
-            <div class="form-field">
+            <!-- IMPORTE FIJO CUANDO SOLO HAY UN MÉTODO -->
+            <div
+              class="payment-fixed-amount"
+              *ngIf="pagos.length === 1"
+            >
+
+              <span>
+                Importe que debe cubrir este método
+              </span>
+
+              <strong>
+                S/ {{ totalVenta | number:'1.2-2' }}
+              </strong>
+
+            </div>
+
+            <!-- IMPORTE EDITABLE CUANDO SE DIVIDE EL PAGO -->
+            <div
+              class="form-field"
+              *ngIf="pagos.length > 1"
+            >
 
               <label [for]="'montoPago' + i">
-                Importe aplicado (S/)
+                Monto que pagará con este método (S/)
               </label>
 
               <input
@@ -1101,13 +1182,16 @@
 
             </div>
 
-            <!-- SOLO PARA EFECTIVO -->
-            <ng-container *ngIf="pago.metodoPago === 'EFECTIVO'">
+            <!-- INFORMACIÓN EXCLUSIVA PARA EFECTIVO -->
+            <div
+              class="cash-payment"
+              *ngIf="pago.metodoPago === 'EFECTIVO'"
+            >
 
               <div class="form-field">
 
                 <label [for]="'montoRecibido' + i">
-                  Dinero recibido (S/)
+                  ¿Cuánto dinero recibiste? (S/)
                 </label>
 
                 <input
@@ -1120,91 +1204,116 @@
                   [ngModelOptions]="{ standalone: true }"
                 />
 
+                <small>
+                  Ingresa el dinero que te entrega el cliente.
+                </small>
+
               </div>
 
+              <!-- VUELTO -->
               <div class="cash-change">
-                <span>Vuelto</span>
+
+                <span>
+                  <i class="bi bi-cash-coin"></i>
+                  Vuelto que debes entregar
+                </span>
 
                 <strong>
                   S/ {{ calcularVuelto(pago) | number:'1.2-2' }}
                 </strong>
+
               </div>
 
-            </ng-container>
+            </div>
 
           </div>
 
-          <!-- AGREGAR OTRO MÉTODO -->
+          <!-- DIVIDIR EL PAGO -->
           <button
             type="button"
             class="btn-add-payment"
             (click)="agregarPago()"
-            [disabled]="saldoPendiente <= 0"
+            [disabled]="!puedeAgregarPago"
+            *ngIf="pagos.length < metodosPago.length"
           >
+
             <i class="bi bi-plus-circle"></i>
-            Agregar otro método de pago
+
+            Dividir pago con otro método
+
           </button>
 
           <!-- RESUMEN DE PAGOS -->
           <div class="payment-summary">
 
             <div class="payment-summary-row">
+
               <span>Total de la venta</span>
 
               <strong>
                 S/ {{ totalVenta | number:'1.2-2' }}
               </strong>
+
             </div>
 
             <div class="payment-summary-row">
-              <span>Total pagado</span>
+
+              <span>Total distribuido</span>
 
               <strong>
                 S/ {{ totalPagado | number:'1.2-2' }}
               </strong>
+
             </div>
 
+            <!-- SALDO PENDIENTE O EXCEDENTE -->
             <div
               class="payment-balance"
-              [class.balance-paid]="saldoPendiente <= 0 && excesoPago <= 0"
+              [class.balance-paid]="pagosValidos"
               [class.balance-error]="excesoPago > 0"
             >
 
               <span>
                 {{
                   excesoPago > 0
-                    ? 'Importe excedente'
+                    ? 'Importe excedido'
                     : saldoPendiente > 0
-                      ? 'Saldo pendiente'
-                      : 'Pago completado'
+                      ? 'Falta por pagar'
+                      : 'Estado del pago'
                 }}
               </span>
 
               <strong>
-                S/ {{
+                {{
                   excesoPago > 0
-                    ? excesoPago
-                    : saldoPendiente
-                    | number:'1.2-2'
+                    ? ('S/ ' + (excesoPago | number:'1.2-2'))
+                    : saldoPendiente > 0
+                      ? ('S/ ' + (saldoPendiente | number:'1.2-2'))
+                      : pagosValidos
+                        ? 'Completo'
+                        : 'Revisar'
                 }}
               </strong>
 
             </div>
 
+            <!-- VUELTO TOTAL -->
             <div
               class="payment-total-change"
               *ngIf="vueltoTotal > 0"
             >
+
               <span>Vuelto total</span>
 
               <strong>
                 S/ {{ vueltoTotal | number:'1.2-2' }}
               </strong>
+
             </div>
 
           </div>
 
-          <!-- ERRORES -->
+          <!-- MENSAJE DE ERROR -->
           <div
             class="payment-error"
             *ngIf="errorPagos"
@@ -1214,7 +1323,7 @@
             {{ errorPagos }}
           </div>
 
-          <!-- ESTADO -->
+          <!-- ESTADO DEL PAGO -->
           <div
             class="payment-status"
             [class.payment-status-valid]="pagosValidos"
@@ -1229,21 +1338,58 @@
               "
             ></i>
 
-            {{
-              pagosValidos
-                ? 'Los métodos de pago cubren el total de la venta.'
-                : 'Completa los importes para cubrir el total de la venta.'
-            }}
+            {{ mensajeEstadoPagos }}
 
           </div>
 
         </section>
 
 
-        <p class="cart-disclaimer">
-          El importe del carrito es referencial. El cálculo del servidor
-          considera los precios, descuentos y existencias vigentes.
+        <!-- MENSAJE ANTES DE CALCULAR -->
+        <p
+          class="cart-disclaimer"
+          *ngIf="!previsualizacion() && !cargandoPrevisualizacion()"
+        >
+          <i class="bi bi-info-circle"></i>
+
+          El importe mostrado es aproximado. Calcula la venta para confirmar
+          el total, los descuentos y las existencias disponibles.
         </p>
+
+        <!-- MENSAJE DURANTE EL CÁLCULO -->
+        <p
+          class="cart-disclaimer disclaimer-loading"
+          *ngIf="cargandoPrevisualizacion()"
+        >
+          <i class="bi bi-arrow-repeat spinning"></i>
+
+          Estamos revisando los precios, descuentos y existencias.
+        </p>
+
+        <!-- MENSAJE DESPUÉS DE CALCULAR -->
+        <ng-container *ngIf="previsualizacion() as vista">
+
+          <p
+            class="cart-disclaimer disclaimer-success"
+            *ngIf="vista.stockSuficiente"
+          >
+            <i class="bi bi-check-circle"></i>
+
+            El total está actualizado y todos los productos tienen
+            existencias disponibles. Puedes continuar con el pago.
+          </p>
+
+          <p
+            class="cart-disclaimer disclaimer-warning"
+            *ngIf="!vista.stockSuficiente"
+          >
+            <i class="bi bi-exclamation-triangle"></i>
+
+            No hay existencias suficientes para algunos productos.
+            Ajusta las cantidades y vuelve a calcular la venta.
+          </p>
+
+        </ng-container>
 
         <!-- VACIAR CARRITO -->
         <button
