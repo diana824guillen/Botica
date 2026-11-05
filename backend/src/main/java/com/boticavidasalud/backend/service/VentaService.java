@@ -208,11 +208,10 @@ public class VentaService {
 
         // Cliente que ya existe.
         if (request.getIdCliente() != null) {
-
-        cliente = clienteRepository.findById(request.getIdCliente())
+                cliente = clienteRepository.findByIdActivo(request.getIdCliente())
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Cliente no encontrado"
+                                "Cliente no encontrado o no disponible"
                         )
                 );
         }
@@ -650,6 +649,9 @@ public class VentaService {
         }
 
         BigDecimal totalPagado = BigDecimal.ZERO;
+        
+        // Controlar que no se repita un método de pago.
+        List<MetodoPago> metodosRegistrados = new ArrayList<>();
 
         for (PagoRequestDTO pago : pagos) {
 
@@ -660,6 +662,14 @@ public class VentaService {
                         "Los datos de cada pago son obligatorios"
                 );
             }
+
+            if (metodosRegistrados.contains(pago.getMetodoPago())) {
+                throw new BusinessException(
+                        "No se permite registrar el mismo método de pago más de una vez"
+                );
+            }
+
+            metodosRegistrados.add(pago.getMetodoPago());
 
             if (pago.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new BusinessException(

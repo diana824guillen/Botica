@@ -46,7 +46,7 @@
     <!-- CATÁLOGO -->
     <!-- ======================================== -->
 
-    <section class="catalog-section">
+    <section class="catalog-section" *ngIf="!ventaRegistrada">
 
       <div class="section-header">
 
@@ -398,7 +398,7 @@
     <!-- CARRITO -->
     <!-- ======================================== -->
 
-    <aside class="cart-section">
+    <aside class="cart-section" *ngIf="!ventaRegistrada">
 
       <div class="cart-header">
         <div>
@@ -764,6 +764,16 @@
           }}
 
         </button>
+
+        <!-- ERROR AL CONFIRMAR LA VENTA -->
+        <div
+          class="sale-error"
+          *ngIf="errorVenta"
+          role="alert"
+        >
+          <i class="bi bi-exclamation-circle"></i>
+          {{ errorVenta }}
+        </div>
 
         <!-- ======================================== -->
         <!-- CLIENTE DE LA VENTA -->
@@ -1141,15 +1151,24 @@
               </p>
             </div>
 
-            <span>
+            <span *ngIf="totalVenta > 0">
               {{ pagos.length }}
               {{ pagos.length === 1 ? 'método' : 'métodos' }}
+            </span>
+
+            <span *ngIf="totalVenta === 0">
+              Sin pago
             </span>
 
           </div>
 
           <!-- TOTAL DESTACADO -->
           <div class="payment-total-highlight">
+
+            <div class="payment-no-required" *ngIf="totalVenta === 0">
+              <i class="bi bi-check-circle"></i>
+              El descuento cubre el total. No se requiere pago.
+            </div>
 
             <div>
               <span>Total a cobrar</span>
@@ -1313,7 +1332,7 @@
             class="btn-add-payment"
             (click)="agregarPago()"
             [disabled]="!puedeAgregarPago"
-            *ngIf="pagos.length < metodosPago.length"
+            *ngIf="totalVenta > 0 && pagos.length < metodosPago.length"
           >
 
             <i class="bi bi-plus-circle"></i>
@@ -1323,8 +1342,8 @@
           </button>
 
           <!-- RESUMEN DE PAGOS -->
-          <div class="payment-summary">
-
+          <div class="payment-summary" *ngIf="totalVenta > 0">
+            
             <div class="payment-summary-row">
 
               <span>Total distribuido</span>
@@ -1394,8 +1413,17 @@
 
           <!-- ESTADO DEL PAGO -->
           <div
+            class="payment-status payment-status-valid"
+            *ngIf="totalVenta === 0"
+          >
+            <i class="bi bi-check-circle"></i>
+            No se requiere pago para esta venta.
+          </div>
+
+          <div
             class="payment-status"
             [class.payment-status-valid]="pagosValidos"
+            *ngIf="totalVenta > 0"
           >
             <i
               class="bi"
@@ -1407,11 +1435,48 @@
             ></i>
 
             {{ pagosValidos ? 'Pago completo' : mensajeEstadoPagos }}
-
           </div>
 
         </section>
 
+        <!-- ======================================== -->
+        <!-- CONFIRMACIÓN DE LA VENTA -->
+        <!-- ======================================== -->
+
+        <section
+          class="sale-confirmation"
+          *ngIf="previsualizacion()?.stockSuficiente"
+        >
+
+          <button
+            type="button"
+            class="btn-confirm-sale"
+            (click)="confirmarVenta()"
+            [disabled]="!pagosValidos || registrandoVenta"
+          >
+
+            <i
+              class="bi"
+              [ngClass]="
+                registrandoVenta
+                  ? 'bi-arrow-repeat spinning'
+                  : 'bi-check-circle'
+              "
+            ></i>
+
+            {{
+              registrandoVenta
+                ? 'Registrando venta...'
+                : 'Confirmar venta'
+            }}
+
+          </button>
+
+          <small>
+            Revisa los productos y el importe antes de confirmar.
+          </small>
+
+        </section>
 
         <!-- ANTES DE CALCULAR -->
         <p
@@ -1458,6 +1523,199 @@
       </div>
 
     </aside>
+
+    <!-- ======================================== -->
+    <!-- RESULTADO DE LA VENTA REGISTRADA -->
+    <!-- ======================================== -->
+
+    <section
+      class="sale-success-panel"
+      *ngIf="ventaRegistrada as venta"
+    >
+
+      <!-- ENCABEZADO -->
+      <div class="sale-success-header">
+
+        <div class="sale-success-icon">
+          <i class="bi bi-check-lg"></i>
+        </div>
+
+        <div>
+          <h2>Venta registrada correctamente</h2>
+          <p>La operación se guardó satisfactoriamente.</p>
+        </div>
+
+      </div>
+
+      <!-- NÚMERO DE NOTA -->
+      <div class="sale-success-reference">
+
+        <span>Número de nota de venta</span>
+
+        <strong>
+          {{ venta.numeroNotaVenta }}
+        </strong>
+
+      </div>
+
+      <!-- INFORMACIÓN GENERAL -->
+      <div class="sale-success-information">
+
+        <div>
+          <span>Fecha y hora</span>
+          <strong>
+            {{ venta.fechaVenta | date:'dd/MM/yyyy HH:mm' }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Cliente</span>
+          <strong>
+            {{ venta.clienteNombre || 'Sin cliente asociado' }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Cajero</span>
+          <strong>{{ venta.cajeroNombre }}</strong>
+        </div>
+
+      </div>
+
+      <!-- PRODUCTOS REGISTRADOS -->
+      <div class="sale-success-section">
+
+        <h3>
+          <i class="bi bi-bag-check"></i>
+          Productos registrados
+        </h3>
+
+        <div
+          class="sale-success-detail"
+          *ngFor="let detalle of venta.detalles"
+        >
+
+          <div class="sale-success-detail-info">
+
+            <strong>{{ detalle.productoNombre }}</strong>
+
+            <span>
+              {{ detalle.cantidad | number:'1.0-2' }}
+              {{ detalle.presentacionTipo }}
+            </span>
+
+            <small *ngIf="detalle.numeroLote">
+              Lote: {{ detalle.numeroLote }}
+            </small>
+
+          </div>
+
+          <strong>
+            S/ {{ detalle.subtotal | number:'1.2-2' }}
+          </strong>
+
+        </div>
+
+      </div>
+
+      <!-- RESUMEN ECONÓMICO -->
+      <div class="sale-success-totals">
+
+        <div>
+          <span>Subtotal</span>
+          <strong>S/ {{ venta.subtotal | number:'1.2-2' }}</strong>
+        </div>
+
+        <div *ngIf="venta.descuentoTotal > 0">
+          <span>Descuento aplicado</span>
+          <strong class="success-discount">
+            - S/ {{ venta.descuentoTotal | number:'1.2-2' }}
+          </strong>
+        </div>
+
+        <div class="sale-success-total">
+          <span>Total de la venta</span>
+          <strong>
+            S/ {{ venta.total | number:'1.2-2' }}
+          </strong>
+        </div>
+
+      </div>
+
+      <!-- PAGOS REGISTRADOS -->
+      <div class="sale-success-section">
+
+        <h3>
+          <i class="bi bi-wallet2"></i>
+          Pagos registrados
+        </h3>
+
+        <div *ngIf="venta.pagos.length === 0">
+          <span class="sale-success-no-payment">
+            No se registraron pagos para esta venta.
+          </span>
+        </div>
+
+        <div
+          class="sale-success-payment"
+          *ngFor="let pago of venta.pagos"
+        >
+
+          <div>
+            <strong>
+              {{
+                metodosPago.find(m => m.valor === pago.metodoPago)?.nombre
+                  || pago.metodoPago
+              }}
+            </strong>
+
+            <small *ngIf="pago.metodoPago === 'EFECTIVO'">
+              Recibido: S/ {{ pago.montoRecibido | number:'1.2-2' }}
+              · Vuelto: S/ {{ pago.vuelto | number:'1.2-2' }}
+            </small>
+          </div>
+
+          <strong>
+            S/ {{ pago.monto | number:'1.2-2' }}
+          </strong>
+
+        </div>
+
+      </div>
+
+      <!-- NUEVA VENTA -->
+      <div class="sale-success-actions">
+
+        <button
+          type="button"
+          class="btn-new-sale"
+          (click)="nuevaVenta()"
+        >
+          <i class="bi bi-plus-circle"></i>
+          Nueva venta
+        </button>
+
+      </div>
+
+    </section>
+
+    <!-- BLOQUEO VISUAL DURANTE EL REGISTRO -->
+    <div
+      class="sale-processing-overlay"
+      *ngIf="registrandoVenta"
+    >
+
+      <div class="sale-processing-card">
+
+        <i class="bi bi-arrow-repeat spinning"></i>
+
+        <strong>Registrando la venta...</strong>
+
+        <span>No cierres esta pantalla mientras se completa la operación.</span>
+
+      </div>
+
+    </div>
 
   </div>
 

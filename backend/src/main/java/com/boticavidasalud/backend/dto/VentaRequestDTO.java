@@ -1,10 +1,13 @@
 package com.boticavidasalud.backend.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +35,18 @@ public class VentaRequestDTO {
     // Puede estar vacío cuando el total de la venta sea cero.
     @Valid
     private List<PagoRequestDTO> pagos = new ArrayList<>();
+
+    @DecimalMin(
+        value = "0.00",
+        message = "El total esperado no puede ser negativo"
+    )
+    @Digits(
+        integer = 8,
+        fraction = 2,
+        message = "El total esperado admite hasta dos decimales"
+    )
+    private BigDecimal totalEsperado;
+
 }
 
 

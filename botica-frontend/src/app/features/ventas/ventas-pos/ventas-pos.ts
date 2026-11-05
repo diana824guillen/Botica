@@ -28,7 +28,9 @@ import {
   PagoVentaRequest,
   TipoDocumentoCliente,
   VentaPrevisualizacionRequest,
-  VentaPrevisualizacionResponse
+  VentaPrevisualizacionResponse,
+  VentaRequest,
+  VentaResponse
 } from '../../../core/models/venta.model';
 
 interface ItemCarrito {
@@ -155,6 +157,19 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   ];
 
   errorPagos = '';
+
+  // ============================================================
+  // CONFIRMACIÓN Y RESULTADO DE LA VENTA
+  // ============================================================
+
+  // Indica si se está registrando una venta.
+  registrandoVenta = false;
+
+  // Conserva la respuesta de una venta registrada correctamente.
+  ventaRegistrada: VentaResponse | null = null;
+
+  // Mensaje de error durante la confirmación.
+  errorVenta = '';
 
   // ============================================================
   // NOTIFICACIONES
@@ -957,6 +972,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
     this.cargandoPrevisualizacion.set(true);
     this.errorPrevisualizacion.set('');
+    this.errorVenta = '';
     this.previsualizacion.set(null);
 
     // Los pagos anteriores ya no corresponden al nuevo cálculo.
@@ -1015,9 +1031,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   private invalidarPrevisualizacion(): void {
     this.previsualizacion.set(null);
     this.errorPrevisualizacion.set('');
-    // El carrito cambió, por lo que los pagos anteriores ya no deben utilizarse.
     this.pagos = [];
     this.errorPagos = '';
+    this.errorVenta = '';
   }
 
   // ============================================================
@@ -1058,8 +1074,10 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
   // Comprueba si se puede agregar otro método de pago.
   get puedeAgregarPago(): boolean {
-
-    if (this.pagos.length >= this.metodosPago.length) {
+    if (
+      this.totalVenta <= 0 ||
+      this.pagos.length >= this.metodosPago.length
+    ) {
       return false;
     }
 
@@ -1088,15 +1106,23 @@ export class VentasPosComponent implements OnInit, OnDestroy {
       return false;
     }
 
+    // Las ventas con total cero no necesitan métodos de pago.
+    if (this.totalVenta === 0) {
+      return this.pagos.length === 0;
+    }
+
     if (this.pagos.length === 0) {
       return false;
     }
 
-    if (this.excesoPago > 0.001 || this.saldoPendiente > 0.001) {
+    if (
+      this.excesoPago > 0.001 ||
+      this.saldoPendiente > 0.001
+    ) {
       return false;
     }
 
-    // Evita utilizar el mismo método más de una vez.
+    // Evitar repetir métodos de pago.
     const metodosSeleccionados = this.pagos.map(
       pago => pago.metodoPago
     );
@@ -1135,6 +1161,10 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // Mensaje que explica el estado actual de los pagos.
   get mensajeEstadoPagos(): string {
 
+    if (this.totalVenta === 0 && this.pagos.length === 0) {
+      return 'No se requiere pago para esta venta.';
+    }
+
     if (this.pagos.length === 0) {
       return 'Selecciona al menos un método de pago.';
     }
@@ -1150,11 +1180,11 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     }
 
     if (this.excesoPago > 0.001) {
-      return 'Los importes superan el total de la venta. Ajusta las cantidades.';
+      return 'Los importes superan el total de la venta.';
     }
 
     if (this.saldoPendiente > 0.001) {
-      return `Falta distribuir S/ ${this.saldoPendiente.toFixed(2)} del total de la venta.`;
+      return `Falta S/ ${this.saldoPendiente.toFixed(2)} por pagar.`;
     }
 
     if (
@@ -1167,14 +1197,14 @@ export class VentasPosComponent implements OnInit, OnDestroy {
           )
       )
     ) {
-      return 'El dinero recibido en efectivo debe cubrir el importe indicado.';
+      return 'El dinero recibido es insuficiente.';
     }
 
     if (!this.pagosValidos) {
       return 'Revisa los métodos de pago antes de continuar.';
     }
 
-    return 'El pago está completo y listo para continuar.';
+    return 'Pago completo';
   }
 
   // Inicializa un pago en efectivo con el total de la venta.
@@ -1182,13 +1212,19 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
     const total = this.totalVenta;
 
+    this.errorPagos = '';
+
+    // Cuando el descuento cubre el total, no se necesita un pago.
+    if (total === 0) {
+      this.pagos = [];
+      return;
+    }
+
     this.pagos = [{
       metodoPago: 'EFECTIVO',
       monto: total,
       montoRecibido: total
     }];
-
-    this.errorPagos = '';
   }
 
   // Divide el importe de un método para agregar otro método de pago.
@@ -1473,7 +1509,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
     this.errorPagos = '';
 
-    if (!this.previsualizacion()) {
+    const vista = this.previsualizacion();
+
+    if (!vista) {
 
       this.errorPagos =
         'Primero debes calcular el total de la venta.';
@@ -1481,12 +1519,17 @@ export class VentasPosComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    if (!this.previsualizacion()!.stockSuficiente) {
+    if (!vista.stockSuficiente) {
 
       this.errorPagos =
-        'Hay productos sin existencias suficientes. Corrige las cantidades y vuelve a calcular.';
+        'Hay productos sin existencias suficientes.';
 
       return null;
+    }
+
+    // El backend permite ventas con total cero y sin pagos.
+    if (this.totalVenta === 0 && this.pagos.length === 0) {
+      return [];
     }
 
     if (!this.pagosValidos) {
@@ -1521,6 +1564,230 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     }
 
     return pagosRequest;
+  }
+
+  // ============================================================
+  // CONFIRMAR Y REGISTRAR VENTA
+  // ============================================================
+
+  confirmarVenta(): void {
+
+    // Evitar confirmaciones simultáneas o repetidas.
+    if (this.registrandoVenta || this.ventaRegistrada) {
+      return;
+    }
+
+    this.errorVenta = '';
+
+    // 1. Comprobar que existan productos.
+    if (this.carrito.length === 0) {
+
+      this.errorVenta =
+        'Agrega productos antes de confirmar la venta.';
+
+      return;
+    }
+
+    // 2. Comprobar que exista una previsualización válida.
+    const vista = this.previsualizacion();
+
+    if (!vista) {
+
+      this.errorVenta =
+        'Calcula nuevamente la venta antes de confirmarla.';
+
+      return;
+    }
+
+    if (!vista.stockSuficiente) {
+
+      this.errorVenta =
+        'Hay productos sin existencias suficientes.';
+
+      return;
+    }
+
+    // 3. Preparar y validar los pagos.
+    const pagosRequest = this.obtenerPagosRequest();
+
+    if (pagosRequest === null) {
+
+      this.cdr.markForCheck();
+      return;
+    }
+
+    // 4. Preparar los datos del cliente.
+    let idCliente: number | null = null;
+    let nuevoCliente: ClienteVentaRequest | null = null;
+
+    if (this.modoCliente === 'EXISTENTE') {
+
+      if (!this.clienteSeleccionado) {
+
+        this.mostrarPanelCliente = true;
+
+        this.errorVenta =
+          'Selecciona un cliente registrado o elige continuar sin cliente.';
+
+        this.cdr.markForCheck();
+        return;
+      }
+
+      idCliente = this.clienteSeleccionado.id;
+    }
+
+    if (this.modoCliente === 'NUEVO') {
+
+      nuevoCliente = this.obtenerNuevoClienteRequest();
+
+      if (!nuevoCliente) {
+
+        this.mostrarPanelCliente = true;
+
+        this.errorVenta =
+          'Revisa los datos del nuevo cliente.';
+
+        this.cdr.markForCheck();
+        return;
+      }
+    }
+
+    // 5. Construir la solicitud definitiva.
+    const request: VentaRequest = {
+
+      idCliente,
+
+      nuevoCliente,
+
+      observacion: null,
+
+      detalles: this.carrito.map(item => ({
+        idPresentacion: item.idPresentacion,
+        cantidad: item.cantidad
+      })),
+
+      pagos: pagosRequest
+
+    };
+
+    // 6. Enviar la solicitud al backend.
+    this.registrandoVenta = true;
+    this.errorVenta = '';
+
+    this.cdr.markForCheck();
+
+    this.ventaService
+      .registrarVenta(request)
+      .pipe(
+        finalize(() => {
+
+          this.registrandoVenta = false;
+
+          this.cdr.markForCheck();
+
+        })
+      )
+      .subscribe({
+
+        // VENTA REGISTRADA CORRECTAMENTE.
+        next: respuesta => {
+
+          this.ventaRegistrada = respuesta;
+
+          this.errorVenta = '';
+          this.errorPagos = '';
+          this.errorPrevisualizacion.set('');
+
+          this.limpiarMensaje();
+
+          this.cdr.markForCheck();
+        },
+
+        // ERROR DURANTE EL REGISTRO.
+        error: err => {
+
+          const mensaje = this.obtenerMensajeError(
+            err,
+            'No fue posible registrar la venta. Revisa los datos e inténtalo nuevamente.'
+          );
+
+          const mensajeNormalizado = mensaje.toLowerCase();
+
+          // Si las existencias cambiaron desde el último cálculo,
+          // se debe volver a calcular la venta.
+          const requiereNuevoCalculo =
+            err?.status === 400 &&
+            (
+              mensajeNormalizado.includes('stock') ||
+              mensajeNormalizado.includes('existencia') ||
+              mensajeNormalizado.includes('lote') ||
+              mensajeNormalizado.includes('disponible')
+            );
+
+          if (requiereNuevoCalculo) {
+
+            this.previsualizacion.set(null);
+
+            this.pagos = [];
+            this.errorPagos = '';
+
+            this.errorPrevisualizacion.set(
+              'Las existencias cambiaron. Vuelve a calcular la venta.'
+            );
+
+            this.errorVenta = '';
+
+          } else {
+
+            this.errorVenta = mensaje;
+          }
+
+          // Los errores esperados de validación no necesitan
+          // registrarse como errores inesperados en consola.
+          if (err?.status >= 500) {
+            console.error('Error al registrar la venta:', err);
+          }
+
+          this.cdr.markForCheck();
+        }
+
+      });
+  }
+
+
+  // ============================================================
+  // INICIAR UNA NUEVA VENTA
+  // ============================================================
+
+  nuevaVenta(): void {
+
+    if (this.registrandoVenta) {
+      return;
+    }
+
+    // Liberar los datos de la venta anterior.
+    this.ventaRegistrada = null;
+
+    this.carrito = [];
+
+    this.invalidarPrevisualizacion();
+
+    // Restablecer el cliente.
+    this.limpiarDatosCliente();
+
+    this.modoCliente = 'NINGUNO';
+    this.mostrarPanelCliente = false;
+
+    // Limpiar otros estados del POS.
+    this.productoExpandidoId = null;
+    this.errorVenta = '';
+
+    this.limpiarMensaje();
+
+    // Actualizar las existencias del catálogo después de la venta.
+    this.cargarProductos();
+
+    this.cdr.markForCheck();
   }
 
   // ============================================================

@@ -81,6 +81,7 @@ export interface VentaRequest {
   observacion?: string | null;
   detalles: DetalleVentaRequest[];
   pagos: PagoVentaRequest[];
+  totalEsperado: number;
 }
 
 export interface DetalleVentaResponse {
