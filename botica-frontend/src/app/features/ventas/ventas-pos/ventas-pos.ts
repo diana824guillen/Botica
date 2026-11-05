@@ -100,6 +100,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   modoCliente: ModoClientePOS = 'NINGUNO';
+  
+  // Controla si la sección opcional de cliente está desplegada.
+  mostrarPanelCliente = false;
 
   // Búsqueda de un cliente existente.
   documentoBusqueda = '';
@@ -599,19 +602,66 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
+  // ORGANIZACIÓN DEL PROCESO DE VENTA
+  // ============================================================
+
+  // Indica si el carrito ya fue calculado y tiene existencias suficientes.
+  get ventaCalculada(): boolean {
+    return this.previsualizacion()?.stockSuficiente === true;
+  }
+
+  // Resumen breve del cliente seleccionado o del estado actual.
+  get resumenCliente(): string {
+
+    if (this.clienteSeleccionado) {
+      return `${this.clienteSeleccionado.nombres} ${this.clienteSeleccionado.apellidos}`.trim();
+    }
+
+    if (this.modoCliente === 'NUEVO') {
+
+      const documento = this.nuevoCliente.numeroDocumento.trim();
+
+      if (documento) {
+        return `Nuevo cliente · ${documento}`;
+      }
+
+      return 'Registrar un nuevo cliente';
+    }
+
+    if (this.modoCliente === 'EXISTENTE') {
+      return 'Buscar cliente registrado';
+    }
+
+    return 'Sin cliente asociado';
+  }
+
+  // Abre o contrae la sección opcional de cliente.
+  alternarPanelCliente(): void {
+    this.mostrarPanelCliente = !this.mostrarPanelCliente;
+  }
+
+  // ============================================================
   // SELECCIÓN DEL TIPO DE CLIENTE
   // ============================================================
 
   cambiarModoCliente(modo: ModoClientePOS): void {
 
-    // Si ya está seleccionada la opción, no es necesario reiniciarla.
     if (this.modoCliente === modo) {
+
+      // Al seleccionar nuevamente "Sin cliente", cierra la sección.
+      if (modo === 'NINGUNO') {
+        this.mostrarPanelCliente = false;
+      }
+
       return;
     }
 
     this.limpiarDatosCliente();
 
     this.modoCliente = modo;
+
+    // Las opciones de cliente abren la sección para mostrar sus campos.
+    this.mostrarPanelCliente = modo !== 'NINGUNO';
   }
 
   // ============================================================

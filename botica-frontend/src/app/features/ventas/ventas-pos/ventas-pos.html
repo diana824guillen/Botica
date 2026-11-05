@@ -419,318 +419,69 @@
       </div>
 
       <!-- ======================================== -->
-      <!-- CLIENTE DE LA VENTA -->
+      <!-- ETAPAS DEL PROCESO DE VENTA -->
       <!-- ======================================== -->
 
-      <section class="customer-panel">
+      <div class="sale-progress">
 
-        <div class="panel-title">
-          <h3>
-            <i class="bi bi-person"></i>
-            Cliente
-          </h3>
-
-          <span>Opcional</span>
-        </div>
-
-        <p class="customer-description">
-          Puedes asociar un cliente registrado, ingresar uno nuevo
-          o realizar la venta sin datos de cliente.
-        </p>
-
-        <!-- OPCIONES DE CLIENTE -->
-        <div class="customer-mode">
-
-          <button
-            type="button"
-            [class.active]="modoCliente === 'NINGUNO'"
-            (click)="cambiarModoCliente('NINGUNO')"
-          >
-            Sin cliente
-          </button>
-
-          <button
-            type="button"
-            [class.active]="modoCliente === 'EXISTENTE'"
-            (click)="cambiarModoCliente('EXISTENTE')"
-          >
-            Existente
-          </button>
-
-          <button
-            type="button"
-            [class.active]="modoCliente === 'NUEVO'"
-            (click)="cambiarModoCliente('NUEVO')"
-          >
-            Nuevo
-          </button>
-
-        </div>
-
-        <!-- CLIENTE EXISTENTE -->
+        <!-- ETAPA 1 -->
         <div
-          class="customer-form"
-          *ngIf="modoCliente === 'EXISTENTE'"
+          class="sale-progress-step"
+          [class.step-completed]="ventaCalculada"
+          [class.step-active]="!ventaCalculada"
         >
 
-          <label for="documentoBusqueda">
-            Número de documento
-          </label>
+          <span class="step-number">
+            <i
+              class="bi bi-check-lg"
+              *ngIf="ventaCalculada"
+            ></i>
 
-          <div class="customer-search">
-
-            <input
-              id="documentoBusqueda"
-              type="text"
-              [(ngModel)]="documentoBusqueda"
-              [ngModelOptions]="{ standalone: true }"
-              placeholder="Ingresa DNI, CE o pasaporte"
-              (keyup.enter)="buscarCliente()"
-              maxlength="15"
-            />
-
-            <button
-              type="button"
-              (click)="buscarCliente()"
-              [disabled]="buscandoCliente || !documentoBusqueda.trim()"
-            >
-              <i
-                class="bi"
-                [ngClass]="
-                  buscandoCliente
-                    ? 'bi-arrow-repeat spinning'
-                    : 'bi-search'
-                "
-              ></i>
-
-              {{ buscandoCliente ? 'Buscando' : 'Buscar' }}
-            </button>
-
-          </div>
-
-          <!-- MENSAJE DE BÚSQUEDA -->
-          <div
-            class="customer-message"
-            *ngIf="mensajeBusquedaCliente"
-            [ngClass]="tipoMensajeBusqueda"
-          >
-            {{ mensajeBusquedaCliente }}
-          </div>
-
-          <!-- CLIENTE ENCONTRADO -->
-          <div
-            class="selected-customer"
-            *ngIf="clienteSeleccionado"
-          >
-
-            <div class="selected-customer-icon">
-              <i class="bi bi-person-check"></i>
-            </div>
-
-            <div class="selected-customer-information">
-
-              <strong>
-                {{ clienteSeleccionado.nombres }}
-                {{ clienteSeleccionado.apellidos }}
-              </strong>
-
-              <span>
-                {{ clienteSeleccionado.tipoDocumento }}:
-                {{ clienteSeleccionado.numeroDocumento }}
-              </span>
-
-              <small *ngIf="clienteSeleccionado.correo">
-                {{ clienteSeleccionado.correo }}
-              </small>
-
-            </div>
-
-            <button
-              type="button"
-              class="btn-remove-customer"
-              title="Quitar cliente"
-              aria-label="Quitar cliente"
-              (click)="quitarClienteSeleccionado()"
-            >
-              <i class="bi bi-x-lg"></i>
-            </button>
-
-          </div>
-
-        </div>
-
-        <!-- CLIENTE NUEVO -->
-        <div
-          class="customer-form"
-          *ngIf="modoCliente === 'NUEVO'"
-        >
-
-          <div class="form-field">
-
-            <label for="tipoDocumentoNuevo">
-              Tipo de documento
-            </label>
-
-            <select
-              id="tipoDocumentoNuevo"
-              [ngModel]="nuevoCliente.tipoDocumento"
-              (ngModelChange)="cambiarTipoDocumentoNuevo($event)"
-              [ngModelOptions]="{ standalone: true }"
-            >
-              <option value="DNI">DNI</option>
-              <option value="CE">Carné de extranjería</option>
-              <option value="PASAPORTE">Pasaporte</option>
-            </select>
-
-          </div>
-
-          <div class="form-field">
-
-            <label for="documentoNuevo">
-              Número de documento
-            </label>
-
-            <input
-              id="documentoNuevo"
-              type="text"
-              [(ngModel)]="nuevoCliente.numeroDocumento"
-              [ngModelOptions]="{ standalone: true }"
-              (input)="normalizarDocumentoNuevo($event)"
-              placeholder="Ingresa el documento"
-              [attr.maxlength]="
-                nuevoCliente.tipoDocumento === 'DNI'
-                  ? 8
-                  : nuevoCliente.tipoDocumento === 'CE'
-                    ? 11
-                    : 15
-              "
-            />
-
-          </div>
-
-          <!-- MODALIDAD DE REGISTRO -->
-          <div class="registration-mode">
-
-            <span>Datos del cliente</span>
-
-            <div class="registration-options">
-
-              <button
-                *ngIf="nuevoCliente.tipoDocumento === 'DNI'"
-                type="button"
-                [class.active]="modoRegistroNuevo === 'AUTO'"
-                (click)="cambiarModoRegistroNuevo('AUTO')"
-              >
-                Consulta RENIEC
-              </button>
-
-              <button
-                type="button"
-                [class.active]="modoRegistroNuevo === 'MANUAL'"
-                (click)="cambiarModoRegistroNuevo('MANUAL')"
-              >
-                Manual
-              </button>
-
-            </div>
-
-          </div>
-
-          <!-- DATOS MANUALES -->
-          <ng-container *ngIf="modoRegistroNuevo === 'MANUAL'">
-
-            <div class="form-field">
-
-              <label for="nombresNuevo">
-                Nombres
-              </label>
-
-              <input
-                id="nombresNuevo"
-                type="text"
-                [(ngModel)]="nuevoCliente.nombres"
-                [ngModelOptions]="{ standalone: true }"
-                (input)="normalizarNombreNuevo($event, 'nombres')"
-                placeholder="Nombres del cliente"
-              />
-
-            </div>
-
-            <div class="form-field">
-
-              <label for="apellidosNuevo">
-                Apellidos
-              </label>
-
-              <input
-                id="apellidosNuevo"
-                type="text"
-                [(ngModel)]="nuevoCliente.apellidos"
-                [ngModelOptions]="{ standalone: true }"
-                (input)="normalizarNombreNuevo($event, 'apellidos')"
-                placeholder="Apellidos del cliente"
-              />
-
-            </div>
-
-          </ng-container>
-
-          <div class="form-field">
-
-            <label for="correoNuevo">
-              Correo electrónico
-              <span>(opcional)</span>
-            </label>
-
-            <input
-              id="correoNuevo"
-              type="email"
-              [(ngModel)]="nuevoCliente.correo"
-              [ngModelOptions]="{ standalone: true }"
-              placeholder="correo@ejemplo.com"
-            />
-
-          </div>
-
-          <div
-            class="customer-message error"
-            *ngIf="errorNuevoCliente"
-          >
-            {{ errorNuevoCliente }}
-          </div>
-
-          <div
-            class="customer-info"
-            *ngIf="modoRegistroNuevo === 'AUTO'"
-          >
-            <i class="bi bi-info-circle"></i>
-
-            Los datos se consultarán al confirmar la venta.
-            Si la consulta no está disponible, podrás cambiar al registro manual.
-          </div>
-
-          <div class="customer-info">
-            <i class="bi bi-shield-check"></i>
-
-            El cliente se registrará junto con la venta.
-            No se realizará un registro independiente.
-          </div>
-
-        </div>
-
-        <!-- SIN CLIENTE -->
-        <div
-          class="customer-no-selection"
-          *ngIf="modoCliente === 'NINGUNO'"
-        >
-          <i class="bi bi-person-dash"></i>
-
-          <span>
-            La venta se realizará sin asociar un cliente.
+            <span *ngIf="!ventaCalculada">1</span>
           </span>
+
+          <div>
+            <strong>Carrito</strong>
+            <small>Productos</small>
+          </div>
+
         </div>
 
-      </section>
+        <div class="sale-progress-line"></div>
+
+        <!-- ETAPA 2 -->
+        <div
+          class="sale-progress-step step-optional"
+          [class.step-active]="mostrarPanelCliente"
+        >
+
+          <span class="step-number">2</span>
+
+          <div>
+            <strong>Cliente</strong>
+            <small>Opcional</small>
+          </div>
+
+        </div>
+
+        <div class="sale-progress-line"></div>
+
+        <!-- ETAPA 3 -->
+        <div
+          class="sale-progress-step"
+          [class.step-active]="ventaCalculada"
+        >
+
+          <span class="step-number">3</span>
+
+          <div>
+            <strong>Pago</strong>
+            <small>Cobro</small>
+          </div>
+
+        </div>
+
+      </div>
 
       <!-- ======================================== -->
       <!-- PRODUCTOS DEL CARRITO -->
@@ -1015,6 +766,359 @@
         </button>
 
         <!-- ======================================== -->
+        <!-- CLIENTE DE LA VENTA -->
+        <!-- ======================================== -->
+
+        <section class="customer-panel">
+
+          <!-- ENCABEZADO CONTRAÍBLE -->
+          <button
+            type="button"
+            class="customer-toggle"
+            (click)="alternarPanelCliente()"
+            [attr.aria-expanded]="mostrarPanelCliente"
+          >
+
+            <div class="customer-toggle-main">
+
+              <div class="customer-toggle-icon">
+                <i class="bi bi-person"></i>
+              </div>
+
+              <div class="customer-toggle-information">
+
+                <div class="customer-toggle-title">
+                  <strong>Cliente</strong>
+                  <span>Opcional</span>
+                </div>
+
+                <small>{{ resumenCliente }}</small>
+
+              </div>
+
+            </div>
+
+            <i
+              class="bi customer-toggle-chevron"
+              [ngClass]="
+                mostrarPanelCliente
+                  ? 'bi-chevron-up'
+                  : 'bi-chevron-down'
+              "
+            ></i>
+
+          </button>
+
+          <!-- CONTENIDO DESPLEGABLE -->
+          <div
+            class="customer-content"
+            *ngIf="mostrarPanelCliente"
+          >
+
+            <p class="customer-description">
+              Asocia un cliente registrado, ingresa uno nuevo o continúa sin cliente.
+            </p>
+
+            <!-- OPCIONES DE CLIENTE -->
+            <div class="customer-mode">
+
+              <button
+                type="button"
+                [class.active]="modoCliente === 'NINGUNO'"
+                (click)="cambiarModoCliente('NINGUNO')"
+              >
+                Sin cliente
+              </button>
+
+              <button
+                type="button"
+                [class.active]="modoCliente === 'EXISTENTE'"
+                (click)="cambiarModoCliente('EXISTENTE')"
+              >
+                Existente
+              </button>
+
+              <button
+                type="button"
+                [class.active]="modoCliente === 'NUEVO'"
+                (click)="cambiarModoCliente('NUEVO')"
+              >
+                Nuevo
+              </button>
+
+            </div>
+
+            <!-- CLIENTE EXISTENTE -->
+            <div
+              class="customer-form"
+              *ngIf="modoCliente === 'EXISTENTE'"
+            >
+
+              <label for="documentoBusqueda">
+                Número de documento
+              </label>
+
+              <div class="customer-search">
+
+                <input
+                  id="documentoBusqueda"
+                  type="text"
+                  [(ngModel)]="documentoBusqueda"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Ingresa DNI, CE o pasaporte"
+                  (keyup.enter)="buscarCliente()"
+                  maxlength="15"
+                />
+
+                <button
+                  type="button"
+                  (click)="buscarCliente()"
+                  [disabled]="buscandoCliente || !documentoBusqueda.trim()"
+                >
+
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      buscandoCliente
+                        ? 'bi-arrow-repeat spinning'
+                        : 'bi-search'
+                    "
+                  ></i>
+
+                  {{ buscandoCliente ? 'Buscando' : 'Buscar' }}
+
+                </button>
+
+              </div>
+
+              <!-- MENSAJE DE BÚSQUEDA -->
+              <div
+                class="customer-message"
+                *ngIf="mensajeBusquedaCliente"
+                [ngClass]="tipoMensajeBusqueda"
+              >
+                {{ mensajeBusquedaCliente }}
+              </div>
+
+              <!-- CLIENTE ENCONTRADO -->
+              <div
+                class="selected-customer"
+                *ngIf="clienteSeleccionado"
+              >
+
+                <div class="selected-customer-icon">
+                  <i class="bi bi-person-check"></i>
+                </div>
+
+                <div class="selected-customer-information">
+
+                  <strong>
+                    {{ clienteSeleccionado.nombres }}
+                    {{ clienteSeleccionado.apellidos }}
+                  </strong>
+
+                  <span>
+                    {{ clienteSeleccionado.tipoDocumento }}:
+                    {{ clienteSeleccionado.numeroDocumento }}
+                  </span>
+
+                  <small *ngIf="clienteSeleccionado.correo">
+                    {{ clienteSeleccionado.correo }}
+                  </small>
+
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-remove-customer"
+                  title="Quitar cliente"
+                  aria-label="Quitar cliente"
+                  (click)="quitarClienteSeleccionado()"
+                >
+                  <i class="bi bi-x-lg"></i>
+                </button>
+
+              </div>
+
+            </div>
+
+            <!-- CLIENTE NUEVO -->
+            <div
+              class="customer-form"
+              *ngIf="modoCliente === 'NUEVO'"
+            >
+
+              <div class="form-field">
+
+                <label for="tipoDocumentoNuevo">
+                  Tipo de documento
+                </label>
+
+                <select
+                  id="tipoDocumentoNuevo"
+                  [ngModel]="nuevoCliente.tipoDocumento"
+                  (ngModelChange)="cambiarTipoDocumentoNuevo($event)"
+                  [ngModelOptions]="{ standalone: true }"
+                >
+                  <option value="DNI">DNI</option>
+                  <option value="CE">Carné de extranjería</option>
+                  <option value="PASAPORTE">Pasaporte</option>
+                </select>
+
+              </div>
+
+              <div class="form-field">
+
+                <label for="documentoNuevo">
+                  Número de documento
+                </label>
+
+                <input
+                  id="documentoNuevo"
+                  type="text"
+                  [(ngModel)]="nuevoCliente.numeroDocumento"
+                  [ngModelOptions]="{ standalone: true }"
+                  (input)="normalizarDocumentoNuevo($event)"
+                  placeholder="Ingresa el documento"
+                  [attr.maxlength]="
+                    nuevoCliente.tipoDocumento === 'DNI'
+                      ? 8
+                      : nuevoCliente.tipoDocumento === 'CE'
+                        ? 11
+                        : 15
+                  "
+                />
+
+              </div>
+
+              <!-- MODALIDAD DE REGISTRO -->
+              <div class="registration-mode">
+
+                <span>Datos del cliente</span>
+
+                <div class="registration-options">
+
+                  <button
+                    *ngIf="nuevoCliente.tipoDocumento === 'DNI'"
+                    type="button"
+                    [class.active]="modoRegistroNuevo === 'AUTO'"
+                    (click)="cambiarModoRegistroNuevo('AUTO')"
+                  >
+                    Consulta RENIEC
+                  </button>
+
+                  <button
+                    type="button"
+                    [class.active]="modoRegistroNuevo === 'MANUAL'"
+                    (click)="cambiarModoRegistroNuevo('MANUAL')"
+                  >
+                    Manual
+                  </button>
+
+                </div>
+
+              </div>
+
+              <!-- DATOS MANUALES -->
+              <ng-container *ngIf="modoRegistroNuevo === 'MANUAL'">
+
+                <div class="form-field">
+
+                  <label for="nombresNuevo">
+                    Nombres
+                  </label>
+
+                  <input
+                    id="nombresNuevo"
+                    type="text"
+                    [(ngModel)]="nuevoCliente.nombres"
+                    [ngModelOptions]="{ standalone: true }"
+                    (input)="normalizarNombreNuevo($event, 'nombres')"
+                    placeholder="Nombres del cliente"
+                  />
+
+                </div>
+
+                <div class="form-field">
+
+                  <label for="apellidosNuevo">
+                    Apellidos
+                  </label>
+
+                  <input
+                    id="apellidosNuevo"
+                    type="text"
+                    [(ngModel)]="nuevoCliente.apellidos"
+                    [ngModelOptions]="{ standalone: true }"
+                    (input)="normalizarNombreNuevo($event, 'apellidos')"
+                    placeholder="Apellidos del cliente"
+                  />
+
+                </div>
+
+              </ng-container>
+
+              <div class="form-field">
+
+                <label for="correoNuevo">
+                  Correo electrónico
+                  <span>(opcional)</span>
+                </label>
+
+                <input
+                  id="correoNuevo"
+                  type="email"
+                  [(ngModel)]="nuevoCliente.correo"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="correo@ejemplo.com"
+                />
+
+              </div>
+
+              <div
+                class="customer-message error"
+                *ngIf="errorNuevoCliente"
+              >
+                {{ errorNuevoCliente }}
+              </div>
+
+              <div
+                class="customer-info"
+                *ngIf="modoRegistroNuevo === 'AUTO'"
+              >
+                <i class="bi bi-info-circle"></i>
+
+                Los datos se consultarán al confirmar la venta.
+                Si la consulta no está disponible, podrás cambiar al registro manual.
+              </div>
+
+              <div class="customer-info">
+                <i class="bi bi-shield-check"></i>
+
+                El cliente se registrará junto con la venta.
+              </div>
+
+            </div>
+
+            <!-- SIN CLIENTE -->
+            <div
+              class="customer-no-selection"
+              *ngIf="modoCliente === 'NINGUNO'"
+            >
+              <i class="bi bi-person-dash"></i>
+
+              <span>
+                La venta se realizará sin asociar un cliente.
+              </span>
+            </div>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- ======================================== -->
         <!-- MÉTODOS DE PAGO -->
         <!-- ======================================== -->
 
@@ -1058,18 +1162,13 @@
 
           </div>
 
-          <!-- AYUDA SEGÚN LA CANTIDAD DE MÉTODOS -->
+          <!-- AYUDA BREVE -->
           <div
             class="payment-help"
-            *ngIf="pagos.length === 1"
+            *ngIf="pagos.length === 1 && pagos[0]?.metodoPago === 'EFECTIVO'"
           >
             <i class="bi bi-info-circle"></i>
-
-            <span>
-              Selecciona cómo pagará el cliente. El importe se asigna
-              automáticamente. Si es en efectivo, registra cuánto recibiste
-              para calcular el vuelto.
-            </span>
+            <span>Ingresa el dinero recibido para calcular el vuelto.</span>
           </div>
 
           <div
@@ -1077,11 +1176,7 @@
             *ngIf="pagos.length > 1"
           >
             <i class="bi bi-info-circle"></i>
-
-            <span>
-              El pago está dividido entre varios métodos. Indica cuánto
-              corresponde a cada uno hasta completar el total de la venta.
-            </span>
+            <span>Distribuye el total entre los métodos elegidos.</span>
           </div>
 
           <!-- LISTADO DE PAGOS -->
@@ -1141,22 +1236,6 @@
                 </option>
 
               </select>
-
-            </div>
-
-            <!-- IMPORTE FIJO CUANDO SOLO HAY UN MÉTODO -->
-            <div
-              class="payment-fixed-amount"
-              *ngIf="pagos.length === 1"
-            >
-
-              <span>
-                Importe que debe cubrir este método
-              </span>
-
-              <strong>
-                S/ {{ totalVenta | number:'1.2-2' }}
-              </strong>
 
             </div>
 
@@ -1248,16 +1327,6 @@
 
             <div class="payment-summary-row">
 
-              <span>Total de la venta</span>
-
-              <strong>
-                S/ {{ totalVenta | number:'1.2-2' }}
-              </strong>
-
-            </div>
-
-            <div class="payment-summary-row">
-
               <span>Total distribuido</span>
 
               <strong>
@@ -1328,7 +1397,6 @@
             class="payment-status"
             [class.payment-status-valid]="pagosValidos"
           >
-
             <i
               class="bi"
               [ngClass]="
@@ -1338,55 +1406,40 @@
               "
             ></i>
 
-            {{ mensajeEstadoPagos }}
+            {{ pagosValidos ? 'Pago completo' : mensajeEstadoPagos }}
 
           </div>
 
         </section>
 
 
-        <!-- MENSAJE ANTES DE CALCULAR -->
+        <!-- ANTES DE CALCULAR -->
         <p
           class="cart-disclaimer"
           *ngIf="!previsualizacion() && !cargandoPrevisualizacion()"
         >
           <i class="bi bi-info-circle"></i>
-
-          El importe mostrado es aproximado. Calcula la venta para confirmar
-          el total, los descuentos y las existencias disponibles.
+          Calcula la venta para confirmar el total y las existencias.
         </p>
 
-        <!-- MENSAJE DURANTE EL CÁLCULO -->
+        <!-- DURANTE EL CÁLCULO -->
         <p
           class="cart-disclaimer disclaimer-loading"
           *ngIf="cargandoPrevisualizacion()"
         >
           <i class="bi bi-arrow-repeat spinning"></i>
-
-          Estamos revisando los precios, descuentos y existencias.
+          Actualizando precios y existencias...
         </p>
 
-        <!-- MENSAJE DESPUÉS DE CALCULAR -->
+        <!-- EXISTENCIAS INSUFICIENTES -->
         <ng-container *ngIf="previsualizacion() as vista">
-
-          <p
-            class="cart-disclaimer disclaimer-success"
-            *ngIf="vista.stockSuficiente"
-          >
-            <i class="bi bi-check-circle"></i>
-
-            El total está actualizado y todos los productos tienen
-            existencias disponibles. Puedes continuar con el pago.
-          </p>
 
           <p
             class="cart-disclaimer disclaimer-warning"
             *ngIf="!vista.stockSuficiente"
           >
             <i class="bi bi-exclamation-triangle"></i>
-
-            No hay existencias suficientes para algunos productos.
-            Ajusta las cantidades y vuelve a calcular la venta.
+            Algunos productos no tienen existencias suficientes.
           </p>
 
         </ng-container>
