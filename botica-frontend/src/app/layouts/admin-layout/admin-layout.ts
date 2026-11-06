@@ -1,6 +1,14 @@
-import { Component } from '@angular/core';
+import {
+  Component,
+  inject
+} from '@angular/core';
+
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+
+import {
+  RouterModule,
+  Router
+} from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 
@@ -15,20 +23,49 @@ interface MenuItem {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [
+    CommonModule,
+    RouterModule
+  ],
   templateUrl: './admin-layout.html',
   styleUrls: ['./admin-layout.scss']
 })
 export class AdminLayoutComponent {
-  
+
+  // ============================================================
+  // SERVICIOS
+  // ============================================================
+
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  // ============================================================
+  // DATOS DEL USUARIO
+  // ============================================================
+
   userRole = '';
   userName = '';
   userPermissions: string[] = [];
-  
+
+  // ============================================================
+  // ESTADO DE LA INTERFAZ
+  // ============================================================
+
   isSidebarOpen = true;
 
+  // Estado del aviso de expiración.
   sessionWarning$ = this.authService.sessionWarning$;
-  sessionSecondsRemaining$ = this.authService.sessionSecondsRemaining$;
+
+  // Cuenta regresiva.
+  sessionSecondsRemaining$ =
+    this.authService.sessionSecondsRemaining$;
+
+  // Indica si se está esperando una operación activa.
+  sessionClosing$ = this.authService.sessionClosing$;
+
+  // ============================================================
+  // ELEMENTOS DEL MENÚ
+  // ============================================================
 
   menuItems: MenuItem[] = [
 
@@ -100,11 +137,12 @@ export class AdminLayoutComponent {
     }
 
   ];
-  
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {
+
+  // ============================================================
+  // CONSTRUCTOR
+  // ============================================================
+
+  constructor() {
 
     this.userRole = this.authService.getUserRole();
 
@@ -132,7 +170,11 @@ export class AdminLayoutComponent {
       }
     }
   }
-  
+
+  // ============================================================
+  // FILTRAR OPCIONES DEL MENÚ
+  // ============================================================
+
   get allowedMenuItems(): MenuItem[] {
 
     return this.menuItems.filter(item => {
@@ -147,26 +189,45 @@ export class AdminLayoutComponent {
     });
   }
 
+  // ============================================================
+  // SIDEBAR
+  // ============================================================
+
   toggleSidebar(): void {
+
     this.isSidebarOpen = !this.isSidebarOpen;
   }
 
+  // ============================================================
+  // CERRAR SESIÓN VOLUNTARIAMENTE
+  // ============================================================
+
   cerrarSesion(): void {
+
     this.authService.logout();
-    this.router.navigate(['/login']);
+
+    void this.router.navigate(['/login']);
   }
 
+  // ============================================================
+  // FORMATEAR CUENTA REGRESIVA
+  // ============================================================
 
-  // Formatear el tiempo restante en minutos y segundos.
   formatearTiempoSesion(segundos: number | null): string {
+
     const total = Math.max(0, segundos ?? 0);
+
     const minutos = Math.floor(total / 60);
+
     const restantes = total % 60;
 
     return `${String(minutos).padStart(2, '0')}:${String(restantes).padStart(2, '0')}`;
   }
 
-  // Ocultar el aviso sin prolongar la sesión.
+  // ============================================================
+  // OCULTAR AVISO
+  // ============================================================
+
   ocultarAvisoSesion(): void {
 
     this.authService.ocultarAvisoSesion();

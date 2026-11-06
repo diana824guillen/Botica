@@ -38,43 +38,67 @@ export class AuthService {
 
   private apiUrl = `${environment.apiUrl}/auth`;
 
-  // Tiempo de anticipación del aviso: 2 minutos.
+  // Mostrar el aviso dos minutos antes del vencimiento.
   private readonly TIEMPO_AVISO_MS = 2 * 60 * 1000;
 
-  // Claves de almacenamiento.
-  private readonly CLAVE_SESION_EXPIRADA = 'vida-salud:session-expired';
+  // Claves utilizadas para controlar la sesión.
+  private readonly CLAVE_SESION_EXPIRADA =
+    'vida-salud:session-expired';
 
-  private readonly CLAVE_USUARIO_EXPIRADO = 'vida-salud:expired-user';
+  private readonly CLAVE_USUARIO_EXPIRADO =
+    'vida-salud:expired-user';
 
-  private readonly PREFIJO_BORRADOR = 'vida-salud:pos-draft:';
+  private readonly PREFIJO_BORRADOR =
+    'vida-salud:pos-draft:';
 
-  // Estado del aviso de expiración.
-  private sessionWarningSubject = new BehaviorSubject<boolean>(false);
+  // ============================================================
+  // ESTADOS REACTIVOS
+  // ============================================================
+
+  private sessionWarningSubject =
+    new BehaviorSubject<boolean>(false);
 
   readonly sessionWarning$ =
     this.sessionWarningSubject.asObservable();
 
-  // Segundos que faltan para vencer el token.
-  private remainingSecondsSubject = new BehaviorSubject<number>(0);
+  private remainingSecondsSubject =
+    new BehaviorSubject<number>(0);
 
   readonly sessionSecondsRemaining$ =
     this.remainingSecondsSubject.asObservable();
 
-  // Temporizadores.
-  private warningTimeout: ReturnType<typeof setTimeout> | null = null;
+  private sessionClosingSubject =
+    new BehaviorSubject<boolean>(false);
 
-  private expirationTimeout: ReturnType<typeof setTimeout> | null = null;
+  readonly sessionClosing$ =
+    this.sessionClosingSubject.asObservable();
 
-  private countdownInterval: ReturnType<typeof setInterval> | null = null;
+  // ============================================================
+  // TEMPORIZADORES
+  // ============================================================
+
+  private warningTimeout:
+    ReturnType<typeof setTimeout> | null = null;
+
+  private expirationTimeout:
+    ReturnType<typeof setTimeout> | null = null;
+
+  private countdownInterval:
+    ReturnType<typeof setInterval> | null = null;
 
   private tokenMonitoreado: string | null = null;
 
   private fechaExpiracion = 0;
 
-  // Control de solicitudes que ya están en curso.
-  private solicitudesActivas = 0;
+  // ============================================================
+  // CONTROL DE SOLICITUDES ACTIVAS
+  // ============================================================
 
-  private expiracionPendiente = false;
+  // Se contabilizan por token para no mezclar solicitudes
+  // de una sesión anterior con una nueva autenticación.
+  private solicitudesActivas = new Map<string, number>();
+
+  private tokenCierrePendiente: string | null = null;
 
   private redireccionando = false;
 
@@ -83,7 +107,7 @@ export class AuthService {
     private router: Router
   ) {
 
-    // Recuperar la programación del token si se actualiza la página.
+    // Recuperar el monitoreo si la página se actualiza.
     const token = localStorage.getItem('token');
 
     if (token) {
@@ -91,7 +115,12 @@ export class AuthService {
       const expiracion = this.obtenerFechaExpiracion(token);
 
       if (expiracion && expiracion > Date.now()) {
+
         this.programarMonitoreo(token, expiracion);
+
+      } else {
+
+        this.solicitarExpiracionSesion(token);
       }
     }
   }
@@ -110,11 +139,12 @@ export class AuthService {
       .pipe(
         tap(response => {
 
-          // Si inició sesión otra persona después del vencimiento, eliminar el borrador de la usuaria anterior.
+          // Identificar al usuario de la sesión anterior.
           const usuarioAnterior = sessionStorage.getItem(
             this.CLAVE_USUARIO_EXPIRADO
           );
 
+          // No permitir recuperar el borrador de otro usuario.
           if (
             usuarioAnterior &&
             usuarioAnterior.toLowerCase() !==
@@ -124,6 +154,7 @@ export class AuthService {
             this.eliminarBorradorVenta(usuarioAnterior);
           }
 
+          // Guardar los datos de la nueva sesión.
           localStorage.setItem('token', response.token);
 
           localStorage.setItem(
@@ -131,10 +162,13 @@ export class AuthService {
             JSON.stringify(response)
           );
 
-          this.expiracionPendiente = false;
+          // Restablecer el control de la sesión.
+          this.tokenCierrePendiente = null;
           this.redireccionando = false;
 
-          // Programar aviso y cierre de sesión.
+          this.sessionClosingSubject.next(false);
+
+          // Programar aviso y expiración.
           this.programarMonitoreo(response.token);
         })
       );
@@ -148,17 +182,23 @@ export class AuthService {
 
     const username = this.obtenerUsuarioActual();
 
-    // Si la usuaria cierra sesión voluntariamente, descartar su borrador pendiente.
+    // Un cierre voluntario descarta el borrador pendiente.
     if (username) {
       this.eliminarBorradorVenta(username);
     }
 
-    sessionStorage.removeItem(this.CLAVE_SESION_EXPIRADA);
-    sessionStorage.removeItem(this.CLAVE_USUARIO_EXPIRADO);
+    sessionStorage.removeItem(
+      this.CLAVE_SESION_EXPIRADA
+    );
+
+    sessionStorage.removeItem(
+      this.CLAVE_USUARIO_EXPIRADO
+    );
+
+    this.tokenCierrePendiente = null;
 
     this.limpiarDatosAutenticacion();
 
-    this.expiracionPendiente = false;
   }
 
   // ============================================================
@@ -177,17 +217,18 @@ export class AuthService {
 
     if (!expiracion || Date.now() >= expiracion) {
 
-      this.registrarSesionExpirada();
-
-      this.expiracionPendiente = true;
-
-      this.procesarExpiracionSiCorresponde();
+      this.solicitarExpiracionSesion(token);
 
       return false;
     }
 
-    // Asegurar que exista un monitoreo para el token actual.
+    if (this.tokenCierrePendiente === token) {
+      return false;
+    }
+
+    // Garantizar que el token tenga un monitoreo activo.
     if (this.tokenMonitoreado !== token) {
+
       this.programarMonitoreo(token, expiracion);
     }
 
@@ -195,7 +236,7 @@ export class AuthService {
   }
 
   // ============================================================
-  // MONITOREO DE EXPIRACIÓN
+  // PROGRAMAR AVISO Y EXPIRACIÓN
   // ============================================================
 
   private programarMonitoreo(
@@ -203,24 +244,23 @@ export class AuthService {
     expiracionConocida?: number
   ): void {
 
+    // No programar un token que ya fue reemplazado.
+    if (localStorage.getItem('token') !== token) {
+      return;
+    }
+
     const expiracion =
-      expiracionConocida ?? this.obtenerFechaExpiracion(token);
+      expiracionConocida ??
+      this.obtenerFechaExpiracion(token);
 
-    if (!expiracion) {
+    if (!expiracion || expiracion <= Date.now()) {
 
-      this.solicitarExpiracionSesion();
-
-      return;
-    }
-
-    if (expiracion <= Date.now()) {
-
-      this.solicitarExpiracionSesion();
+      this.solicitarExpiracionSesion(token);
 
       return;
     }
 
-    // Evitar programar dos veces el mismo token.
+    // Evitar duplicar temporizadores.
     if (
       this.tokenMonitoreado === token &&
       this.expirationTimeout !== null
@@ -233,106 +273,178 @@ export class AuthService {
     this.tokenMonitoreado = token;
     this.fechaExpiracion = expiracion;
 
-    this.sessionWarningSubject.next(false);
-    this.remainingSecondsSubject.next(0);
+    this.tokenCierrePendiente = null;
 
-    this.expiracionPendiente = false;
+    this.sessionWarningSubject.next(false);
+    this.sessionClosingSubject.next(false);
+    this.remainingSecondsSubject.next(0);
 
     const tiempoRestante = expiracion - Date.now();
 
-    // Mostrar aviso dos minutos antes del vencimiento.
     const tiempoParaAviso = Math.max(
       0,
       tiempoRestante - this.TIEMPO_AVISO_MS
     );
 
+    // AVISO PREVIO.
     this.warningTimeout = setTimeout(() => {
+
+      this.warningTimeout = null;
+
+      if (localStorage.getItem('token') !== token) {
+        return;
+      }
 
       this.sessionWarningSubject.next(true);
 
-      this.actualizarCuentaRegresiva();
+      this.actualizarCuentaRegresiva(token);
 
       this.countdownInterval = setInterval(() => {
 
-        this.actualizarCuentaRegresiva();
+        this.actualizarCuentaRegresiva(token);
 
       }, 1000);
 
     }, tiempoParaAviso);
 
-    // Programar el vencimiento.
+    // EXPIRACIÓN DEFINITIVA.
     this.expirationTimeout = setTimeout(() => {
 
-      this.solicitarExpiracionSesion();
+      this.expirationTimeout = null;
+
+      this.solicitarExpiracionSesion(token);
 
     }, tiempoRestante);
   }
 
-  private actualizarCuentaRegresiva(): void {
+  private actualizarCuentaRegresiva(token: string): void {
+
+    if (localStorage.getItem('token') !== token) {
+      return;
+    }
 
     const segundos = Math.max(
       0,
-      Math.ceil((this.fechaExpiracion - Date.now()) / 1000)
+      Math.ceil(
+        (this.fechaExpiracion - Date.now()) / 1000
+      )
     );
 
     this.remainingSecondsSubject.next(segundos);
   }
 
-  // Ocultar el aviso sin prolongar la sesión.
+  // Ocultar el aviso, pero no prolongar la sesión.
   ocultarAvisoSesion(): void {
+
+    // Si está esperando una operación, mantener el aviso.
+    if (this.tokenCierrePendiente) {
+      return;
+    }
 
     this.sessionWarningSubject.next(false);
   }
 
   // ============================================================
-  // CONTROL DE SOLICITUDES EN CURSO
+  // CONTROL DE SOLICITUDES
   // ============================================================
 
-  // Se llama cuando comienza una solicitud protegida con JWT.
-  iniciarSolicitudProtegida(): void {
+  // Se ejecuta antes de iniciar una solicitud protegida. No permite comenzar operaciones con un token vencido.
+  iniciarSolicitudProtegida(token: string): boolean {
 
-    this.solicitudesActivas++;
-  }
+    if (!token || localStorage.getItem('token') !== token) {
+      return false;
+    }
 
-  // Se llama cuando termina una solicitud protegida.
-  finalizarSolicitudProtegida(): void {
+    if (this.tokenCierrePendiente === token) {
+      return false;
+    }
 
-    this.solicitudesActivas = Math.max(
-      0,
-      this.solicitudesActivas - 1
+    const expiracion = this.obtenerFechaExpiracion(token);
+
+    if (!expiracion || Date.now() >= expiracion) {
+
+      this.solicitarExpiracionSesion(token);
+
+      return false;
+    }
+
+    const actual = this.solicitudesActivas.get(token) ?? 0;
+
+    this.solicitudesActivas.set(
+      token,
+      actual + 1
     );
 
-    this.procesarExpiracionSiCorresponde();
+    return true;
   }
 
-  // Se llama cuando el backend responde 401.
-  solicitarCierrePorAutenticacion(): void {
+  // Se ejecuta cuando termina una solicitud protegida.
+  finalizarSolicitudProtegida(token: string): void {
 
-    this.solicitarExpiracionSesion();
+    const actual = this.solicitudesActivas.get(token) ?? 0;
+
+    if (actual <= 1) {
+
+      this.solicitudesActivas.delete(token);
+
+    } else {
+
+      this.solicitudesActivas.set(
+        token,
+        actual - 1
+      );
+    }
+
+    // Si el token venció mientras había solicitudes activas, comprobar si ya se pueden cerrar todos los accesos.
+    if (this.tokenCierrePendiente === token) {
+
+      this.procesarExpiracionSiCorresponde(token);
+    }
   }
 
-  private solicitarExpiracionSesion(): void {
+  // Se ejecuta cuando el backend responde HTTP 401.
+  solicitarCierrePorAutenticacion(token: string): void {
 
-    // No hacer nada si la sesión ya fue cerrada manualmente.
-    if (!localStorage.getItem('token')) {
+    this.solicitarExpiracionSesion(token);
+  }
+
+  // ============================================================
+  // SOLICITAR EXPIRACIÓN
+  // ============================================================
+
+  private solicitarExpiracionSesion(token: string): void {
+
+    // Ignorar respuestas de una sesión anterior.
+    if (localStorage.getItem('token') !== token) {
       return;
     }
+
+    this.tokenCierrePendiente = token;
 
     this.registrarSesionExpirada();
 
-    this.expiracionPendiente = true;
+    this.sessionClosingSubject.next(true);
+    this.sessionWarningSubject.next(true);
+    this.remainingSecondsSubject.next(0);
 
-    this.procesarExpiracionSiCorresponde();
+    this.procesarExpiracionSiCorresponde(token);
   }
 
-  // No cerrar la sesión mientras existan peticiones iniciadas.
-  private procesarExpiracionSiCorresponde(): void {
+  // Esperar a que terminen las solicitudes que comenzaron mientras el token todavía era válido.
+  private procesarExpiracionSiCorresponde(token: string): void {
 
-    if (!this.expiracionPendiente) {
+    if (this.tokenCierrePendiente !== token) {
       return;
     }
 
-    if (this.solicitudesActivas > 0) {
+    if (localStorage.getItem('token') !== token) {
+      return;
+    }
+
+    const pendientes = this.solicitudesActivas.get(token) ?? 0;
+
+    // No cerrar mientras exista una solicitud en ejecución.
+    if (pendientes > 0) {
       return;
     }
 
@@ -342,12 +454,13 @@ export class AuthService {
 
     this.redireccionando = true;
 
-    // El borrador del POS no se elimina.
+    // Mantener registrado que la sesión terminó por vencimiento.
     this.registrarSesionExpirada();
 
-    this.limpiarDatosAutenticacion();
+    // El borrador del POS no se elimina.
+    this.tokenCierrePendiente = null;
 
-    this.expiracionPendiente = false;
+    this.limpiarDatosAutenticacion(token);
 
     void this.router.navigate(
       ['/login'],
@@ -393,10 +506,20 @@ export class AuthService {
   }
 
   // ============================================================
-  // LIMPIAR AUTENTICACIÓN
+  // LIMPIAR DATOS DE AUTENTICACIÓN
   // ============================================================
 
-  private limpiarDatosAutenticacion(): void {
+  private limpiarDatosAutenticacion(
+    tokenEsperado?: string
+  ): void {
+
+    // Evitar que una sesión anterior elimine una autenticación nueva.
+    if (
+      tokenEsperado &&
+      localStorage.getItem('token') !== tokenEsperado
+    ) {
+      return;
+    }
 
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -408,28 +531,35 @@ export class AuthService {
 
     this.sessionWarningSubject.next(false);
     this.remainingSecondsSubject.next(0);
+    this.sessionClosingSubject.next(false);
   }
 
   private limpiarTemporizadores(): void {
 
-    if (this.warningTimeout) {
+    if (this.warningTimeout !== null) {
+
       clearTimeout(this.warningTimeout);
+
       this.warningTimeout = null;
     }
 
-    if (this.expirationTimeout) {
+    if (this.expirationTimeout !== null) {
+
       clearTimeout(this.expirationTimeout);
+
       this.expirationTimeout = null;
     }
 
-    if (this.countdownInterval) {
+    if (this.countdownInterval !== null) {
+
       clearInterval(this.countdownInterval);
+
       this.countdownInterval = null;
     }
   }
 
   // ============================================================
-  // LEER EXPIRACIÓN DEL JWT
+  // OBTENER FECHA DE EXPIRACIÓN DEL JWT
   // ============================================================
 
   private obtenerFechaExpiracion(
@@ -471,7 +601,6 @@ export class AuthService {
         return null;
       }
 
-      // La expiración del JWT está expresada en segundos.
       return payload.exp * 1000;
 
     } catch {
@@ -515,20 +644,22 @@ export class AuthService {
 
     const user = localStorage.getItem('user');
 
-    if (user) {
-
-      try {
-        return JSON.parse(user).perfil || '';
-      } catch {
-        return '';
-      }
+    if (!user) {
+      return '';
     }
 
-    return '';
+    try {
+
+      return JSON.parse(user).perfil || '';
+
+    } catch {
+
+      return '';
+    }
   }
 
   // ============================================================
-  // RUTA DESPUÉS DE VOLVER A INICIAR SESIÓN
+  // RUTA DESPUÉS DE INICIAR SESIÓN
   // ============================================================
 
   obtenerRutaDespuesLogin(username: string): string {
@@ -549,10 +680,14 @@ export class AuthService {
         this.obtenerClaveBorrador(username)
       );
 
-    sessionStorage.removeItem(this.CLAVE_SESION_EXPIRADA);
-    sessionStorage.removeItem(this.CLAVE_USUARIO_EXPIRADO);
+    sessionStorage.removeItem(
+      this.CLAVE_SESION_EXPIRADA
+    );
 
-    // Recuperar el POS únicamente para la misma usuaria.
+    sessionStorage.removeItem(
+      this.CLAVE_USUARIO_EXPIRADO
+    );
+
     if (fueExpirada && mismoUsuario && existeBorrador) {
       return '/ventas';
     }
@@ -561,7 +696,7 @@ export class AuthService {
   }
 
   // ============================================================
-  // GUARDAR BORRADOR DE VENTA
+  // CONSERVAR BORRADOR DEL POS
   // ============================================================
 
   private obtenerClaveBorrador(username: string): string {
@@ -625,6 +760,7 @@ export class AuthService {
         !borrador.username ||
         borrador.username.toLowerCase() !== username.toLowerCase()
       ) {
+
         return null;
       }
 
@@ -640,7 +776,8 @@ export class AuthService {
 
   eliminarBorradorVenta(username?: string | null): void {
 
-    const usuario = username ?? this.obtenerUsuarioActual();
+    const usuario =
+      username ?? this.obtenerUsuarioActual();
 
     if (!usuario) {
       return;
@@ -650,6 +787,7 @@ export class AuthService {
       this.obtenerClaveBorrador(usuario)
     );
   }
+
 }
 
 

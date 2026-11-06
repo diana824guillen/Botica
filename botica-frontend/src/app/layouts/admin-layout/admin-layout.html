@@ -1,57 +1,116 @@
 <div class="layout-container" [class.sidebar-collapsed]="!isSidebarOpen">
-  
+
   <!-- BARRA LATERAL -->
   <aside class="sidebar">
+
     <div class="sidebar-header">
       <h2>Vida & Salud</h2>
     </div>
 
     <nav class="sidebar-menu">
+
       <ul>
+
         <li *ngFor="let item of allowedMenuItems">
-          <a [routerLink]="item.route" routerLinkActive="active" title="{{ item.label }}">
+
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [title]="item.label"
+          >
+
             <i class="bi {{ item.icon }} icon"></i>
-            <span class="label" *ngIf="isSidebarOpen">{{ item.label }}</span>
+
+            <span class="label" *ngIf="isSidebarOpen">
+              {{ item.label }}
+            </span>
+
           </a>
+
         </li>
+
       </ul>
+
     </nav>
+
   </aside>
 
   <!-- CONTENIDO PRINCIPAL -->
   <main class="main-content">
+
+    <!-- ENCABEZADO -->
     <header class="topbar">
+
       <div class="topbar-left">
-        <!-- Botón de hamburguesa movido aquí -->
-        <button class="toggle-btn" (click)="toggleSidebar()">
+
+        <button
+          type="button"
+          class="toggle-btn"
+          (click)="toggleSidebar()"
+        >
           <i class="bi bi-list"></i>
         </button>
-        <span class="greeting">Hola, <strong>{{ userName }}</strong></span>
+
+        <span class="greeting">
+          Hola, <strong>{{ userName }}</strong>
+        </span>
+
       </div>
 
       <div class="topbar-right">
-        <span class="badge">{{ userRole }}</span>
-        <button class="logout-btn" (click)="cerrarSesion()">Cerrar Sesión</button>
+
+        <span class="badge">
+          {{ userRole }}
+        </span>
+
+        <button
+          type="button"
+          class="logout-btn"
+          (click)="cerrarSesion()"
+        >
+          Cerrar Sesión
+        </button>
+
       </div>
+
     </header>
 
-    
-    <!-- AVISO DE SESIÓN PRÓXIMA A VENCER -->
+    <!-- ======================================== -->
+    <!-- AVISO DE EXPIRACIÓN DE SESIÓN -->
+    <!-- ======================================== -->
+
     <div
       class="session-warning"
       *ngIf="sessionWarning$ | async"
       role="alert"
+      aria-live="polite"
     >
 
       <div class="session-warning-icon">
-        <i class="bi bi-clock-history"></i>
+
+        <i
+          class="bi"
+          [ngClass]="
+            (sessionClosing$ | async)
+              ? 'bi-hourglass-split'
+              : 'bi-clock-history'
+          "
+        ></i>
+
       </div>
 
       <div class="session-warning-content">
 
-        <strong>Tu sesión está por vencer</strong>
+        <strong *ngIf="!(sessionClosing$ | async)">
+          Tu sesión está por vencer
+        </strong>
 
-        <span>
+        <strong *ngIf="sessionClosing$ | async">
+          Finalizando la operación actual
+        </strong>
+
+        <span *ngIf="!(sessionClosing$ | async)">
+
           Se cerrará en
 
           <strong>
@@ -64,24 +123,41 @@
 
           Guarda o termina la operación que estás realizando.
           Tendrás que iniciar sesión nuevamente.
+
+        </span>
+
+        <span *ngIf="sessionClosing$ | async">
+
+          Tu sesión ha vencido. Estamos esperando que termine
+          la operación que ya estaba en curso antes de cerrar
+          el acceso al sistema.
+
         </span>
 
       </div>
 
       <button
+        *ngIf="!(sessionClosing$ | async)"
         type="button"
         class="session-warning-close"
         (click)="ocultarAvisoSesion()"
-        aria-label="Cerrar aviso"
+        aria-label="Ocultar aviso"
+        title="Ocultar aviso"
       >
+
         <i class="bi bi-x-lg"></i>
+
       </button>
 
     </div>
 
+    <!-- CONTENIDO DE LOS MÓDULOS -->
     <div class="content-area">
-      <router-outlet></router-outlet> <!-- Aquí se cargan los módulos -->
+
+      <router-outlet></router-outlet>
+
     </div>
+
   </main>
 
 </div>

@@ -105,6 +105,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
 
   private restaurandoBorrador = false;
+  // Evita recuperar varias veces la misma venta al actualizar el catálogo.
+  private borradorRestaurado = false;
   private clienteSeleccionadoIdPendiente: number | null = null;
 
   // ============================================================
@@ -280,6 +282,15 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   }
 
   private restaurarBorradorVenta(): void {
+    // La recuperación solo se realiza una vez por instancia del POS.
+    if (
+      this.borradorRestaurado ||
+      this.restaurandoBorrador
+    ) {
+      return;
+    }
+
+    this.borradorRestaurado = true;
 
     const borrador =
       this.authService.obtenerBorradorVenta<VentaPosDraft>();
@@ -959,6 +970,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     this.clienteSeleccionado = null;
     this.mensajeBusquedaCliente = '';
     this.tipoMensajeBusqueda = '';
+    this.clienteSeleccionadoIdPendiente = null;
+    // Guardar el estado de la búsqueda.
+    this.guardarBorradorVenta();
 
     this.clienteService
       .buscarPorDocumento(documento)
@@ -977,6 +991,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
         next: cliente => {
 
           this.clienteSeleccionado = cliente;
+          // Conservar el identificador del cliente seleccionado.
+          this.guardarBorradorVenta();
 
           this.mensajeBusquedaCliente =
             'Cliente encontrado correctamente.';
@@ -1995,6 +2011,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
         next: respuesta => {
 
           this.ventaRegistrada = respuesta;
+          // La venta ya está registrada. Eliminar el borrador para impedir que se recupere como pendiente.
+          this.authService.eliminarBorradorVenta();
 
           this.errorVenta = '';
           this.errorPagos = '';
@@ -2177,6 +2195,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   private limpiarDatosCliente(): void {
+
+    // Limpiar el identificador pendiente de recuperación.
+    this.clienteSeleccionadoIdPendiente = null;
 
     // Limpiar búsqueda de cliente existente.
     this.documentoBusqueda = '';

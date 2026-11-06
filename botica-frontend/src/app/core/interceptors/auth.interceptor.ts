@@ -1,4 +1,8 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpInterceptorFn
+} from '@angular/common/http';
+
 import { inject } from '@angular/core';
 
 import {
@@ -13,7 +17,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const authService = inject(AuthService);
 
-  // El login no necesita token.
+  // El inicio de sesión no necesita un token anterior.
   const esLogin = req.url.includes('/auth/login');
 
   if (esLogin) {
@@ -22,46 +26,57 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const token = localStorage.getItem('token');
 
-  const solicitudProtegida = !!token;
-
-  // Agregar el token a la solicitud.
-  const request = token
-    ? req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-    : req;
-
-  // Registrar solicitudes que ya comenzaron.
-  if (solicitudProtegida) {
-    authService.iniciarSolicitudProtegida();
+  // Si no existe token, dejar que Spring Security responda según las reglas de autenticación.
+  if (!token) {
+    return next(req);
   }
 
-  return next(request).pipe(
+  // Evitar solicitudes nuevas si el token ya venció o existe un cierre de sesión pendiente.
+  const solicitudIniciada =
+    authService.iniciarSolicitudProtegida(token);
+
+  if (!solicitudIniciada) {
+
+    return throwError(() =>
+      new HttpErrorResponse({
+        status: 401,
+        statusText: 'Unauthorized',
+        url: req.url,
+        error: {
+          status: 401,
+          mensaje: 'La sesión ha vencido. Inicia sesión nuevamente.'
+        }
+      })
+    );
+  }
+
+  // Adjuntar el JWT a la petición.
+  const requestAutenticada = req.clone({
+    setHeaders: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  return next(requestAutenticada).pipe(
 
     catchError((error: unknown) => {
 
       if (
-        solicitudProtegida &&
         error instanceof HttpErrorResponse &&
         error.status === 401
       ) {
 
-        // El backend rechazó la autenticación. Se solicita el cierre de sesión, pero el servicio
-        // espera las demás solicitudes que ya están en curso.
-        authService.solicitarCierrePorAutenticacion();
+        authService.solicitarCierrePorAutenticacion(token);
       }
 
-      // Cada componente puede continuar gestionando su error.
+      // Permitir que cada módulo gestione su error.
       return throwError(() => error);
     }),
 
     finalize(() => {
 
-      if (solicitudProtegida) {
-        authService.finalizarSolicitudProtegida();
-      }
+      // Liberar la solicitud cuando termina.
+      authService.finalizarSolicitudProtegida(token);
 
     })
 

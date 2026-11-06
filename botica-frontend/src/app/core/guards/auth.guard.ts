@@ -8,11 +8,18 @@ export const authGuard = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
+  // Comprobar si existía un token.
+  const teniaToken = !!localStorage.getItem('token');
+
+  // Permitir acceso solamente con una sesión vigente.
   if (authService.isLoggedIn()) {
     return true;
   }
 
-  const queryParams = authService.sesionExpirada()
+  // Diferenciar el acceso sin sesión del vencimiento del JWT.
+  const queryParams = (
+    teniaToken || authService.sesionExpirada()
+  )
     ? { sessionExpired: 'true' }
     : {};
 
