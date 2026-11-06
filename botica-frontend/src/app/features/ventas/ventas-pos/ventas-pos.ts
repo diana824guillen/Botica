@@ -1569,7 +1569,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // ============================================================
   // CONFIRMAR Y REGISTRAR VENTA
   // ============================================================
-
+  
   confirmarVenta(): void {
 
     // Evitar confirmaciones simultáneas o repetidas.
@@ -1666,7 +1666,10 @@ export class VentasPosComponent implements OnInit, OnDestroy {
         cantidad: item.cantidad
       })),
 
-      pagos: pagosRequest
+      pagos: pagosRequest,
+
+      // Enviar el total que el usuario visualizó antes de confirmar.
+      totalEsperado: Number(vista.total.toFixed(2))
 
     };
 
@@ -1713,15 +1716,22 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
           const mensajeNormalizado = mensaje.toLowerCase();
 
-          // Si las existencias cambiaron desde el último cálculo,
-          // se debe volver a calcular la venta.
+          // Comprobar si cambió el total desde la última previsualización.
+          const requiereRecalculoTotal =
+            mensajeNormalizado.includes('total de la venta cambió');
+
+          // Comprobar si cambió el stock desde el último cálculo.
+          const requiereRecalculoStock =
+            mensajeNormalizado.includes('stock') ||
+            mensajeNormalizado.includes('existencia') ||
+            mensajeNormalizado.includes('lote') ||
+            mensajeNormalizado.includes('disponible');
+
           const requiereNuevoCalculo =
             err?.status === 400 &&
             (
-              mensajeNormalizado.includes('stock') ||
-              mensajeNormalizado.includes('existencia') ||
-              mensajeNormalizado.includes('lote') ||
-              mensajeNormalizado.includes('disponible')
+              requiereRecalculoTotal ||
+              requiereRecalculoStock
             );
 
           if (requiereNuevoCalculo) {
@@ -1731,9 +1741,18 @@ export class VentasPosComponent implements OnInit, OnDestroy {
             this.pagos = [];
             this.errorPagos = '';
 
-            this.errorPrevisualizacion.set(
-              'Las existencias cambiaron. Vuelve a calcular la venta.'
-            );
+            if (requiereRecalculoTotal) {
+
+              this.errorPrevisualizacion.set(
+                'El total de la venta cambió. Vuelve a calcularla antes de confirmar.'
+              );
+
+            } else {
+
+              this.errorPrevisualizacion.set(
+                'Las existencias cambiaron. Vuelve a calcular la venta.'
+              );
+            }
 
             this.errorVenta = '';
 
@@ -1753,7 +1772,6 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
       });
   }
-
 
   // ============================================================
   // INICIAR UNA NUEVA VENTA

@@ -1,9 +1,11 @@
+
 package com.boticavidasalud.backend.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -36,6 +38,10 @@ public class VentaRequestDTO {
     @Valid
     private List<PagoRequestDTO> pagos = new ArrayList<>();
 
+    // Total que el usuario visualizó antes de confirmar la venta.
+    @NotNull(
+        message = "Debes enviar el total calculado antes de confirmar la venta"
+    )
     @DecimalMin(
         value = "0.00",
         message = "El total esperado no puede ser negativo"

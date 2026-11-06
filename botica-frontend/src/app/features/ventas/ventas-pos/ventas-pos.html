@@ -1590,29 +1590,53 @@
           Productos registrados
         </h3>
 
-        <div
-          class="sale-success-detail"
-          *ngFor="let detalle of venta.detalles"
-        >
+        <div class="sale-success-table-wrapper">
 
-          <div class="sale-success-detail-info">
+          <table class="sale-success-table sale-success-table-products">
 
-            <strong>{{ detalle.productoNombre }}</strong>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Presentación</th>
+                <th class="table-cell-right">Cantidad</th>
+                <th>Lote</th>
+                <th class="table-cell-right">Importe</th>
+              </tr>
+            </thead>
 
-            <span>
-              {{ detalle.cantidad | number:'1.0-2' }}
-              {{ detalle.presentacionTipo }}
-            </span>
+            <tbody>
 
-            <small *ngIf="detalle.numeroLote">
-              Lote: {{ detalle.numeroLote }}
-            </small>
+              <tr *ngFor="let detalle of venta.detalles">
 
-          </div>
+                <td>
+                  <strong class="table-product-name">
+                    {{ detalle.productoNombre }}
+                  </strong>
+                </td>
 
-          <strong>
-            S/ {{ detalle.subtotal | number:'1.2-2' }}
-          </strong>
+                <td>
+                  {{ detalle.presentacionTipo }}
+                </td>
+
+                <td class="table-cell-right">
+                  {{ detalle.cantidad | number:'1.0-2' }}
+                </td>
+
+                <td>
+                  {{ detalle.numeroLote || '—' }}
+                </td>
+
+                <td class="table-cell-right">
+                  <strong class="table-product-amount">
+                    S/ {{ detalle.subtotal | number:'1.2-2' }}
+                  </strong>
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
 
         </div>
 
@@ -1650,34 +1674,79 @@
           Pagos registrados
         </h3>
 
-        <div *ngIf="venta.pagos.length === 0">
-          <span class="sale-success-no-payment">
-            No se registraron pagos para esta venta.
-          </span>
+        <div
+          *ngIf="venta.pagos.length === 0"
+          class="sale-success-no-payment"
+        >
+          No se registraron pagos para esta venta.
         </div>
 
         <div
-          class="sale-success-payment"
-          *ngFor="let pago of venta.pagos"
+          class="sale-success-table-wrapper"
+          *ngIf="venta.pagos.length > 0"
         >
 
-          <div>
-            <strong>
-              {{
-                metodosPago.find(m => m.valor === pago.metodoPago)?.nombre
-                  || pago.metodoPago
-              }}
-            </strong>
+          <table class="sale-success-table sale-success-table-payments">
 
-            <small *ngIf="pago.metodoPago === 'EFECTIVO'">
-              Recibido: S/ {{ pago.montoRecibido | number:'1.2-2' }}
-              · Vuelto: S/ {{ pago.vuelto | number:'1.2-2' }}
-            </small>
-          </div>
+            <thead>
+              <tr>
+                <th>Método de pago</th>
+                <th class="table-cell-right">Importe aplicado</th>
+                <th class="table-cell-right">Recibido</th>
+                <th class="table-cell-right">Vuelto</th>
+              </tr>
+            </thead>
 
-          <strong>
-            S/ {{ pago.monto | number:'1.2-2' }}
-          </strong>
+            <tbody>
+
+              <tr *ngFor="let pago of venta.pagos">
+
+                <td>
+                  <strong class="table-payment-method">
+                    {{
+                      metodosPago.find(m => m.valor === pago.metodoPago)?.nombre
+                        || pago.metodoPago
+                    }}
+                  </strong>
+                </td>
+
+                <td class="table-cell-right">
+                  <strong class="table-product-amount">
+                    S/ {{ pago.monto | number:'1.2-2' }}
+                  </strong>
+                </td>
+
+                <td class="table-cell-right">
+
+                  <ng-container *ngIf="pago.metodoPago === 'EFECTIVO'; else noRecibido">
+                    S/ {{ pago.montoRecibido | number:'1.2-2' }}
+                  </ng-container>
+
+                  <ng-template #noRecibido>
+                    —
+                  </ng-template>
+
+                </td>
+
+                <td class="table-cell-right">
+
+                  <ng-container *ngIf="pago.metodoPago === 'EFECTIVO'; else noVuelto">
+                    <strong class="table-change-amount">
+                      S/ {{ pago.vuelto | number:'1.2-2' }}
+                    </strong>
+                  </ng-container>
+
+                  <ng-template #noVuelto>
+                    —
+                  </ng-template>
+
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
 
         </div>
 

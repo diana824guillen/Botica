@@ -174,23 +174,23 @@ public class VentaService {
     public VentaResponseDTO registrarVenta(VentaRequestDTO request) {
 
         if (request == null) {
-            throw new BusinessException(
-                    "Los datos de la venta son obligatorios"
-            );
+                throw new BusinessException(
+                        "Los datos de la venta son obligatorios"
+                );
         }
 
         if (request.getDetalles() == null
                 || request.getDetalles().isEmpty()) {
-            throw new BusinessException(
-                    "La venta debe tener al menos un producto"
-            );
+                throw new BusinessException(
+                        "La venta debe tener al menos un producto"
+                );
         }
 
         if (request.getObservacion() != null
                 && request.getObservacion().length() > 255) {
-            throw new BusinessException(
-                    "La observación no puede superar los 255 caracteres"
-            );
+                throw new BusinessException(
+                        "La observación no puede superar los 255 caracteres"
+                );
         }
 
         Usuario cajero = getUsuarioAutenticado();
@@ -199,9 +199,9 @@ public class VentaService {
         if (request.getIdCliente() != null
                 && request.getNuevoCliente() != null) {
 
-        throw new BusinessException(
-                "Seleccione un cliente existente o registre uno nuevo, no ambos"
-        );
+                throw new BusinessException(
+                        "Seleccione un cliente existente o registre uno nuevo, no ambos"
+                );
         }
 
         Cliente cliente = null;
@@ -209,11 +209,11 @@ public class VentaService {
         // Cliente que ya existe.
         if (request.getIdCliente() != null) {
                 cliente = clienteRepository.findByIdActivo(request.getIdCliente())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Cliente no encontrado o no disponible"
-                        )
-                );
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Cliente no encontrado o no disponible"
+                                )
+                        );
         }
 
         List<LineaVenta> lineas = prepararLineasVenta(
@@ -221,6 +221,21 @@ public class VentaService {
         );
 
         ResumenVenta resumen = calcularResumenVenta(lineas);
+
+        // Verificar que se haya enviado el total mostrado al usuario.
+        if (request.getTotalEsperado() == null) {
+                throw new BusinessException(
+                        "Debes calcular nuevamente el total de la venta antes de confirmarla"
+                );
+        }
+
+        // Comprobar que el total actual coincida con el que el usuario confirmó.
+        if (request.getTotalEsperado().compareTo(resumen.total) != 0) {
+                throw new BusinessException(
+                        "El total de la venta cambió desde el último cálculo. "
+                                + "Vuelve a calcular la venta antes de confirmar."
+                );
+        }
 
         // Validar pagos antes de modificar el inventario.
         List<PagoRequestDTO> pagosValidos = validarPagos(
@@ -268,15 +283,15 @@ public class VentaService {
 
         for (PagoRequestDTO pagoRequest : pagosValidos) {
 
-            PagoVenta pago = new PagoVenta();
+                PagoVenta pago = new PagoVenta();
 
-            pago.setVenta(venta);
-            pago.setMetodoPago(pagoRequest.getMetodoPago());
-            pago.setMonto(pagoRequest.getMonto());
-            pago.setFechaPago(LocalDateTime.now());
-            pago.setEstado(EstadoRegistro.ACTIVO.getValor());
+                pago.setVenta(venta);
+                pago.setMetodoPago(pagoRequest.getMetodoPago());
+                pago.setMonto(pagoRequest.getMonto());
+                pago.setFechaPago(LocalDateTime.now());
+                pago.setEstado(EstadoRegistro.ACTIVO.getValor());
 
-            if (pagoRequest.getMetodoPago() == MetodoPago.EFECTIVO) {
+                if (pagoRequest.getMetodoPago() == MetodoPago.EFECTIVO) {
 
                 BigDecimal montoRecibido = pagoRequest.getMontoRecibido();
 
@@ -291,7 +306,7 @@ public class VentaService {
 
                 pago.setVuelto(vuelto);
 
-            } else {
+                } else {
 
                 // Los métodos no monetarios no generan vuelto.
                 pago.setMontoRecibido(null);
@@ -299,9 +314,9 @@ public class VentaService {
                         ESCALA_MONETARIA,
                         RoundingMode.HALF_UP
                 ));
-            }
+                }
 
-            pagosVenta.add(pago);
+                pagosVenta.add(pago);
         }
 
         venta.setPagos(pagosVenta);

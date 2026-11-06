@@ -2445,3 +2445,103 @@
 }
 
 
+/* ============================================================
+   TABLAS DEL RESUMEN DE VENTA REGISTRADA
+============================================================ */
+
+.sale-success-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 0.45rem;
+  border: 1px solid v.$border-color;
+  border-radius: 8px;
+  background: white;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sale-success-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+
+  thead {
+    background: #f7f9fa;
+  }
+
+  th {
+    padding: 0.8rem 0.9rem;
+    color: v.$text-muted;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.85rem 0.9rem;
+    border-top: 1px solid #edf0f2;
+    color: v.$text-main;
+    font-size: 0.77rem;
+    vertical-align: middle;
+  }
+
+  tbody tr:hover {
+    background: #fafcfc;
+  }
+
+  .table-cell-right {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+/* Tabla de productos */
+
+.sale-success-table-products {
+  min-width: 690px;
+}
+
+.table-product-name {
+  display: block;
+  color: v.$text-main;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.table-product-amount {
+  color: v.$text-main;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Tabla de pagos */
+
+.sale-success-table-payments {
+  min-width: 590px;
+}
+
+.table-payment-method {
+  color: v.$text-main;
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+.table-change-amount {
+  color: #087443;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Mensaje cuando la venta no requiere pagos */
+
+.sale-success-no-payment {
+  padding: 0.8rem;
+  border-radius: 7px;
+  background: #f8fafb;
+  color: v.$text-muted;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+
