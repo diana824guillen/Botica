@@ -159,3 +159,79 @@
 }
 
 
+/* ============================================================
+   AVISO DE SESIÓN PRÓXIMA A VENCER
+============================================================ */
+
+.session-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.8rem 1.5rem;
+  border-bottom: 1px solid #f0d9a6;
+  background: #fff8e8;
+  color: #805b18;
+}
+
+.session-warning-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #fff0c9;
+  color: #a16d12;
+  font-size: 1.05rem;
+}
+
+.session-warning-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.2rem;
+
+  > strong {
+    color: #805b18;
+    font-size: 0.78rem;
+  }
+
+  > span {
+    color: #866b3b;
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+}
+
+.session-warning-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #866b3b;
+  cursor: pointer;
+
+  &:hover {
+    background: #fff0c9;
+  }
+}
+
+@media (max-width: 600px) {
+
+  .session-warning {
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+
+  .session-warning-content > span {
+    font-size: 0.68rem;
+  }
+
+}
+
+

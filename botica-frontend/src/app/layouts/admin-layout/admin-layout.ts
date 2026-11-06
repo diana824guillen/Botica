@@ -20,12 +20,15 @@ interface MenuItem {
   styleUrls: ['./admin-layout.scss']
 })
 export class AdminLayoutComponent {
-
+  
   userRole = '';
   userName = '';
   userPermissions: string[] = [];
-
+  
   isSidebarOpen = true;
+
+  sessionWarning$ = this.authService.sessionWarning$;
+  sessionSecondsRemaining$ = this.authService.sessionSecondsRemaining$;
 
   menuItems: MenuItem[] = [
 
@@ -97,7 +100,7 @@ export class AdminLayoutComponent {
     }
 
   ];
-
+  
   constructor(
     private authService: AuthService,
     private router: Router
@@ -129,7 +132,7 @@ export class AdminLayoutComponent {
       }
     }
   }
-
+  
   get allowedMenuItems(): MenuItem[] {
 
     return this.menuItems.filter(item => {
@@ -152,6 +155,23 @@ export class AdminLayoutComponent {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
+
+
+  // Formatear el tiempo restante en minutos y segundos.
+  formatearTiempoSesion(segundos: number | null): string {
+    const total = Math.max(0, segundos ?? 0);
+    const minutos = Math.floor(total / 60);
+    const restantes = total % 60;
+
+    return `${String(minutos).padStart(2, '0')}:${String(restantes).padStart(2, '0')}`;
+  }
+
+  // Ocultar el aviso sin prolongar la sesión.
+  ocultarAvisoSesion(): void {
+
+    this.authService.ocultarAvisoSesion();
+  }
+
 }
 
 

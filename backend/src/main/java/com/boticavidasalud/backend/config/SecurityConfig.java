@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -112,10 +113,9 @@ public class SecurityConfig {
                     .anyRequest().authenticated()
             )
 
-            // Configurar respuestas para errores de autenticación y permisos.
+            // Respuestas diferenciadas para autenticación y permisos.
             .exceptionHandling(exceptions -> exceptions
 
-                    // 401: sesión inexistente, vencida o inválida.
                     .authenticationEntryPoint((request, response, ex) -> {
 
                         escribirRespuesta(
@@ -126,7 +126,6 @@ public class SecurityConfig {
                         );
                     })
 
-                    // 403: usuario autenticado sin permisos suficientes.
                     .accessDeniedHandler((request, response, ex) -> {
 
                         escribirRespuesta(
@@ -138,12 +137,11 @@ public class SecurityConfig {
                     })
             )
 
-            // La autenticación utiliza JWT, no sesiones del servidor.
+            // Autenticación sin sesiones del servidor.
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
-            // Filtro de validación del token.
             .addFilterBefore(
                     jwtAuthenticationFilter,
                     UsernamePasswordAuthenticationFilter.class
@@ -152,7 +150,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Generar respuestas JSON para los errores de seguridad.
     private void escribirRespuesta(
             HttpServletResponse response,
             int status,

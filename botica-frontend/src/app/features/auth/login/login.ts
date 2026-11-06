@@ -62,7 +62,7 @@ export class LoginComponent {
 
     });
 
-    // Detectar si el usuario fue enviado al login porque su sesión anterior venció.
+    // Mostrar aviso cuando se llega al login por vencimiento.
     const sessionExpired =
       this.route.snapshot.queryParamMap.get('sessionExpired');
 
@@ -96,13 +96,18 @@ export class LoginComponent {
       .login(this.loginForm.value)
       .subscribe({
 
-        // INICIO DE SESIÓN CORRECTO.
-        next: () => {
+        // Inicio de sesión correcto.
+        next: response => {
 
-          this.router.navigate(['/dashboard']);
+          // Volver al POS únicamente si existe un borrador de la misma usuaria que acaba de autenticarse.
+          const ruta = this.authService.obtenerRutaDespuesLogin(
+            response.username
+          );
+
+          void this.router.navigateByUrl(ruta);
         },
 
-        // ERROR DE AUTENTICACIÓN.
+        // Error de autenticación.
         error: err => {
 
           this.isLoading = false;

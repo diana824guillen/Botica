@@ -1,28 +1,30 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 
-import { catchError, throwError } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  throwError
+} from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const authService = inject(AuthService);
-  const router = inject(Router);
 
-  // Identificar las solicitudes de inicio de sesión.
+  // El login no necesita token.
   const esLogin = req.url.includes('/auth/login');
 
-  // El login no necesita token ni debe activar el cierre de sesión por credenciales incorrectas.
   if (esLogin) {
     return next(req);
   }
 
-  // Obtener el token almacenado.
   const token = localStorage.getItem('token');
 
-  // Agregar el token a las solicitudes protegidas.
+  const solicitudProtegida = !!token;
+
+  // Agregar el token a la solicitud.
   const request = token
     ? req.clone({
         setHeaders: {
@@ -31,38 +33,36 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       })
     : req;
 
+  // Registrar solicitudes que ya comenzaron.
+  if (solicitudProtegida) {
+    authService.iniciarSolicitudProtegida();
+  }
+
   return next(request).pipe(
 
     catchError((error: unknown) => {
 
-      // Gestionar únicamente los errores de autenticación.
       if (
+        solicitudProtegida &&
         error instanceof HttpErrorResponse &&
         error.status === 401
       ) {
 
-        // Comprobar si existía una sesión almacenada.
-        const teniaToken = !!localStorage.getItem('token');
-
-        // Eliminar los datos de la sesión.
-        authService.logout();
-
-        // Redirigir al login si todavía no estamos allí.
-        if (!router.url.startsWith('/login')) {
-
-          const queryParams = teniaToken
-            ? { sessionExpired: 'true' }
-            : {};
-
-          void router.navigate(
-            ['/login'],
-            { queryParams }
-          );
-        }
+        // El backend rechazó la autenticación. Se solicita el cierre de sesión, pero el servicio
+        // espera las demás solicitudes que ya están en curso.
+        authService.solicitarCierrePorAutenticacion();
       }
 
-      // Permitir que cada componente gestione su propio error.
+      // Cada componente puede continuar gestionando su error.
       return throwError(() => error);
+    }),
+
+    finalize(() => {
+
+      if (solicitudProtegida) {
+        authService.finalizarSolicitudProtegida();
+      }
+
     })
 
   );

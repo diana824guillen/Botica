@@ -35,6 +35,10 @@ export class ClienteService {
   cambiarEstado(id: number, estado: number): Observable<Cliente> {
     return this.http.patch<Cliente>(`${this.apiUrl}/${id}/estado?estado=${estado}`, {});
   }
+
+  obtenerPorId(id: number): Observable<Cliente> {
+    return this.http.get<Cliente>(`${this.apiUrl}/id/${id}`);
+  }
 }
 
 

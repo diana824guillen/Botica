@@ -1,6 +1,7 @@
 package com.boticavidasalud.backend.security;
 
 import io.jsonwebtoken.JwtException;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,11 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Obtener el encabezado de autorización.
         final String authHeader = request.getHeader("Authorization");
 
-        // Si no existe un token, continuar.
-        // Spring Security determinará si la ruta requiere autenticación.
+        // Si no existe un token, Spring Security determinará si la ruta necesita autenticación.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -53,17 +52,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
 
             if (jwt.isBlank()) {
-                responderNoAutenticado(
-                        response,
-                        "La sesión ha vencido o no es válida. Inicia sesión nuevamente."
-                );
+                responderNoAutenticado(response);
                 return;
             }
 
-            // Extraer el usuario del token.
+            // Extraer el usuario asociado al token.
             String username = jwtUtil.extractUsername(jwt);
 
-            // Validar el token si todavía no existe autenticación.
             if (username != null
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -75,28 +70,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.clearContext();
 
-                    responderNoAutenticado(
-                            response,
-                            "La cuenta no está habilitada. Contacta con la administradora."
-                    );
-
+                    responderNoAutenticado(response);
                     return;
                 }
 
-                // Comprobar que el token sea válido y no haya vencido.
+                // Validar la firma y la fecha de expiración.
                 if (!jwtUtil.validateToken(jwt, userDetails)) {
 
                     SecurityContextHolder.clearContext();
 
-                    responderNoAutenticado(
-                            response,
-                            "La sesión ha vencido o no es válida. Inicia sesión nuevamente."
-                    );
-
+                    responderNoAutenticado(response);
                     return;
                 }
 
-                // Registrar la autenticación del usuario.
+                // Registrar la autenticación.
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -109,19 +96,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 .buildDetails(request)
                 );
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authToken);
             }
 
         } catch (JwtException | IllegalArgumentException ex) {
 
-            // Token vencido, manipulado, mal formado o inválido.
+            // Token vencido, manipulado o inválido.
             SecurityContextHolder.clearContext();
 
-            responderNoAutenticado(
-                    response,
-                    "La sesión ha vencido o no es válida. Inicia sesión nuevamente."
-            );
-
+            responderNoAutenticado(response);
             return;
 
         } catch (UsernameNotFoundException ex) {
@@ -129,21 +113,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // El usuario asociado al token ya no existe.
             SecurityContextHolder.clearContext();
 
-            responderNoAutenticado(
-                    response,
-                    "La cuenta asociada a esta sesión ya no está disponible. Inicia sesión nuevamente."
-            );
-
+            responderNoAutenticado(response);
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
-    // Generar una respuesta 401 cuando no existe una autenticación válida.
     private void responderNoAutenticado(
-            HttpServletResponse response,
-            String mensaje) throws IOException {
+            HttpServletResponse response) throws IOException {
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
@@ -152,7 +130,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.getWriter().write(
                 "{\"status\":401,"
                 + "\"error\":\"Unauthorized\","
-                + "\"mensaje\":\"" + mensaje + "\"}"
+                + "\"mensaje\":\"La sesión ha vencido o no es válida. "
+                + "Inicia sesión nuevamente.\"}"
         );
     }
 }

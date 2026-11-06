@@ -21,6 +21,7 @@ import { Cliente } from '../../../core/models/cliente.model';
 import { ClienteService } from '../../clientes/services/cliente';
 import { ProductoService } from '../../productos/services/producto';
 import { VentaService } from '../services/venta';
+import { AuthService } from '../../../core/services/auth.service';
 
 import {
   ClienteVentaRequest,
@@ -58,6 +59,32 @@ interface PagoFormulario {
   montoRecibido: number | null;
 }
 
+interface VentaPosDraft {
+  version: 1;
+
+  carrito: {
+    idProducto: number;
+    idPresentacion: number;
+    cantidad: number;
+  }[];
+
+  modoCliente: ModoClientePOS;
+  mostrarPanelCliente: boolean;
+  documentoBusqueda: string;
+  clienteSeleccionadoId: number | null;
+  modoRegistroNuevo: ModoRegistroNuevo;
+
+  nuevoCliente: {
+    tipoDocumento: TipoDocumentoCliente;
+    numeroDocumento: string;
+    nombres: string;
+    apellidos: string;
+    correo: string;
+  };
+
+  pagos: PagoFormulario[];
+}
+
 @Component({
   selector: 'app-ventas-pos',
   standalone: true,
@@ -75,6 +102,10 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   private clienteService = inject(ClienteService);
   private ventaService = inject(VentaService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
+
+  private restaurandoBorrador = false;
+  private clienteSeleccionadoIdPendiente: number | null = null;
 
   // ============================================================
   // DATOS REACTIVOS DEL CATALOGO
@@ -196,6 +227,229 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
+  // CONSERVAR Y RECUPERAR BORRADOR DEL POS
+  // ============================================================
+
+  guardarBorradorVenta(): void {
+
+    if (this.restaurandoBorrador) {
+      return;
+    }
+
+    // Si no hay productos, no existe una venta pendiente.
+    if (this.carrito.length === 0) {
+
+      this.authService.eliminarBorradorVenta();
+
+      return;
+    }
+
+    const borrador: VentaPosDraft = {
+
+      version: 1,
+
+      // Guardar únicamente los identificadores y las cantidades. Los precios y existencias se actualizarán desde el backend.
+      carrito: this.carrito.map(item => ({
+        idProducto: item.idProducto,
+        idPresentacion: item.idPresentacion,
+        cantidad: item.cantidad
+      })),
+
+      modoCliente: this.modoCliente,
+
+      mostrarPanelCliente: this.mostrarPanelCliente,
+
+      documentoBusqueda: this.documentoBusqueda,
+
+      clienteSeleccionadoId:
+        this.clienteSeleccionado?.id ??
+        this.clienteSeleccionadoIdPendiente,
+
+      modoRegistroNuevo: this.modoRegistroNuevo,
+
+      nuevoCliente: {
+        ...this.nuevoCliente
+      },
+
+      pagos: this.pagos.map(pago => ({
+        ...pago
+      }))
+    };
+
+    this.authService.guardarBorradorVenta(borrador);
+  }
+
+  private restaurarBorradorVenta(): void {
+
+    const borrador =
+      this.authService.obtenerBorradorVenta<VentaPosDraft>();
+
+    if (
+      !borrador ||
+      borrador.version !== 1 ||
+      !Array.isArray(borrador.carrito)
+    ) {
+      return;
+    }
+
+    this.restaurandoBorrador = true;
+
+    // Recuperar los datos del cliente.
+    this.modoCliente =
+      borrador.modoCliente ?? 'NINGUNO';
+
+    this.mostrarPanelCliente =
+      borrador.mostrarPanelCliente ?? false;
+
+    this.documentoBusqueda =
+      borrador.documentoBusqueda ?? '';
+
+    this.modoRegistroNuevo =
+      borrador.modoRegistroNuevo ?? 'AUTO';
+
+    this.nuevoCliente = {
+      tipoDocumento:
+        borrador.nuevoCliente?.tipoDocumento ?? 'DNI',
+
+      numeroDocumento:
+        borrador.nuevoCliente?.numeroDocumento ?? '',
+
+      nombres:
+        borrador.nuevoCliente?.nombres ?? '',
+
+      apellidos:
+        borrador.nuevoCliente?.apellidos ?? '',
+
+      correo:
+        borrador.nuevoCliente?.correo ?? ''
+    };
+
+    this.clienteSeleccionado = null;
+
+    this.clienteSeleccionadoIdPendiente =
+      borrador.clienteSeleccionadoId ?? null;
+
+    // Reconstruir el carrito con precios y stock actualizados.
+    const carritoRecuperado: ItemCarrito[] = [];
+
+    for (const itemGuardado of borrador.carrito) {
+
+      const producto = this.productos().find(
+        item => item.id === itemGuardado.idProducto
+      );
+
+      if (!producto) {
+        continue;
+      }
+
+      const presentacion = producto.presentaciones.find(
+        item => item.id === itemGuardado.idPresentacion
+      );
+
+      if (!presentacion) {
+        continue;
+      }
+
+      const cantidad = Number(itemGuardado.cantidad);
+
+      if (
+        !Number.isInteger(cantidad) ||
+        cantidad <= 0
+      ) {
+        continue;
+      }
+
+      carritoRecuperado.push({
+
+        idProducto: producto.id,
+
+        idPresentacion: presentacion.id,
+
+        productoNombre: producto.nombre,
+
+        presentacionTipo: presentacion.tipo,
+
+        factorConversion: presentacion.factorConversion,
+
+        precioUnitario: Number(presentacion.precioVenta),
+
+        stockDisponible: this.obtenerStock(presentacion),
+
+        cantidad
+      });
+    }
+
+    this.carrito = carritoRecuperado;
+
+    // Recuperar los métodos de pago registrados en el borrador.
+    this.pagos = Array.isArray(borrador.pagos)
+      ? borrador.pagos.map(pago => ({ ...pago }))
+      : [];
+
+    this.restaurandoBorrador = false;
+
+    // Si ninguno de los productos sigue disponible,
+    // no mantener una venta que ya no se puede recuperar.
+    if (this.carrito.length === 0) {
+
+      this.authService.eliminarBorradorVenta();
+
+      this.mostrarMensaje(
+        'La venta pendiente ya no contiene productos disponibles.',
+        'warning'
+      );
+
+      this.cdr.markForCheck();
+
+      return;
+    }
+
+    // Recuperar el cliente existente desde el backend.
+    if (this.clienteSeleccionadoIdPendiente !== null) {
+
+      const idCliente = this.clienteSeleccionadoIdPendiente;
+
+      this.clienteService
+        .obtenerPorId(idCliente)
+        .subscribe({
+
+          next: cliente => {
+
+            this.clienteSeleccionado = cliente;
+
+            this.clienteSeleccionadoIdPendiente = null;
+
+            this.guardarBorradorVenta();
+
+            this.cdr.markForCheck();
+          },
+
+          error: err => {
+
+            this.mensajeBusquedaCliente =
+              err?.error?.mensaje ||
+              'No se pudo recuperar el cliente seleccionado. Puedes volver a buscarlo.';
+
+            this.tipoMensajeBusqueda = 'error';
+
+            this.cdr.markForCheck();
+          }
+
+        });
+    }
+
+    this.mostrarMensaje(
+      'Se recuperó la venta pendiente. Revisa el stock y los importes antes de continuar.',
+      'warning'
+    );
+
+    // Recalcular precios, descuentos y existencias. También se recupera la distribución anterior de pagos.
+    this.previsualizarVenta(this.pagos);
+
+    this.cdr.markForCheck();
+  }
+
+  // ============================================================
   // CARGAR PRODUCTOS
   // ============================================================
 
@@ -227,6 +481,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
           this.reconstruirCategorias();
           this.actualizarProductosFiltrados();
+          this.restaurarBorradorVenta();
 
           if (
             this.productoExpandidoId !== null &&
@@ -653,6 +908,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // Abre o contrae la sección opcional de cliente.
   alternarPanelCliente(): void {
     this.mostrarPanelCliente = !this.mostrarPanelCliente;
+    this.guardarBorradorVenta();
   }
 
   // ============================================================
@@ -677,6 +933,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
     // Las opciones de cliente abren la sección para mostrar sus campos.
     this.mostrarPanelCliente = modo !== 'NINGUNO';
+    this.guardarBorradorVenta();
   }
 
   // ============================================================
@@ -951,7 +1208,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // PREVISUALIZAR VENTA EN EL SERVIDOR
   // ============================================================
 
-  previsualizarVenta(): void {
+  previsualizarVenta(
+    pagosRestaurados?: PagoFormulario[]
+  ): void {
 
     if (this.carrito.length === 0) {
 
@@ -964,18 +1223,22 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     }
 
     const request: VentaPrevisualizacionRequest = {
+
       detalles: this.carrito.map(item => ({
         idPresentacion: item.idPresentacion,
         cantidad: item.cantidad
       }))
+
     };
 
     this.cargandoPrevisualizacion.set(true);
+
     this.errorPrevisualizacion.set('');
     this.errorVenta = '';
+
     this.previsualizacion.set(null);
 
-    // Los pagos anteriores ya no corresponden al nuevo cálculo.
+    // Los pagos se reconstruirán cuando llegue el nuevo cálculo.
     this.pagos = [];
     this.errorPagos = '';
 
@@ -994,10 +1257,41 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
           if (respuesta.stockSuficiente) {
 
-            this.inicializarPagos();
+            if (respuesta.total === 0) {
+
+              // Una venta con total cero no necesita pagos.
+              this.pagos = [];
+
+            } else if (
+              pagosRestaurados &&
+              pagosRestaurados.length > 0
+            ) {
+
+              // Recuperar la distribución anterior.
+              this.pagos = pagosRestaurados.map(pago => ({
+                ...pago
+              }));
+
+            } else {
+
+              // Comportamiento normal de una nueva previsualización.
+              this.inicializarPagos();
+            }
+
+            // Si cambió el total, los importes anteriores
+            // podrían necesitar ajustes.
+            if (
+              pagosRestaurados &&
+              pagosRestaurados.length > 0 &&
+              !this.pagosValidos
+            ) {
+
+              this.errorPagos =
+                'El total o las existencias pudieron cambiar. Revisa los importes antes de confirmar.';
+            }
 
             this.mostrarMensaje(
-              'La venta se calculó correctamente. Ya puedes continuar con el pago.',
+              'La venta se calculó correctamente. Revisa los importes antes de continuar.',
               'success'
             );
 
@@ -1011,6 +1305,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
               'warning'
             );
           }
+
+          // Actualizar el borrador con el nuevo estado.
+          this.guardarBorradorVenta();
         },
 
         error: err => {
@@ -1024,6 +1321,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
             )
           );
         }
+
       });
   }
 
@@ -1034,6 +1332,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     this.pagos = [];
     this.errorPagos = '';
     this.errorVenta = '';
+    this.guardarBorradorVenta();
   }
 
   // ============================================================

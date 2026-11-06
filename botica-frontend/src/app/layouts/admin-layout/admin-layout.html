@@ -35,6 +35,50 @@
       </div>
     </header>
 
+    
+    <!-- AVISO DE SESIÓN PRÓXIMA A VENCER -->
+    <div
+      class="session-warning"
+      *ngIf="sessionWarning$ | async"
+      role="alert"
+    >
+
+      <div class="session-warning-icon">
+        <i class="bi bi-clock-history"></i>
+      </div>
+
+      <div class="session-warning-content">
+
+        <strong>Tu sesión está por vencer</strong>
+
+        <span>
+          Se cerrará en
+
+          <strong>
+            {{
+              formatearTiempoSesion(
+                sessionSecondsRemaining$ | async
+              )
+            }}
+          </strong>.
+
+          Guarda o termina la operación que estás realizando.
+          Tendrás que iniciar sesión nuevamente.
+        </span>
+
+      </div>
+
+      <button
+        type="button"
+        class="session-warning-close"
+        (click)="ocultarAvisoSesion()"
+        aria-label="Cerrar aviso"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
     <div class="content-area">
       <router-outlet></router-outlet> <!-- Aquí se cargan los módulos -->
     </div>
