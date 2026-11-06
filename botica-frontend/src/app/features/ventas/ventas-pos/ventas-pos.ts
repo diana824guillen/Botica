@@ -744,7 +744,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
             if (err?.status === 403) {
 
               this.mensajeBusquedaCliente =
-                'Tu perfil no tiene permiso para consultar clientes. Se necesita el permiso CLIENTE_LEER.';
+                'Tu perfil no tiene permiso para realizar esta acción.';
 
             } else if (err?.status === 0) {
 
