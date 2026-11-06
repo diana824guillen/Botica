@@ -404,8 +404,14 @@ export class AuthService {
 
   // Se ejecuta cuando el backend responde HTTP 401.
   solicitarCierrePorAutenticacion(token: string): void {
-
     this.solicitarExpiracionSesion(token);
+  }
+
+  hayOperacionesPendientesDeCierre(): boolean {
+    const token = this.tokenCierrePendiente;
+
+    return token !== null &&
+      (this.solicitudesActivas.get(token) ?? 0) > 0;
   }
 
   // ============================================================
