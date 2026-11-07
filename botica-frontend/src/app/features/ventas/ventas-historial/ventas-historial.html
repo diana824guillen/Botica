@@ -469,7 +469,6 @@
 <div
   class="detail-backdrop"
   *ngIf="mostrarDetalle"
-  (click)="cerrarDetalle()"
 >
 
   <section
@@ -692,45 +691,143 @@
           Métodos de pago
         </h3>
 
+        <!-- VENTA SIN PAGOS -->
+
         <div
           class="detail-empty-payment"
           *ngIf="!venta.pagos || venta.pagos.length === 0"
         >
-          Esta venta no requirió registrar pagos.
+
+          <i class="bi bi-info-circle"></i>
+
+          <span>
+            Esta venta no requirió registrar pagos.
+          </span>
+
         </div>
 
+
+        <!-- TARJETAS DE PAGOS -->
+
         <div
-          class="payment-detail-row"
-          *ngFor="let pago of venta.pagos"
+          class="payment-cards-grid"
+          *ngIf="venta.pagos && venta.pagos.length > 0"
         >
 
-          <div>
+          <article
+            class="payment-history-card"
+            *ngFor="let pago of venta.pagos"
+          >
 
-            <strong>
-              {{ obtenerNombreMetodoPago(pago.metodoPago) }}
-            </strong>
+            <!-- ENCABEZADO DE LA TARJETA -->
 
-            <small *ngIf="pago.metodoPago === 'EFECTIVO'">
-              Recibido:
-              {{
-                pago.montoRecibido
-                  | currency:'PEN':'symbol':'1.2-2':'es-PE'
-              }}
-              · Vuelto:
-              {{
-                pago.vuelto
-                  | currency:'PEN':'symbol':'1.2-2':'es-PE'
-              }}
-            </small>
+            <div class="payment-history-header">
 
-          </div>
+              <div class="payment-history-icon">
 
-          <strong>
-            {{
-              pago.monto
-                | currency:'PEN':'symbol':'1.2-2':'es-PE'
-            }}
-          </strong>
+                <i
+                  class="bi"
+                  [ngClass]="
+                    pago.metodoPago === 'EFECTIVO'
+                      ? 'bi-cash-coin'
+                      : 'bi-credit-card'
+                  "
+                ></i>
+
+              </div>
+
+              <div class="payment-history-method">
+
+                <span>Método de pago</span>
+
+                <strong>
+                  {{ obtenerNombreMetodoPago(pago.metodoPago) }}
+                </strong>
+
+              </div>
+
+              <span class="payment-history-status">
+                Registrado
+              </span>
+
+            </div>
+
+
+            <!-- IMPORTE APLICADO -->
+
+            <div class="payment-history-main">
+
+              <span>Importe aplicado a la venta</span>
+
+              <strong>
+                {{
+                  pago.monto
+                    | currency:'PEN':'symbol':'1.2-2':'es-PE'
+                }}
+              </strong>
+
+            </div>
+
+
+            <!-- INFORMACIÓN ADICIONAL -->
+
+            <div class="payment-history-values">
+
+              <!-- DINERO RECIBIDO -->
+
+              <div class="payment-history-value">
+
+                <span>Dinero recibido</span>
+
+                <strong
+                  *ngIf="pago.metodoPago === 'EFECTIVO'; else noAplicaRecibido"
+                >
+                  {{
+                    pago.montoRecibido
+                      | currency:'PEN':'symbol':'1.2-2':'es-PE'
+                  }}
+                </strong>
+
+                <ng-template #noAplicaRecibido>
+
+                  <strong class="payment-not-applicable">
+                    No aplica
+                  </strong>
+
+                </ng-template>
+
+              </div>
+
+
+              <!-- VUELTO -->
+
+              <div class="payment-history-value">
+
+                <span>Vuelto</span>
+
+                <strong
+                  *ngIf="pago.metodoPago === 'EFECTIVO'; else noAplicaVuelto"
+                  class="payment-change-value"
+                >
+                  {{
+                    pago.vuelto
+                      | currency:'PEN':'symbol':'1.2-2':'es-PE'
+                  }}
+                </strong>
+
+                <ng-template #noAplicaVuelto>
+
+                  <strong class="payment-not-applicable">
+                    No aplica
+                  </strong>
+
+                </ng-template>
+
+              </div>
+
+            </div>
+
+          </article>
 
         </div>
 
