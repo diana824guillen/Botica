@@ -427,29 +427,6 @@
         ventas
       </span>
 
-      <div class="page-size-selector">
-
-        <label for="pageSize">
-          Mostrar
-        </label>
-
-        <select
-          id="pageSize"
-          [ngModel]="pageSize"
-          (ngModelChange)="cambiarTamanoPagina($event)"
-        >
-
-          <option
-            *ngFor="let cantidad of tamanosPagina"
-            [ngValue]="cantidad"
-          >
-            {{ cantidad }}
-          </option>
-
-        </select>
-
-      </div>
-
     </div>
 
 

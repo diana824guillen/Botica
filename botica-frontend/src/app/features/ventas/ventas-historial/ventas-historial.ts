@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 
 import {
   Subject,
+  Subscription,
   debounceTime,
   distinctUntilChanged,
   finalize
@@ -43,8 +44,14 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
   private searchSubject = new Subject<string>();
 
+  private searchSubscription?: Subscription;
+  private ventasSubscription?: Subscription;
+  private detalleSubscription?: Subscription;
+
+  private destruido = false;
+
   // ============================================================
-  // LISTADO DE VENTAS
+  // LISTADO
   // ============================================================
 
   ventas: VentaListado[] = [];
@@ -66,15 +73,15 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
   // ============================================================
 
   currentPage = 0;
-  pageSize = 10;
+
+  // Se mantiene fijo como en el módulo de Clientes.
+  readonly pageSize = 10;
 
   totalElements = 0;
   totalPages = 0;
 
-  readonly tamanosPagina = [10, 20, 50];
-
   // ============================================================
-  // DETALLE DE LA VENTA
+  // DETALLE DE VENTA
   // ============================================================
 
   mostrarDetalle = false;
@@ -90,10 +97,9 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
 
-    // Evitar consultar el servidor por cada tecla escrita.
-    this.searchSubject
+    this.searchSubscription = this.searchSubject
       .pipe(
-        debounceTime(350),
+        debounceTime(400),
         distinctUntilChanged()
       )
       .subscribe(termino => {
@@ -109,7 +115,26 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
 
+    this.destruido = true;
+
+    this.searchSubscription?.unsubscribe();
+
+    this.ventasSubscription?.unsubscribe();
+
+    this.detalleSubscription?.unsubscribe();
+
     this.searchSubject.complete();
+  }
+
+  // ============================================================
+  // ACTUALIZAR VISTA
+  // ============================================================
+
+  private actualizarVista(): void {
+
+    if (!this.destruido) {
+      this.cdr.detectChanges();
+    }
   }
 
   // ============================================================
@@ -118,10 +143,15 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
   cargarVentas(): void {
 
+    // Cancelar cualquier consulta anterior.
+    this.ventasSubscription?.unsubscribe();
+
     this.isLoading = true;
     this.errorCarga = '';
 
-    this.ventaService
+    this.actualizarVista();
+
+    this.ventasSubscription = this.ventaService
       .listarVentas(
         this.currentPage,
         this.pageSize,
@@ -134,31 +164,32 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
           this.isLoading = false;
 
-          this.cdr.markForCheck();
+          this.actualizarVista();
         })
       )
       .subscribe({
 
         next: respuesta => {
 
-          this.ventas = respuesta.content || [];
+          this.ventas = respuesta.content ?? [];
 
-          this.totalElements = respuesta.totalElements || 0;
-          this.totalPages = respuesta.totalPages || 0;
+          this.totalElements = respuesta.totalElements ?? 0;
+          this.totalPages = respuesta.totalPages ?? 0;
 
           this.currentPage = respuesta.number ?? this.currentPage;
 
-          this.cdr.markForCheck();
+          this.actualizarVista();
         },
 
         error: err => {
 
           console.error(
-            'Error al consultar el historial de ventas:',
+            'Error al cargar el historial de ventas:',
             err
           );
 
           this.ventas = [];
+
           this.totalElements = 0;
           this.totalPages = 0;
 
@@ -180,8 +211,9 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
               'No se pudo cargar el historial de ventas.';
           }
 
-          this.cdr.markForCheck();
+          this.actualizarVista();
         }
+
       });
   }
 
@@ -213,12 +245,13 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
       this.errorCarga =
         'La fecha inicial no puede ser posterior a la fecha final.';
 
-      this.cdr.markForCheck();
+      this.actualizarVista();
 
       return;
     }
 
     this.errorCarga = '';
+
     this.currentPage = 0;
 
     this.cargarVentas();
@@ -237,26 +270,8 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
     this.currentPage = 0;
 
-    // Actualizar también el flujo de búsqueda pendiente.
+    // Sincronizar el buscador y cancelar consultas pendientes.
     this.searchSubject.next('');
-
-    this.cargarVentas();
-  }
-
-  // ============================================================
-  // CAMBIAR TAMAÑO DE PÁGINA
-  // ============================================================
-
-  cambiarTamanoPagina(valor: number | string): void {
-
-    const tamano = Number(valor);
-
-    if (!this.tamanosPagina.includes(tamano)) {
-      return;
-    }
-
-    this.pageSize = tamano;
-    this.currentPage = 0;
 
     this.cargarVentas();
   }
@@ -281,7 +296,7 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // RANGO DE REGISTROS MOSTRADOS
+  // RANGO DE REGISTROS
   // ============================================================
 
   get primerRegistro(): number {
@@ -307,6 +322,9 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
   abrirDetalle(venta: VentaListado): void {
 
+    // Cancelar una consulta de detalle anterior.
+    this.detalleSubscription?.unsubscribe();
+
     this.mostrarDetalle = true;
 
     this.cargandoDetalle = true;
@@ -314,14 +332,16 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
     this.ventaSeleccionada = null;
 
-    this.ventaService
+    this.actualizarVista();
+
+    this.detalleSubscription = this.ventaService
       .obtenerVentaPorId(venta.id)
       .pipe(
         finalize(() => {
 
           this.cargandoDetalle = false;
 
-          this.cdr.markForCheck();
+          this.actualizarVista();
         })
       )
       .subscribe({
@@ -330,7 +350,7 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
           this.ventaSeleccionada = respuesta;
 
-          this.cdr.markForCheck();
+          this.actualizarVista();
         },
 
         error: err => {
@@ -363,8 +383,9 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
               'No se pudo recuperar el detalle de la venta.';
           }
 
-          this.cdr.markForCheck();
+          this.actualizarVista();
         }
+
       });
   }
 
@@ -378,14 +399,18 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.detalleSubscription?.unsubscribe();
+
     this.mostrarDetalle = false;
 
     this.ventaSeleccionada = null;
     this.errorDetalle = '';
+
+    this.actualizarVista();
   }
 
   // ============================================================
-  // FORMATO DE ESTADO
+  // ESTADO DE LA VENTA
   // ============================================================
 
   obtenerNombreEstado(estado: number): string {
@@ -425,7 +450,7 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // FORMATO DE DOCUMENTO
+  // DOCUMENTO DEL CLIENTE
   // ============================================================
 
   obtenerDocumento(
@@ -443,7 +468,7 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // FORMATO DE MÉTODOS DE PAGO
+  // MÉTODOS DE PAGO
   // ============================================================
 
   obtenerNombreMetodoPago(metodo: MetodoPago): string {
