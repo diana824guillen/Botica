@@ -628,7 +628,7 @@
                 <th>Producto</th>
                 <th>Presentación</th>
                 <th class="text-right">Cantidad</th>
-                <th class="text-right">Precio</th>
+                <th class="text-right">Precio unitario</th>
                 <th class="text-right">Subtotal</th>
                 <th>Lote</th>
               </tr>
@@ -879,41 +879,128 @@
       <!-- ACCIONES DE LA NOTA DE VENTA -->
       <div class="detail-pdf-actions">
 
-        <button
-          type="button"
-          class="btn-pdf-action"
-          (click)="descargarNotaA4(venta)"
-        >
-          <i class="bi bi-file-earmark-pdf"></i>
-          Descargar A4
-        </button>
+        <!-- DESCARGAR PDF -->
 
-        <button
-          type="button"
-          class="btn-pdf-action"
-          (click)="imprimirNotaA4(venta)"
-        >
-          <i class="bi bi-printer"></i>
-          Imprimir A4
-        </button>
+        <section class="pdf-action-group">
 
-        <button
-          type="button"
-          class="btn-pdf-action"
-          (click)="descargarNotaTicket(venta)"
-        >
-          <i class="bi bi-receipt"></i>
-          Descargar ticket 80 mm
-        </button>
+          <div class="pdf-action-group-heading">
 
-        <button
-          type="button"
-          class="btn-pdf-action"
-          (click)="imprimirNotaTicket(venta)"
-        >
-          <i class="bi bi-printer-fill"></i>
-          Imprimir ticket 80 mm
-        </button>
+            <span class="pdf-action-group-icon">
+              <i class="bi bi-download"></i>
+            </span>
+
+            <div>
+              <strong>Descargar documento</strong>
+              <small>Guardar una copia de la nota de venta.</small>
+            </div>
+
+          </div>
+
+          <div class="pdf-action-buttons">
+
+            <button
+              type="button"
+              class="pdf-action-button"
+              (click)="descargarNotaA4(venta)"
+            >
+
+              <span class="pdf-action-button-icon">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </span>
+
+              <span class="pdf-action-button-copy">
+                <strong>Formato A4</strong>
+                <small>Hoja completa</small>
+              </span>
+
+              <i class="bi bi-chevron-right pdf-action-trailing-icon"></i>
+
+            </button>
+
+            <button
+              type="button"
+              class="pdf-action-button"
+              (click)="descargarNotaTicket(venta)"
+            >
+
+              <span class="pdf-action-button-icon">
+                <i class="bi bi-receipt"></i>
+              </span>
+
+              <span class="pdf-action-button-copy">
+                <strong>Ticket 80 mm</strong>
+                <small>Formato térmico</small>
+              </span>
+
+              <i class="bi bi-chevron-right pdf-action-trailing-icon"></i>
+
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- IMPRIMIR -->
+
+        <section class="pdf-action-group">
+
+          <div class="pdf-action-group-heading">
+
+            <span class="pdf-action-group-icon">
+              <i class="bi bi-printer"></i>
+            </span>
+
+            <div>
+              <strong>Imprimir documento</strong>
+              <small>Abrir la vista de impresión.</small>
+            </div>
+
+          </div>
+
+          <div class="pdf-action-buttons">
+
+            <button
+              type="button"
+              class="pdf-action-button"
+              (click)="imprimirNotaA4(venta)"
+            >
+
+              <span class="pdf-action-button-icon">
+                <i class="bi bi-printer"></i>
+              </span>
+
+              <span class="pdf-action-button-copy">
+                <strong>Formato A4</strong>
+                <small>Impresión en hoja</small>
+              </span>
+
+              <i class="bi bi-chevron-right pdf-action-trailing-icon"></i>
+
+            </button>
+
+            <button
+              type="button"
+              class="pdf-action-button"
+              (click)="imprimirNotaTicket(venta)"
+            >
+
+              <span class="pdf-action-button-icon">
+                <i class="bi bi-printer-fill"></i>
+              </span>
+
+              <span class="pdf-action-button-copy">
+                <strong>Ticket 80 mm</strong>
+                <small>Impresión térmica</small>
+              </span>
+
+              <i class="bi bi-chevron-right pdf-action-trailing-icon"></i>
+
+            </button>
+
+          </div>
+
+        </section>
 
       </div>
 

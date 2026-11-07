@@ -1650,4 +1650,223 @@
   }
 }
 
+/* ============================================================
+   ACCIONES DE LA NOTA DE VENTA
+============================================================ */
+
+.sale-success-pdf-actions,
+.detail-pdf-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  padding: 1rem;
+  margin-top: 1.3rem;
+  border: 1px solid #dfe9e7;
+  border-radius: 12px;
+  background: #f7fbfa;
+}
+
+.pdf-action-group {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #e5eceb;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 2px 7px rgb(15 23 42 / 3%);
+}
+
+.pdf-action-group-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.85rem;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  strong {
+    color: v.$text-main;
+    font-size: 0.88rem;
+    font-weight: 750;
+  }
+
+  small {
+    color: v.$text-muted;
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+}
+
+.pdf-action-group-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 39px;
+  height: 39px;
+  border-radius: 9px;
+  background: v.$primary-light;
+  color: v.$primary-color;
+
+  i {
+    font-size: 1.1rem;
+  }
+}
+
+.pdf-action-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+.pdf-action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 65px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e5eceb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: v.$text-main;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    border-color: v.$primary-color;
+    background: #f2fbf9;
+    box-shadow: 0 3px 9px rgb(13 148 136 / 9%);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid v.$primary-color;
+    outline-offset: 2px;
+  }
+}
+
+.pdf-action-button-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 37px;
+  height: 37px;
+  border-radius: 8px;
+  background: #edf8f6;
+  color: v.$primary-color;
+
+  i {
+    font-size: 1.05rem;
+  }
+}
+
+.pdf-action-button-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.2rem;
+
+  strong {
+    color: v.$text-main;
+    font-size: 0.79rem;
+    font-weight: 700;
+  }
+
+  small {
+    color: v.$text-muted;
+    font-size: 0.66rem;
+    line-height: 1.35;
+  }
+}
+
+.pdf-action-trailing-icon {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: #94a3a8;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+
+  .sale-success-pdf-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-action-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 480px) {
+
+  .sale-success-pdf-actions {
+    padding: 0.7rem;
+  }
+
+  .sale-success-pdf-actions .pdf-action-group {
+    padding: 0.75rem;
+  }
+
+  .pdf-action-buttons {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 760px) {
+
+  .detail-pdf-actions {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 480px) {
+
+  .detail-pdf-actions {
+    padding: 0.7rem;
+  }
+
+  .detail-pdf-actions .pdf-action-group {
+    padding: 0.75rem;
+  }
+
+}
+
+/* ============================================================
+   ALINEACIÓN DE LA TABLA DE PRODUCTOS DEL HISTORIAL
+============================================================ */
+
+/* Cabeceras centradas. */
+.detail-table th,
+.detail-table th.text-right {
+  text-align: center;
+}
+
+/* Datos centrados por defecto. */
+.detail-table td,
+.detail-table td.text-right {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Mantener producto y presentación a la izquierda. */
+.detail-table tbody td:nth-child(1),
+.detail-table tbody td:nth-child(2) {
+  text-align: left;
+}
+
 

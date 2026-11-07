@@ -211,7 +211,8 @@ export class NotaVentaPdfService {
 
       margin: {
         left: margen,
-        right: margen
+        right: margen,
+        bottom: 24
       },
 
       head: [[
@@ -219,7 +220,7 @@ export class NotaVentaPdfService {
         'Cant.',
         'Factor',
         'Lote',
-        'Precio',
+        'Precio unitario',
         'Subtotal'
       ]],
 
@@ -235,28 +236,47 @@ export class NotaVentaPdfService {
         lineColor: this.colorLinea,
         lineWidth: 0.15,
         overflow: 'linebreak',
-        valign: 'middle'
+        valign: 'middle',
+        halign: 'center'
       },
 
       headStyles: {
         fillColor: this.colorPrincipal,
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 8.5
+        fontSize: 8.5,
+        halign: 'center'
       },
 
       columnStyles: {
-        0: { cellWidth: 65 },
-        1: { cellWidth: 16, halign: 'right' },
-        2: { cellWidth: 15, halign: 'right' },
+        0: { cellWidth: 63 },
+        1: { cellWidth: 14 },
+        2: { cellWidth: 14 },
         3: { cellWidth: 25 },
-        4: { cellWidth: 25, halign: 'right' },
-        5: { cellWidth: 28, halign: 'right' }
+        4: { cellWidth: 30 },
+        5: { cellWidth: 28 }
+      },
+
+      // Centrar todas las celdas excepto el contenido de la primera columna en las filas de productos.
+      didParseCell: data => {
+
+        if (
+          data.section === 'body' &&
+          data.column.index === 0
+        ) {
+
+          data.cell.styles.halign = 'left';
+
+        } else {
+
+          data.cell.styles.halign = 'center';
+
+        }
+
       },
 
       didDrawPage: () => {
 
-        // Mantener el contenido dentro de los márgenes.
         doc.setDrawColor(...this.colorLinea);
 
       }
@@ -321,7 +341,8 @@ export class NotaVentaPdfService {
 
         margin: {
           left: margen,
-          right: margen
+          right: margen,
+          bottom: 24
         },
 
         head: [[
@@ -340,19 +361,16 @@ export class NotaVentaPdfService {
           fontSize: 9.5,
           cellPadding: 2.5,
           textColor: this.colorOscuro,
-          lineColor: this.colorLinea
+          lineColor: this.colorLinea,
+          halign: 'center',
+          valign: 'middle'
         },
 
         headStyles: {
           fillColor: this.colorOscuro,
           textColor: [255, 255, 255],
-          fontStyle: 'bold'
-        },
-
-        columnStyles: {
-          1: { halign: 'right' },
-          2: { halign: 'right' },
-          3: { halign: 'right' }
+          fontStyle: 'bold',
+          halign: 'center'
         }
 
       });
@@ -392,31 +410,80 @@ export class NotaVentaPdfService {
     const detalles = venta.detalles || [];
     const pagos = venta.pagos || [];
 
-    // Altura variable según la cantidad y longitud de productos.
-    const caracteresPorLinea = 32;
+    // Estimar la altura para evitar que el contenido
+    // quede cortado cuando existan textos largos.
+    const estimarLineas = (
+      texto: string,
+      caracteres: number
+    ): number => {
 
-    const alturaProductos = detalles.reduce(
-      (total, detalle) => {
+      return Math.max(
+        1,
+        Math.ceil(texto.length / caracteres)
+      );
+    };
 
-        const lineas = Math.max(
-          1,
-          Math.ceil(
-            this.textoSeguro(detalle.productoNombre).length /
-            caracteresPorLinea
-          )
-        );
+    // Espacio adicional para los datos generales que
+    // puedan ocupar más de una línea.
+    const datosGenerales = [
+      this.formatearFecha(venta.fechaVenta),
+      this.textoSeguro(venta.cajeroNombre),
+      this.textoSeguro(venta.clienteNombre || 'Sin cliente'),
+      this.obtenerDocumento(venta)
+    ];
 
-        return total + 23 + lineas * 4.2;
+    const alturaExtraInformacion = datosGenerales.reduce(
+      (total, texto) => {
+
+        return total +
+          Math.max(0, estimarLineas(texto, 30) - 1) * 4.5;
 
       },
       0
     );
 
-    const alturaPagos = pagos.length * 22;
+    // Calcular la altura de cada producto considerando
+    // el nombre y el número de lote.
+    const alturaProductos = detalles.reduce(
+      (total, detalle) => {
+
+        const nombre = this.textoSeguro(
+          detalle.productoNombre
+        );
+
+        const lote = this.textoSeguro(
+          detalle.numeroLote || 'N/D'
+        );
+
+        const lineasNombre = estimarLineas(nombre, 38);
+        const lineasLote = estimarLineas(lote, 28);
+
+        return total +
+          38 +
+          Math.max(0, lineasNombre - 1) * 4.2 +
+          Math.max(0, lineasLote - 1) * 4.5;
+
+      },
+      0
+    );
+
+    // Altura de los pagos según el método utilizado.
+    const alturaPagos = pagos.reduce(
+      (total, pago) => {
+
+        return total +
+          (pago.metodoPago === 'EFECTIVO' ? 23 : 13);
+
+      },
+      pagos.length === 0 ? 6 : 0
+    );
 
     const alturaDocumento = Math.max(
-      170,
-      145 + alturaProductos + alturaPagos
+      180,
+      155 +
+        alturaExtraInformacion +
+        alturaProductos +
+        alturaPagos
     );
 
     const doc = new jsPDF({
@@ -456,52 +523,52 @@ export class NotaVentaPdfService {
     y += 7;
 
     this.lineaTicket(doc, y);
+
     y += 6;
 
     // ----------------------------------------------------------
     // INFORMACIÓN DE LA VENTA
     // ----------------------------------------------------------
 
-    this.textoTicket(doc, 'Número:', ` ${venta.numeroNotaVenta}`, y);
-    y += 5;
+    y = this.textoTicket(
+      doc,
+      'Número:',
+      String(venta.numeroNotaVenta || '-'),
+      y
+    );
 
-    this.textoTicket(
+    y = this.textoTicket(
       doc,
       'Fecha:',
       this.formatearFecha(venta.fechaVenta),
       y
     );
 
-    y += 5;
-
-    this.textoTicket(
+    y = this.textoTicket(
       doc,
       'Cajero:',
       this.textoSeguro(venta.cajeroNombre),
       y
     );
 
-    y += 5;
-
-    this.textoTicket(
+    y = this.textoTicket(
       doc,
       'Cliente:',
       this.textoSeguro(venta.clienteNombre || 'Sin cliente'),
       y
     );
 
-    y += 5;
-
-    this.textoTicket(
+    y = this.textoTicket(
       doc,
       'Documento:',
       this.obtenerDocumento(venta),
       y
     );
 
-    y += 6;
+    y += 1;
 
     this.lineaTicket(doc, y);
+
     y += 6;
 
     // ----------------------------------------------------------
@@ -512,12 +579,15 @@ export class NotaVentaPdfService {
     doc.setFontSize(10);
     doc.setTextColor(...this.colorOscuro);
 
-    doc.text('PRODUCTOS', margen, y);
+    doc.text('PRODUCTOS', centro, y, {
+      align: 'center'
+    });
 
     y += 7;
 
     for (const detalle of detalles) {
 
+      // NOMBRE DEL PRODUCTO
       const nombre = doc.splitTextToSize(
         this.textoSeguro(detalle.productoNombre),
         ancho
@@ -529,18 +599,33 @@ export class NotaVentaPdfService {
 
       doc.text(nombre, margen, y);
 
-      y += nombre.length * 4.2;
+      y += nombre.length * 4.2 + 1;
 
+      // PRESENTACIÓN Y CANTIDAD
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8.8);
+      doc.setTextColor(...this.colorOscuro);
 
       doc.text(
-        `${detalle.presentacionTipo} | Cant.: ${this.formatearNumero(detalle.cantidad)}`,
+        `Presentación: ${this.textoSeguro(detalle.presentacionTipo)}`,
         margen,
         y
       );
 
-      y += 4.5;
+      doc.setFont('helvetica', 'bold');
+
+      doc.text(
+        `Cant.: ${this.formatearNumero(detalle.cantidad)}`,
+        margen + ancho,
+        y,
+        { align: 'right' }
+      );
+
+      y += 5;
+
+      // FACTOR Y CANTIDAD BASE
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
 
       doc.text(
         `Factor: ${detalle.factorConversion ?? '-'} | Base: ${this.formatearNumero(detalle.cantidadBase)}`,
@@ -550,32 +635,50 @@ export class NotaVentaPdfService {
 
       y += 4.5;
 
-      doc.text(
-        `Lote: ${this.textoSeguro(detalle.numeroLote || 'N/D')}`,
-        margen,
+      // NÚMERO DE LOTE
+      y = this.textoTicket(
+        doc,
+        'Lote:',
+        this.textoSeguro(detalle.numeroLote || 'N/D'),
         y
       );
 
-      y += 4.5;
-
-      doc.text(
-        `Precio: ${this.formatearMoneda(detalle.precioUnitario)}`,
-        margen,
+      // PRECIO UNITARIO
+      this.filaTicket(
+        doc,
+        'Precio unitario',
+        this.formatearMoneda(detalle.precioUnitario),
         y
       );
 
-      doc.setFont('helvetica', 'bold');
+      y += 5;
 
-      doc.text(
+      // IMPORTE TOTAL DE LA LÍNEA
+      // Se resalta para distinguirlo del precio unitario.
+      doc.setFillColor(236, 253, 250);
+
+      doc.roundedRect(
+        margen,
+        y - 3.5,
+        ancho,
+        7,
+        1.2,
+        1.2,
+        'F'
+      );
+
+      this.filaTicket(
+        doc,
+        'Importe línea',
         this.formatearMoneda(detalle.subtotal),
-        ancho + margen,
         y,
-        { align: 'right' }
+        true
       );
 
-      y += 6;
+      y += 7;
 
       this.lineaTicket(doc, y);
+
       y += 5;
     }
 
@@ -601,20 +704,30 @@ export class NotaVentaPdfService {
 
     y += 7;
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(...this.colorPrincipal);
+    doc.setFillColor(236, 253, 250);
+
+    doc.roundedRect(
+      margen,
+      y - 4,
+      ancho,
+      9,
+      1.5,
+      1.5,
+      'F'
+    );
 
     this.filaTicket(
       doc,
       'TOTAL',
       this.formatearMoneda(venta.total),
-      y
+      y,
+      true
     );
 
-    y += 9;
+    y += 10;
 
     this.lineaTicket(doc, y);
+
     y += 6;
 
     // ----------------------------------------------------------
@@ -635,6 +748,7 @@ export class NotaVentaPdfService {
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
+      doc.setTextColor(...this.colorGris);
 
       doc.text(
         'No se registraron pagos.',
@@ -650,6 +764,7 @@ export class NotaVentaPdfService {
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.5);
+        doc.setTextColor(...this.colorOscuro);
 
         doc.text(
           this.obtenerNombreMetodo(pago.metodoPago),
@@ -698,6 +813,7 @@ export class NotaVentaPdfService {
     // ----------------------------------------------------------
 
     this.lineaTicket(doc, y);
+
     y += 7;
 
     doc.setFont('helvetica', 'bold');
@@ -867,7 +983,7 @@ export class NotaVentaPdfService {
     etiqueta: string,
     valor: string,
     y: number
-  ): void {
+  ): number {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
@@ -879,27 +995,43 @@ export class NotaVentaPdfService {
 
     const lineas = doc.splitTextToSize(
       valor,
-      43
+      48
     );
 
     doc.text(lineas, 27, y);
+
+    // Devuelve la siguiente posición vertical, considerando si el contenido ocupó varias líneas.
+    return y + Math.max(5, lineas.length * 4.2);
   }
 
   private filaTicket(
     doc: jsPDF,
     etiqueta: string,
     valor: string,
-    y: number
+    y: number,
+    destacado: boolean = false
   ): void {
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...this.colorGris);
+    doc.setFont(
+      'helvetica',
+      destacado ? 'bold' : 'normal'
+    );
+
+    doc.setFontSize(destacado ? 9.5 : 9);
+
+    doc.setTextColor(
+      ...(destacado ? this.colorPrincipal : this.colorGris)
+    );
 
     doc.text(etiqueta, 5, y);
 
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...this.colorOscuro);
+
+    doc.setFontSize(destacado ? 9.5 : 9);
+
+    doc.setTextColor(
+      ...(destacado ? this.colorPrincipal : this.colorOscuro)
+    );
 
     doc.text(valor, 75, y, {
       align: 'right'
