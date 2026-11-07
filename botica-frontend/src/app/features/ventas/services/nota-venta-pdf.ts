@@ -218,7 +218,7 @@ export class NotaVentaPdfService {
       head: [[
         'Producto / presentación',
         'Cant.',
-        'Factor',
+        'Unid. por presentación',
         'Lote',
         'Precio unitario',
         'Subtotal'
@@ -249,10 +249,10 @@ export class NotaVentaPdfService {
       },
 
       columnStyles: {
-        0: { cellWidth: 63 },
+        0: { cellWidth: 60 },
         1: { cellWidth: 14 },
-        2: { cellWidth: 14 },
-        3: { cellWidth: 25 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 23 },
         4: { cellWidth: 30 },
         5: { cellWidth: 28 }
       },
@@ -410,8 +410,7 @@ export class NotaVentaPdfService {
     const detalles = venta.detalles || [];
     const pagos = venta.pagos || [];
 
-    // Estimar la altura para evitar que el contenido
-    // quede cortado cuando existan textos largos.
+    // Estimar la altura para evitar que el contenido quede cortado cuando existan textos largos.
     const estimarLineas = (
       texto: string,
       caracteres: number
@@ -423,8 +422,7 @@ export class NotaVentaPdfService {
       );
     };
 
-    // Espacio adicional para los datos generales que
-    // puedan ocupar más de una línea.
+    // Espacio adicional para los datos generales que puedan ocupar más de una línea.
     const datosGenerales = [
       this.formatearFecha(venta.fechaVenta),
       this.textoSeguro(venta.cajeroNombre),
@@ -442,8 +440,7 @@ export class NotaVentaPdfService {
       0
     );
 
-    // Calcular la altura de cada producto considerando
-    // el nombre y el número de lote.
+    // Calcular la altura de cada producto considerando el nombre y el número de lote.
     const alturaProductos = detalles.reduce(
       (total, detalle) => {
 
@@ -622,21 +619,30 @@ export class NotaVentaPdfService {
       );
 
       y += 5;
-
-      // FACTOR Y CANTIDAD BASE
+   
+      // UNIDADES POR PRESENTACIÓN
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
+      doc.setTextColor(...this.colorOscuro);
+
+      const textoUnidadesPresentacion =
+        `Unidades por presentación: ${detalle.factorConversion ?? '-'}`;
+
+      const lineasUnidadesPresentacion = doc.splitTextToSize(
+        textoUnidadesPresentacion,
+        ancho
+      );
 
       doc.text(
-        `Factor: ${detalle.factorConversion ?? '-'} | Base: ${this.formatearNumero(detalle.cantidadBase)}`,
+        lineasUnidadesPresentacion,
         margen,
         y
       );
 
-      y += 4.5;
+      y += lineasUnidadesPresentacion.length * 4.5;
 
       // NÚMERO DE LOTE
-      y = this.textoTicket(
+      y = this.textoTicketDerecha(
         doc,
         'Lote:',
         this.textoSeguro(detalle.numeroLote || 'N/D'),
@@ -1001,6 +1007,39 @@ export class NotaVentaPdfService {
     doc.text(lineas, 27, y);
 
     // Devuelve la siguiente posición vertical, considerando si el contenido ocupó varias líneas.
+    return y + Math.max(5, lineas.length * 4.2);
+  }
+
+  // ============================================================
+  // TEXTO DE TICKET CON VALOR ALINEADO A LA DERECHA
+  // ============================================================
+
+  private textoTicketDerecha(
+    doc: jsPDF,
+    etiqueta: string,
+    valor: string,
+    y: number
+  ): number {
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...this.colorOscuro);
+
+    doc.text(etiqueta, 5, y);
+
+    doc.setFont('helvetica', 'normal');
+
+    const lineas = doc.splitTextToSize(
+      valor,
+      48
+    );
+
+    // El valor queda alineado al margen derecho del ticket.
+    doc.text(lineas, 75, y, {
+      align: 'right'
+    });
+
+    // Considerar líneas adicionales si el lote es largo.
     return y + Math.max(5, lineas.length * 4.2);
   }
 
