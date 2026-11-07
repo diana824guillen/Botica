@@ -269,6 +269,40 @@ public class VentaService {
         venta.setDescuentoTotal(resumen.descuentoTotal);
         venta.setTotal(resumen.total);
 
+        // Guardar el subtotal calculado por el backend.
+        venta.setSubtotal(resumen.subtotal);
+
+        // Guardar los datos históricos del cliente.
+        if (cliente != null) {
+
+        String nombreCliente = (
+                (cliente.getNombres() == null ? "" : cliente.getNombres())
+                + " "
+                + (cliente.getApellidos() == null ? "" : cliente.getApellidos())
+        ).trim();
+
+        venta.setClienteNombreSnapshot(nombreCliente);
+
+        venta.setClienteTipoDocumentoSnapshot(
+                cliente.getTipoDocumento() != null
+                        ? cliente.getTipoDocumento().name()
+                        : null
+        );
+
+        venta.setClienteNumeroDocumentoSnapshot(
+                cliente.getNumeroDocumento()
+        );
+        }
+
+        // Guardar el nombre completo del cajero.
+        String nombreCajero = (
+                (cajero.getNombres() == null ? "" : cajero.getNombres())
+                + " "
+                + (cajero.getApellidos() == null ? "" : cajero.getApellidos())
+        ).trim();
+
+        venta.setCajeroNombreSnapshot(nombreCajero);
+
         // Descontar existencias por presentación y lote.
         List<DetalleVenta> detallesVenta = descontarExistencias(
                 venta,
@@ -960,6 +994,29 @@ public class VentaService {
                 detalleVenta.setLote(lote);
                 detalleVenta.setCantidad(cantidadBaseADescontar);
                 detalleVenta.setPrecioUnitario(linea.precioUnitario);
+
+                // Guardar los datos del producto tal como se vendió.
+                detalleVenta.setProductoNombreSnapshot(
+                        linea.producto.getNombre()
+                );
+
+                detalleVenta.setPresentacionTipoSnapshot(
+                        linea.presentacion.getTipo().name()
+                );
+
+                detalleVenta.setFactorConversionSnapshot(
+                        linea.factorConversion
+                );
+
+                // Cantidad comercial descontada de este lote.
+                detalleVenta.setCantidadPresentacion(
+                        cantidadADescontar
+                );
+
+                detalleVenta.setNumeroLoteSnapshot(
+                        lote.getNumeroLote()
+                );
+
                 detalleVenta.setEstado(
                         EstadoRegistro.ACTIVO.getValor()
                 );
@@ -1133,8 +1190,8 @@ public class VentaService {
     // ============================================================
 
     private VentaResponseDTO mapToResponse(
-            Venta venta,
-            BigDecimal subtotal) {
+                Venta venta,
+                BigDecimal subtotalCalculado) {
 
         VentaResponseDTO dto = new VentaResponseDTO();
 
@@ -1142,103 +1199,185 @@ public class VentaService {
         dto.setNumeroNotaVenta(venta.getNumeroNotaVenta());
         dto.setFechaVenta(venta.getFechaVenta());
 
-        if (venta.getCliente() != null) {
-                String nombres = venta.getCliente().getNombres();
-                String apellidos = venta.getCliente().getApellidos();
-                String nombreCompleto = (
+        // =====================================================
+        // CLIENTE
+        // =====================================================
+
+        Cliente cliente = venta.getCliente();
+
+        String clienteNombre = venta.getClienteNombreSnapshot();
+
+        if (clienteNombre == null && cliente != null) {
+
+                String nombres = cliente.getNombres();
+                String apellidos = cliente.getApellidos();
+
+                clienteNombre = (
                         (nombres == null ? "" : nombres)
                         + " "
                         + (apellidos == null ? "" : apellidos)
                 ).trim();
-
-                dto.setClienteNombre(nombreCompleto);
-
-                } else {
-
-                dto.setClienteNombre("");
         }
 
-        dto.setCajeroNombre(venta.getUsuario().getNombres());
+        dto.setClienteNombre(
+                clienteNombre != null ? clienteNombre : ""
+        );
 
-        dto.setSubtotal(subtotal);
+        String tipoDocumento = venta.getClienteTipoDocumentoSnapshot();
+
+        if (tipoDocumento == null
+                && cliente != null
+                && cliente.getTipoDocumento() != null) {
+
+                tipoDocumento = cliente.getTipoDocumento().name();
+        }
+
+        dto.setClienteTipoDocumento(tipoDocumento);
+
+        String numeroDocumento =
+                venta.getClienteNumeroDocumentoSnapshot();
+
+        if (numeroDocumento == null && cliente != null) {
+                numeroDocumento = cliente.getNumeroDocumento();
+        }
+
+        dto.setClienteNumeroDocumento(numeroDocumento);
+
+        // =====================================================
+        // CAJERO
+        // =====================================================
+
+        String cajeroNombre = venta.getCajeroNombreSnapshot();
+
+        if (cajeroNombre == null && venta.getUsuario() != null) {
+
+                Usuario cajero = venta.getUsuario();
+
+                cajeroNombre = (
+                        (cajero.getNombres() == null ? "" : cajero.getNombres())
+                        + " "
+                        + (cajero.getApellidos() == null ? "" : cajero.getApellidos())
+                ).trim();
+        }
+
+        dto.setCajeroNombre(cajeroNombre);
+
+        // =====================================================
+        // IMPORTES
+        // =====================================================
+
+        BigDecimal subtotal = venta.getSubtotal() != null
+                ? venta.getSubtotal()
+                : subtotalCalculado;
+
+        dto.setSubtotal(
+                subtotal != null ? subtotal : BigDecimal.ZERO
+        );
+
         dto.setDescuentoTotal(venta.getDescuentoTotal());
         dto.setTotal(venta.getTotal());
+
+        // =====================================================
+        // DETALLES DE LA VENTA
+        // =====================================================
 
         List<VentaResponseDTO.DetalleVentaInfoDTO> detallesDto =
                 new ArrayList<>();
 
         for (DetalleVenta detalle : venta.getDetalles()) {
 
-            VentaResponseDTO.DetalleVentaInfoDTO info =
-                    new VentaResponseDTO.DetalleVentaInfoDTO();
+                VentaResponseDTO.DetalleVentaInfoDTO info = new VentaResponseDTO.DetalleVentaInfoDTO();
 
-            Presentacion presentacion = detalle.getPresentacion();
+                Presentacion presentacion = detalle.getPresentacion();
 
-            Integer factorConversion =
-                    presentacion.getFactorConversion();
+                Integer factorConversion = detalle.getFactorConversionSnapshot();
 
-            BigDecimal cantidadBase = detalle.getCantidad();
+                if (factorConversion == null) {
+                        factorConversion = presentacion.getFactorConversion();
+                }
 
-            BigDecimal cantidadPresentacion = cantidadBase.divide(
-                    BigDecimal.valueOf(factorConversion),
-                    ESCALA_MONETARIA,
-                    RoundingMode.HALF_UP
-            );
+                BigDecimal cantidadBase = detalle.getCantidad();
 
-            info.setProductoNombre(
-                    presentacion.getProducto().getNombre()
-            );
+                BigDecimal cantidadPresentacion = detalle.getCantidadPresentacion();
 
-            info.setPresentacionTipo(
-                    presentacion.getTipo().name()
-            );
+                if (cantidadPresentacion == null) {
+                        cantidadPresentacion = cantidadBase.divide(
+                                BigDecimal.valueOf(factorConversion),
+                                ESCALA_MONETARIA,
+                                RoundingMode.HALF_UP
+                        );
+                }
 
-            info.setCantidad(cantidadPresentacion);
-            info.setFactorConversion(factorConversion);
-            info.setCantidadBase(cantidadBase);
+                // Nombre histórico del producto.
+                String productoNombre = detalle.getProductoNombreSnapshot();
 
-            info.setPrecioUnitario(
-                    detalle.getPrecioUnitario()
-            );
+                if (productoNombre == null) {
+                        productoNombre = presentacion.getProducto().getNombre();
+                }
 
-            BigDecimal subtotalDetalle = cantidadPresentacion
-                    .multiply(detalle.getPrecioUnitario())
-                    .setScale(
-                            ESCALA_MONETARIA,
-                            RoundingMode.HALF_UP
-                    );
+                info.setProductoNombre(productoNombre);
 
-            info.setSubtotal(subtotalDetalle);
+                // Presentación histórica.
+                String presentacionTipo = detalle.getPresentacionTipoSnapshot();
 
-            info.setNumeroLote(
-                    detalle.getLote().getNumeroLote()
-            );
+                if (presentacionTipo == null) {
+                        presentacionTipo = presentacion.getTipo().name();
+                }
 
-            detallesDto.add(info);
+                info.setPresentacionTipo(presentacionTipo);
+
+                info.setCantidad(cantidadPresentacion);
+                info.setFactorConversion(factorConversion);
+                info.setCantidadBase(cantidadBase);
+
+                info.setPrecioUnitario(detalle.getPrecioUnitario());
+
+                BigDecimal subtotalDetalle = cantidadPresentacion
+                        .multiply(detalle.getPrecioUnitario())
+                        .setScale(
+                                ESCALA_MONETARIA,
+                                RoundingMode.HALF_UP
+                        );
+
+                info.setSubtotal(subtotalDetalle);
+
+                // Número de lote histórico.
+                String numeroLote = detalle.getNumeroLoteSnapshot();
+
+                if (numeroLote == null && detalle.getLote() != null) {
+                        numeroLote = detalle.getLote().getNumeroLote();
+                }
+
+                info.setNumeroLote(numeroLote);
+
+                detallesDto.add(info);
         }
 
         dto.setDetalles(detallesDto);
+
+        // =====================================================
+        // PAGOS
+        // =====================================================
 
         List<VentaResponseDTO.PagoInfoDTO> pagosDto =
                 new ArrayList<>();
 
         for (PagoVenta pago : venta.getPagos()) {
 
-            VentaResponseDTO.PagoInfoDTO info =
-                    new VentaResponseDTO.PagoInfoDTO();
+                VentaResponseDTO.PagoInfoDTO info = new VentaResponseDTO.PagoInfoDTO();
 
-            info.setMetodoPago(pago.getMetodoPago());
-            info.setMonto(pago.getMonto());
-            info.setMontoRecibido(pago.getMontoRecibido());
-            info.setVuelto(pago.getVuelto());
+                info.setMetodoPago(pago.getMetodoPago());
+                info.setMonto(pago.getMonto());
+                info.setMontoRecibido(pago.getMontoRecibido());
+                info.setVuelto(pago.getVuelto());
 
-            pagosDto.add(info);
+                pagosDto.add(info);
         }
 
         dto.setPagos(pagosDto);
 
         return dto;
-    }
+        }
 
     // ============================================================
     // CLASE AUXILIAR: LÍNEA DE VENTA

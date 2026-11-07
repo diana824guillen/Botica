@@ -15,6 +15,9 @@ public class VentaResponseDTO {
     private LocalDateTime fechaVenta;
 
     private String clienteNombre;
+    private String clienteTipoDocumento;
+    private String clienteNumeroDocumento;
+
     private String cajeroNombre;
 
     private BigDecimal subtotal;
