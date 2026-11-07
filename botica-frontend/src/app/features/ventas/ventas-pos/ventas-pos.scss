@@ -2544,4 +2544,50 @@
   line-height: 1.5;
 }
 
+.sale-success-pdf-actions,
+.detail-pdf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.btn-pdf-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid v.$border-color;
+  border-radius: 7px;
+  background: white;
+  color: v.$text-main;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: v.$primary-color;
+    color: v.$primary-color;
+    background: #f5fbfa;
+  }
+
+  i {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .sale-success-pdf-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sale-success-pdf-actions .btn-pdf-action {
+    width: 100%;
+  }
+}
+
 

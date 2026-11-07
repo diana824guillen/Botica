@@ -22,6 +22,7 @@ import { ClienteService } from '../../clientes/services/cliente';
 import { ProductoService } from '../../productos/services/producto';
 import { VentaService } from '../services/venta';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotaVentaPdfService } from '../services/nota-venta-pdf';
 
 import {
   ClienteVentaRequest,
@@ -103,6 +104,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   private ventaService = inject(VentaService);
   private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
+  private notaVentaPdfService = inject(NotaVentaPdfService);
 
   private restaurandoBorrador = false;
   // Evita recuperar varias veces la misma venta al actualizar el catálogo.
@@ -2123,6 +2125,26 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     this.cargarProductos();
 
     this.cdr.markForCheck();
+  }
+
+  // ============================================================
+  // NOTA DE VENTA PDF
+  // ============================================================
+
+  descargarNotaA4(venta: VentaResponse): void {
+    this.notaVentaPdfService.descargarA4(venta);
+  }
+
+  descargarNotaTicket(venta: VentaResponse): void {
+    this.notaVentaPdfService.descargarTicket(venta);
+  }
+
+  imprimirNotaA4(venta: VentaResponse): void {
+    this.notaVentaPdfService.imprimirA4(venta);
+  }
+
+  imprimirNotaTicket(venta: VentaResponse): void {
+    this.notaVentaPdfService.imprimirTicket(venta);
   }
 
   // ============================================================

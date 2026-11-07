@@ -1633,4 +1633,21 @@
   }
 }
 
+.detail-pdf-actions {
+  padding: 0 1.3rem 1rem;
+}
+
+@media (max-width: 650px) {
+  .detail-pdf-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding-right: 0.9rem;
+    padding-left: 0.9rem;
+  }
+
+  .detail-pdf-actions .btn-pdf-action {
+    width: 100%;
+  }
+}
+
 

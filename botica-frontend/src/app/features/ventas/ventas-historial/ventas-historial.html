@@ -876,6 +876,47 @@
 
       </section>
 
+      <!-- ACCIONES DE LA NOTA DE VENTA -->
+      <div class="detail-pdf-actions">
+
+        <button
+          type="button"
+          class="btn-pdf-action"
+          (click)="descargarNotaA4(venta)"
+        >
+          <i class="bi bi-file-earmark-pdf"></i>
+          Descargar A4
+        </button>
+
+        <button
+          type="button"
+          class="btn-pdf-action"
+          (click)="imprimirNotaA4(venta)"
+        >
+          <i class="bi bi-printer"></i>
+          Imprimir A4
+        </button>
+
+        <button
+          type="button"
+          class="btn-pdf-action"
+          (click)="descargarNotaTicket(venta)"
+        >
+          <i class="bi bi-receipt"></i>
+          Descargar ticket 80 mm
+        </button>
+
+        <button
+          type="button"
+          class="btn-pdf-action"
+          (click)="imprimirNotaTicket(venta)"
+        >
+          <i class="bi bi-printer-fill"></i>
+          Imprimir ticket 80 mm
+        </button>
+
+      </div>
+
     </ng-container>
 
 

@@ -9,6 +9,7 @@ import {
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NotaVentaPdfService } from '../services/nota-venta-pdf';
 
 import {
   Subject,
@@ -41,6 +42,7 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
 
   private ventaService = inject(VentaService);
   private cdr = inject(ChangeDetectorRef);
+  private notaVentaPdfService = inject(NotaVentaPdfService);
 
   private searchSubject = new Subject<string>();
 
@@ -407,6 +409,26 @@ export class VentasHistorialComponent implements OnInit, OnDestroy {
     this.errorDetalle = '';
 
     this.actualizarVista();
+  }
+
+  // ============================================================
+  // NOTA DE VENTA PDF
+  // ============================================================
+
+  descargarNotaA4(venta: VentaResponse): void {
+    this.notaVentaPdfService.descargarA4(venta);
+  }
+
+  descargarNotaTicket(venta: VentaResponse): void {
+    this.notaVentaPdfService.descargarTicket(venta);
+  }
+
+  imprimirNotaA4(venta: VentaResponse): void {
+    this.notaVentaPdfService.imprimirA4(venta);
+  }
+
+  imprimirNotaTicket(venta: VentaResponse): void {
+    this.notaVentaPdfService.imprimirTicket(venta);
   }
 
   // ============================================================
