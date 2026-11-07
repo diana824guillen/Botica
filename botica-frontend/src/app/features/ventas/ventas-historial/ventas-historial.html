@@ -1,0 +1,827 @@
+<div class="page-header">
+
+  <div>
+    <h2>Historial de ventas</h2>
+
+    <p class="page-description">
+      Consulta las ventas registradas, revisa sus detalles y
+      encuentra operaciones mediante el número de nota,
+      los datos del cliente o el rango de fechas.
+    </p>
+  </div>
+
+  <div class="header-reference">
+    <i class="bi bi-receipt"></i>
+    <span>Registro de operaciones</span>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     RESUMEN
+============================================================ -->
+
+<div class="history-summary">
+
+  <div class="summary-card">
+
+    <div class="summary-icon">
+      <i class="bi bi-receipt-cutoff"></i>
+    </div>
+
+    <div>
+      <span>Ventas encontradas</span>
+
+      <strong>
+        {{ totalElements }}
+      </strong>
+    </div>
+
+  </div>
+
+  <div class="summary-card summary-information">
+
+    <i class="bi bi-info-circle"></i>
+
+    <span>
+      Los registros se muestran desde la venta más reciente.
+      Puedes consultar el detalle completo de cada operación.
+    </span>
+
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     FILTROS
+============================================================ -->
+
+<section class="filters-card card">
+
+  <div class="filters-heading">
+
+    <div>
+      <h3>
+        <i class="bi bi-funnel"></i>
+        Buscar ventas
+      </h3>
+
+      <p>
+        Utiliza uno o varios filtros para localizar una operación.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-clear-filters"
+      (click)="limpiarFiltros()"
+      [disabled]="isLoading"
+    >
+      <i class="bi bi-arrow-counterclockwise"></i>
+      Limpiar filtros
+    </button>
+
+  </div>
+
+
+  <div class="filters-grid">
+
+    <!-- BÚSQUEDA -->
+
+    <div class="filter-group search-group">
+
+      <label for="buscarVenta">
+        Número de nota, cliente o documento
+      </label>
+
+      <div class="search-input-wrapper">
+
+        <i class="bi bi-search"></i>
+
+        <input
+          id="buscarVenta"
+          type="text"
+          [value]="terminoBusqueda"
+          (input)="onSearchInput($event)"
+          placeholder="Ej. NV-000001, Juan Pérez o DNI..."
+          autocomplete="off"
+        />
+
+      </div>
+
+    </div>
+
+
+    <!-- FECHA DESDE -->
+
+    <div class="filter-group">
+
+      <label for="fechaDesde">
+        Desde
+      </label>
+
+      <input
+        id="fechaDesde"
+        type="date"
+        [(ngModel)]="fechaDesde"
+      />
+
+    </div>
+
+
+    <!-- FECHA HASTA -->
+
+    <div class="filter-group">
+
+      <label for="fechaHasta">
+        Hasta
+      </label>
+
+      <input
+        id="fechaHasta"
+        type="date"
+        [(ngModel)]="fechaHasta"
+      />
+
+    </div>
+
+
+    <!-- BOTÓN FILTRAR -->
+
+    <div class="filter-action">
+
+      <button
+        type="button"
+        class="btn-apply-filters"
+        (click)="aplicarFiltros()"
+        [disabled]="isLoading"
+      >
+        <i class="bi bi-funnel"></i>
+        Aplicar
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ============================================================
+     MENSAJE DE ERROR
+============================================================ -->
+
+<div
+  class="history-error"
+  *ngIf="errorCarga"
+  role="alert"
+  aria-live="polite"
+>
+
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarVentas()"
+    [disabled]="isLoading"
+  >
+    Reintentar
+  </button>
+
+</div>
+
+
+<!-- ============================================================
+     TABLA DEL HISTORIAL
+============================================================ -->
+
+<section class="history-table-card card">
+
+  <div class="table-heading">
+
+    <div>
+      <h3>Ventas registradas</h3>
+
+      <p>
+        Consulta la información general de cada operación.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-refresh"
+      (click)="cargarVentas()"
+      [disabled]="isLoading"
+      title="Actualizar historial"
+    >
+      <i
+        class="bi bi-arrow-clockwise"
+        [class.spinning]="isLoading"
+      ></i>
+
+      Actualizar
+    </button>
+
+  </div>
+
+
+  <div class="table-wrapper">
+
+    <table class="responsive-table">
+
+      <thead>
+
+        <tr>
+          <th>Nota de venta</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Documento</th>
+          <th>Cajero</th>
+          <th class="text-right">Total</th>
+          <th>Estado</th>
+          <th class="text-center">Acción</th>
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <!-- CARGANDO -->
+
+        <tr *ngIf="isLoading">
+
+          <td colspan="8" class="table-message">
+
+            <div class="loading-indicator">
+
+              <span class="spinner"></span>
+
+              <span>Cargando historial de ventas...</span>
+
+            </div>
+
+          </td>
+
+        </tr>
+
+
+        <!-- SIN RESULTADOS -->
+
+        <tr
+          *ngIf="
+            !isLoading &&
+            !errorCarga &&
+            ventas.length === 0
+          "
+        >
+
+          <td colspan="8" class="table-message">
+
+            <div class="empty-state">
+
+              <i class="bi bi-receipt"></i>
+
+              <strong>No se encontraron ventas</strong>
+
+              <span>
+                Intenta modificar los criterios de búsqueda
+                o limpiar los filtros.
+              </span>
+
+            </div>
+
+          </td>
+
+        </tr>
+
+
+        <!-- REGISTROS -->
+
+        <tr
+          *ngFor="let venta of ventas"
+          class="sale-row"
+        >
+
+          <td data-label="Nota de venta">
+
+            <strong class="sale-number">
+              {{ venta.numeroNotaVenta }}
+            </strong>
+
+          </td>
+
+
+          <td data-label="Fecha">
+
+            <span class="date-value">
+              {{ venta.fechaVenta | date:'dd/MM/yyyy' }}
+            </span>
+
+            <small class="time-value">
+              {{ venta.fechaVenta | date:'HH:mm' }}
+            </small>
+
+          </td>
+
+
+          <td data-label="Cliente">
+
+            <span class="customer-name">
+              {{ venta.clienteNombre || 'Cliente no registrado' }}
+            </span>
+
+          </td>
+
+
+          <td data-label="Documento">
+
+            <span class="document-value">
+              {{
+                obtenerDocumento(
+                  venta.clienteTipoDocumento,
+                  venta.clienteNumeroDocumento
+                )
+              }}
+            </span>
+
+          </td>
+
+
+          <td data-label="Cajero">
+
+            <span>
+              {{ venta.cajeroNombre || 'No disponible' }}
+            </span>
+
+          </td>
+
+
+          <td data-label="Total" class="text-right">
+
+            <strong class="sale-total">
+              {{ venta.total | currency:'PEN':'symbol':'1.2-2':'es-PE' }}
+            </strong>
+
+          </td>
+
+
+          <td data-label="Estado">
+
+            <span
+              class="status-badge"
+              [ngClass]="obtenerClaseEstado(venta.estado)"
+            >
+              {{ obtenerNombreEstado(venta.estado) }}
+            </span>
+
+          </td>
+
+
+          <td data-label="Acción" class="action-cell">
+
+            <button
+              type="button"
+              class="btn-view-detail"
+              (click)="abrirDetalle(venta)"
+              title="Consultar detalle de venta"
+              aria-label="Consultar detalle de venta"
+            >
+              <i class="bi bi-eye"></i>
+              Ver detalle
+            </button>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- ========================================================
+       PAGINACIÓN
+  ========================================================= -->
+
+  <div
+    class="pagination-container"
+    *ngIf="!isLoading && totalElements > 0"
+  >
+
+    <div class="pagination-information">
+
+      <span>
+        Mostrando
+        <strong>{{ primerRegistro }}</strong>
+        -
+        <strong>{{ ultimoRegistro }}</strong>
+        de
+        <strong>{{ totalElements }}</strong>
+        ventas
+      </span>
+
+      <div class="page-size-selector">
+
+        <label for="pageSize">
+          Mostrar
+        </label>
+
+        <select
+          id="pageSize"
+          [ngModel]="pageSize"
+          (ngModelChange)="cambiarTamanoPagina($event)"
+        >
+
+          <option
+            *ngFor="let cantidad of tamanosPagina"
+            [ngValue]="cantidad"
+          >
+            {{ cantidad }}
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <div class="pagination-controls">
+
+      <button
+        type="button"
+        (click)="cambiarPagina(currentPage - 1)"
+        [disabled]="currentPage === 0 || isLoading"
+      >
+        <i class="bi bi-chevron-left"></i>
+        Anterior
+      </button>
+
+      <span>
+        Página {{ currentPage + 1 }}
+        de {{ totalPages }}
+      </span>
+
+      <button
+        type="button"
+        (click)="cambiarPagina(currentPage + 1)"
+        [disabled]="currentPage >= totalPages - 1 || isLoading"
+      >
+        Siguiente
+        <i class="bi bi-chevron-right"></i>
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ============================================================
+     MODAL DE DETALLE DE VENTA
+============================================================ -->
+
+<div
+  class="detail-backdrop"
+  *ngIf="mostrarDetalle"
+  (click)="cerrarDetalle()"
+>
+
+  <section
+    class="detail-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Detalle de venta"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- ENCABEZADO -->
+
+    <header class="detail-modal-header">
+
+      <div>
+        <span class="detail-eyebrow">
+          INFORMACIÓN DE LA OPERACIÓN
+        </span>
+
+        <h2>Detalle de venta</h2>
+      </div>
+
+      <button
+        type="button"
+        class="btn-close-detail"
+        (click)="cerrarDetalle()"
+        [disabled]="cargandoDetalle"
+        aria-label="Cerrar detalle"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </header>
+
+
+    <!-- CARGANDO DETALLE -->
+
+    <div
+      class="detail-loading"
+      *ngIf="cargandoDetalle"
+    >
+
+      <span class="spinner"></span>
+
+      <strong>Consultando información de la venta...</strong>
+
+    </div>
+
+
+    <!-- ERROR DEL DETALLE -->
+
+    <div
+      class="detail-error"
+      *ngIf="!cargandoDetalle && errorDetalle"
+      role="alert"
+    >
+
+      <i class="bi bi-exclamation-circle"></i>
+
+      <span>{{ errorDetalle }}</span>
+
+    </div>
+
+
+    <!-- INFORMACIÓN COMPLETA -->
+
+    <ng-container *ngIf="ventaSeleccionada as venta">
+
+      <!-- REFERENCIA -->
+
+      <div class="detail-reference">
+
+        <div>
+          <span>Número de nota</span>
+
+          <strong>
+            {{ venta.numeroNotaVenta }}
+          </strong>
+        </div>
+
+        <span class="status-badge status-unknown">
+          Detalle consultado
+        </span>
+
+      </div>
+
+
+      <!-- DATOS GENERALES -->
+
+      <section class="detail-section">
+
+        <h3>
+          <i class="bi bi-info-circle"></i>
+          Información general
+        </h3>
+
+        <div class="detail-information-grid">
+
+          <div>
+            <span>Fecha de venta</span>
+
+            <strong>
+              {{ venta.fechaVenta | date:'dd/MM/yyyy HH:mm' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Cajero</span>
+
+            <strong>
+              {{ venta.cajeroNombre || 'No disponible' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Cliente</span>
+
+            <strong>
+              {{ venta.clienteNombre || 'Cliente no registrado' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Documento</span>
+
+            <strong>
+              {{
+                obtenerDocumento(
+                  venta.clienteTipoDocumento,
+                  venta.clienteNumeroDocumento
+                )
+              }}
+            </strong>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- PRODUCTOS -->
+
+      <section class="detail-section">
+
+        <h3>
+          <i class="bi bi-box-seam"></i>
+          Productos vendidos
+        </h3>
+
+        <div class="detail-table-wrapper">
+
+          <table class="detail-table">
+
+            <thead>
+
+              <tr>
+                <th>Producto</th>
+                <th>Presentación</th>
+                <th class="text-right">Cantidad</th>
+                <th class="text-right">Precio</th>
+                <th class="text-right">Subtotal</th>
+                <th>Lote</th>
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              <tr *ngFor="let detalle of venta.detalles">
+
+                <td>
+                  <strong>{{ detalle.productoNombre }}</strong>
+                </td>
+
+                <td>
+                  {{ detalle.presentacionTipo }}
+                </td>
+
+                <td class="text-right">
+                  {{ detalle.cantidad }}
+                </td>
+
+                <td class="text-right">
+                  {{
+                    detalle.precioUnitario
+                      | currency:'PEN':'symbol':'1.2-2':'es-PE'
+                  }}
+                </td>
+
+                <td class="text-right">
+                  <strong>
+                    {{
+                      detalle.subtotal
+                        | currency:'PEN':'symbol':'1.2-2':'es-PE'
+                    }}
+                  </strong>
+                </td>
+
+                <td>
+                  {{ detalle.numeroLote || 'N/D' }}
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- PAGOS -->
+
+      <section class="detail-section">
+
+        <h3>
+          <i class="bi bi-wallet2"></i>
+          Métodos de pago
+        </h3>
+
+        <div
+          class="detail-empty-payment"
+          *ngIf="!venta.pagos || venta.pagos.length === 0"
+        >
+          Esta venta no requirió registrar pagos.
+        </div>
+
+        <div
+          class="payment-detail-row"
+          *ngFor="let pago of venta.pagos"
+        >
+
+          <div>
+
+            <strong>
+              {{ obtenerNombreMetodoPago(pago.metodoPago) }}
+            </strong>
+
+            <small *ngIf="pago.metodoPago === 'EFECTIVO'">
+              Recibido:
+              {{
+                pago.montoRecibido
+                  | currency:'PEN':'symbol':'1.2-2':'es-PE'
+              }}
+              · Vuelto:
+              {{
+                pago.vuelto
+                  | currency:'PEN':'symbol':'1.2-2':'es-PE'
+              }}
+            </small>
+
+          </div>
+
+          <strong>
+            {{
+              pago.monto
+                | currency:'PEN':'symbol':'1.2-2':'es-PE'
+            }}
+          </strong>
+
+        </div>
+
+      </section>
+
+
+      <!-- TOTALES -->
+
+      <section class="detail-totals">
+
+        <div>
+          <span>Subtotal</span>
+
+          <strong>
+            {{
+              venta.subtotal
+                | currency:'PEN':'symbol':'1.2-2':'es-PE'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Descuento</span>
+
+          <strong class="detail-discount">
+            -
+            {{
+              venta.descuentoTotal
+                | currency:'PEN':'symbol':'1.2-2':'es-PE'
+            }}
+          </strong>
+        </div>
+
+        <div class="detail-total">
+
+          <span>Total de la venta</span>
+
+          <strong>
+            {{
+              venta.total
+                | currency:'PEN':'symbol':'1.2-2':'es-PE'
+            }}
+          </strong>
+
+        </div>
+
+      </section>
+
+    </ng-container>
+
+
+    <!-- PIE DEL MODAL -->
+
+    <footer class="detail-modal-footer">
+
+      <button
+        type="button"
+        class="btn-close-modal"
+        (click)="cerrarDetalle()"
+        [disabled]="cargandoDetalle"
+      >
+        Cerrar
+      </button>
+
+    </footer>
+
+  </section>
+
+</div>
+
+

@@ -13,6 +13,7 @@ import { LotesListComponent } from './features/lotes/lotes-list/lotes-list';
 import { DescuentosListComponent } from './features/descuentos/descuentos-list/descuentos-list';
 
 import { VentasPosComponent } from './features/ventas/ventas-pos/ventas-pos';
+import { VentasHistorialComponent } from './features/ventas/ventas-historial/ventas-historial';
 
 export const routes: Routes = [
 
@@ -42,6 +43,11 @@ export const routes: Routes = [
       {
         path: 'ventas',
         component: VentasPosComponent
+      },
+
+      {
+        path: 'historial-ventas',
+        component: VentasHistorialComponent
       },
 
       {

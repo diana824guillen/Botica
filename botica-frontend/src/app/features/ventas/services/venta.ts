@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
@@ -8,7 +8,9 @@ import {
   VentaPrevisualizacionRequest,
   VentaPrevisualizacionResponse,
   VentaRequest,
-  VentaResponse
+  VentaResponse,
+  VentaListado,
+  PaginaResponse
 } from '../../../core/models/venta.model';
 
 @Injectable({
@@ -20,7 +22,10 @@ export class VentaService {
 
   constructor(private http: HttpClient) {}
 
-  // Previsualizar una venta sin registrar ni modificar el inventario.
+  // ============================================================
+  // PREVISUALIZAR VENTA
+  // ============================================================
+
   previsualizarVenta(
     request: VentaPrevisualizacionRequest
   ): Observable<VentaPrevisualizacionResponse> {
@@ -31,7 +36,10 @@ export class VentaService {
     );
   }
 
-  // Registrar definitivamente una venta.
+  // ============================================================
+  // REGISTRAR VENTA
+  // ============================================================
+
   registrarVenta(
     request: VentaRequest
   ): Observable<VentaResponse> {
@@ -39,6 +47,55 @@ export class VentaService {
     return this.http.post<VentaResponse>(
       this.apiUrl,
       request
+    );
+  }
+
+  // ============================================================
+  // HISTORIAL GENERAL DE VENTAS
+  // ============================================================
+
+  listarVentas(
+    pagina: number = 0,
+    tamano: number = 10,
+    buscar: string = '',
+    desde: string = '',
+    hasta: string = ''
+  ): Observable<PaginaResponse<VentaListado>> {
+
+    let params = new HttpParams()
+      .set('pagina', pagina)
+      .set('tamano', tamano);
+
+    const criterio = buscar.trim();
+
+    if (criterio) {
+      params = params.set('buscar', criterio);
+    }
+
+    if (desde) {
+      params = params.set('desde', desde);
+    }
+
+    if (hasta) {
+      params = params.set('hasta', hasta);
+    }
+
+    return this.http.get<PaginaResponse<VentaListado>>(
+      this.apiUrl,
+      { params }
+    );
+  }
+
+  // ============================================================
+  // CONSULTAR DETALLE COMPLETO DE UNA VENTA
+  // ============================================================
+
+  obtenerVentaPorId(
+    idVenta: number
+  ): Observable<VentaResponse> {
+
+    return this.http.get<VentaResponse>(
+      `${this.apiUrl}/${idVenta}`
     );
   }
 }

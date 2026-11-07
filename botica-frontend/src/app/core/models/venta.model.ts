@@ -14,6 +14,10 @@ export type OrigenDatosCliente =
   | 'RENIEC'
   | 'MANUAL';
 
+// ============================================================
+// SOLICITUDES DE VENTA
+// ============================================================
+
 // Datos de un producto enviado al backend.
 export interface DetalleVentaRequest {
   idPresentacion: number;
@@ -41,6 +45,10 @@ export interface ClienteVentaRequest {
 export interface VentaPrevisualizacionRequest {
   detalles: DetalleVentaRequest[];
 }
+
+// ============================================================
+// RESPUESTA DE PREVISUALIZACIÓN
+// ============================================================
 
 export interface DetalleVentaPrevisualizacion {
   idProducto: number;
@@ -74,7 +82,10 @@ export interface VentaPrevisualizacionResponse {
   descuentosAplicados: DescuentoVentaPrevisualizacion[];
 }
 
-// Solicitud para registrar definitivamente la venta.
+// ============================================================
+// REGISTRAR VENTA
+// ============================================================
+
 export interface VentaRequest {
   idCliente: number | null;
   nuevoCliente?: ClienteVentaRequest | null;
@@ -84,6 +95,10 @@ export interface VentaRequest {
   totalEsperado: number;
 }
 
+// ============================================================
+// RESPUESTA COMPLETA DE UNA VENTA
+// ============================================================
+
 export interface DetalleVentaResponse {
   productoNombre: string;
   presentacionTipo: string;
@@ -92,7 +107,7 @@ export interface DetalleVentaResponse {
   factorConversion: number;
   precioUnitario: number;
   subtotal: number;
-  numeroLote: string;
+  numeroLote: string | null;
 }
 
 export interface PagoVentaResponse {
@@ -106,13 +121,55 @@ export interface VentaResponse {
   id: number;
   numeroNotaVenta: string;
   fechaVenta: string;
+
   clienteNombre: string;
+  clienteTipoDocumento: string | null;
+  clienteNumeroDocumento: string | null;
+
   cajeroNombre: string;
+
   subtotal: number;
   descuentoTotal: number;
   total: number;
+
   detalles: DetalleVentaResponse[];
   pagos: PagoVentaResponse[];
+}
+
+// ============================================================
+// HISTORIAL GENERAL DE VENTAS
+// ============================================================
+
+export interface VentaListado {
+  id: number;
+  numeroNotaVenta: string;
+  fechaVenta: string;
+
+  clienteNombre: string;
+  clienteTipoDocumento: string | null;
+  clienteNumeroDocumento: string | null;
+
+  cajeroNombre: string;
+
+  subtotal: number;
+  descuentoTotal: number;
+  total: number;
+
+  estado: number;
+}
+
+// Respuesta paginada de Spring Data.
+export interface PaginaResponse<T> {
+  content: T[];
+
+  totalElements: number;
+  totalPages: number;
+
+  number: number;
+  size: number;
+
+  first: boolean;
+  last: boolean;
 }
 
 

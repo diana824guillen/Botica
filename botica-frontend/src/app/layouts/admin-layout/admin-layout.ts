@@ -84,6 +84,13 @@ export class AdminLayoutComponent {
     },
 
     {
+      label: 'Historial de ventas',
+      route: '/historial-ventas',
+      icon: 'bi-receipt',
+      roles: ['ADMIN', 'VENDEDOR']
+    },
+
+    {
       label: 'Clientes',
       route: '/clientes',
       icon: 'bi-people',
@@ -99,19 +106,19 @@ export class AdminLayoutComponent {
     },
 
     {
-      label: 'Lotes',
-      route: '/lotes',
-      icon: 'bi-boxes',
-      roles: ['ADMIN', 'VENDEDOR'],
-      permission: 'LOTE_LEER'
-    },
-
-    {
       label: 'Productos',
       route: '/productos',
       icon: 'bi-box-seam',
       roles: ['ADMIN'],
       permission: 'PRODUCTO_LEER'
+    },
+
+    {
+      label: 'Lotes',
+      route: '/lotes',
+      icon: 'bi-boxes',
+      roles: ['ADMIN', 'VENDEDOR'],
+      permission: 'LOTE_LEER'
     },
 
     {
