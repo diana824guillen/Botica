@@ -15,6 +15,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -1084,6 +1089,214 @@ public class VentaService {
         mapa.put(
                 clave,
                 valorActual.add(cantidad)
+        );
+    }
+
+
+    // ============================================================
+    // HISTORIAL GENERAL DE VENTAS
+    // ============================================================
+
+    @Transactional(readOnly = true)
+    public Page<VentaListadoDTO> listarVentas(
+        String buscar,
+        LocalDate desde,
+        LocalDate hasta,
+        int pagina,
+        int tamano) {
+
+        // Validar número de página.
+        if (pagina < 0) {
+                throw new BusinessException(
+                        "El número de página no puede ser negativo"
+                );
+        }
+
+        // Validar tamaño de página.
+        if (tamano < 1 || tamano > 100) {
+                throw new BusinessException(
+                        "El tamaño de página debe estar entre 1 y 100"
+                );
+        }
+
+        // Validar rango de fechas.
+        if (desde != null
+                && hasta != null
+                && desde.isAfter(hasta)) {
+
+                throw new BusinessException(
+                        "La fecha inicial no puede ser posterior a la fecha final"
+                );
+        }
+
+        // Normalizar búsqueda.
+        String criterioBusqueda = buscar != null
+                ? buscar.trim()
+                : null;
+
+        if (criterioBusqueda != null
+                && criterioBusqueda.isEmpty()) {
+
+                criterioBusqueda = null;
+        }
+
+        // Convertir fechas a límites de fecha y hora.
+        LocalDateTime fechaDesde = desde != null
+                ? desde.atStartOfDay()
+                : null;
+
+        // Se utiliza el inicio del día siguiente para incluir
+        // todas las ventas realizadas durante la fecha final.
+        LocalDateTime fechaHasta = hasta != null
+                ? hasta.plusDays(1).atStartOfDay()
+                : null;
+
+        // Ordenar de la venta más reciente a la más antigua.
+        Pageable pageable = PageRequest.of(
+                pagina,
+                tamano,
+                Sort.by(
+                        Sort.Order.desc("fechaVenta"),
+                        Sort.Order.desc("id")
+                )
+        );
+
+        Page<Venta> ventas = ventaRepository.buscarVentas(
+                criterioBusqueda,
+                fechaDesde,
+                fechaHasta,
+                pageable
+        );
+
+        return ventas.map(this::mapToListadoDTO);
+    }
+
+    // ============================================================
+    // MAPEAR VENTA PARA EL HISTORIAL GENERAL
+    // ============================================================
+
+    private VentaListadoDTO mapToListadoDTO(Venta venta) {
+
+        VentaListadoDTO dto = new VentaListadoDTO();
+
+        dto.setId(venta.getId());
+
+        dto.setNumeroNotaVenta(
+                venta.getNumeroNotaVenta()
+        );
+
+        dto.setFechaVenta(
+                venta.getFechaVenta()
+        );
+
+        // -----------------------------------------------------
+        // CLIENTE
+        // -----------------------------------------------------
+
+        Cliente cliente = venta.getCliente();
+
+        String clienteNombre = venta.getClienteNombreSnapshot();
+
+        if (clienteNombre == null && cliente != null) {
+
+                String nombres = cliente.getNombres();
+                String apellidos = cliente.getApellidos();
+
+                clienteNombre = (
+                        (nombres == null ? "" : nombres)
+                        + " "
+                        + (apellidos == null ? "" : apellidos)
+                ).trim();
+        }
+
+        dto.setClienteNombre(
+                clienteNombre != null ? clienteNombre : ""
+        );
+
+        String tipoDocumento =
+                venta.getClienteTipoDocumentoSnapshot();
+
+        if (tipoDocumento == null
+                && cliente != null
+                && cliente.getTipoDocumento() != null) {
+
+                tipoDocumento = cliente.getTipoDocumento().name();
+        }
+
+        dto.setClienteTipoDocumento(tipoDocumento);
+
+        String numeroDocumento =
+                venta.getClienteNumeroDocumentoSnapshot();
+
+        if (numeroDocumento == null && cliente != null) {
+                numeroDocumento = cliente.getNumeroDocumento();
+        }
+
+        dto.setClienteNumeroDocumento(numeroDocumento);
+
+        // -----------------------------------------------------
+        // CAJERO
+        // -----------------------------------------------------
+
+        String cajeroNombre = venta.getCajeroNombreSnapshot();
+
+        if (cajeroNombre == null && venta.getUsuario() != null) {
+
+                Usuario cajero = venta.getUsuario();
+
+                cajeroNombre = (
+                        (cajero.getNombres() == null ? "" : cajero.getNombres())
+                        + " "
+                        + (cajero.getApellidos() == null ? "" : cajero.getApellidos())
+                ).trim();
+        }
+
+        dto.setCajeroNombre(cajeroNombre);
+
+        // -----------------------------------------------------
+        // IMPORTES
+        // -----------------------------------------------------
+
+        BigDecimal subtotal = venta.getSubtotal();
+
+        if (subtotal == null) {
+
+                BigDecimal descuento = venta.getDescuentoTotal() != null
+                        ? venta.getDescuentoTotal()
+                        : BigDecimal.ZERO;
+
+                subtotal = venta.getTotal() != null
+                        ? venta.getTotal().add(descuento)
+                        : BigDecimal.ZERO;
+        }
+
+        dto.setSubtotal(subtotal);
+
+        dto.setDescuentoTotal(venta.getDescuentoTotal());
+        dto.setTotal(venta.getTotal());
+
+        dto.setEstado(venta.getEstado());
+
+        return dto;
+    }
+
+    // ============================================================
+    // OBTENER DETALLE COMPLETO DE UNA VENTA
+    // ============================================================
+
+    @Transactional(readOnly = true)
+    public VentaResponseDTO obtenerVentaPorId(Integer idVenta) {
+        
+        Venta venta = ventaRepository.findById(idVenta)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Venta no encontrada"
+                        )
+                );
+
+        return mapToResponse(
+                venta,
+                venta.getSubtotal()
         );
     }
 
