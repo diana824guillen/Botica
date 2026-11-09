@@ -40,7 +40,8 @@ public class GlobalExceptionHandler {
                 || normalizado.contains("ya existe otra categoría")
                 || normalizado.contains("ya existe un producto")
                 || normalizado.contains("ya existe una presentación")
-                || normalizado.contains("ya existe un lote");
+                || normalizado.contains("ya existe un lote")
+                || normalizado.contains("ya existe un perfil con ese nombre");
 
         HttpStatus status = esConflicto
                 ? HttpStatus.CONFLICT
@@ -123,10 +124,13 @@ public class GlobalExceptionHandler {
         String detalle = mensajesDeLaExcepcion(ex)
                 .toLowerCase(Locale.ROOT);
 
-        if (detalle.contains("uq_presentacion_producto_tipo_factor")) {
+        if (detalle.contains("uq_perfil_nombre")) {
 
-            mensaje =
-                    "Ya existe una presentación con ese tipo y factor para este producto";
+                mensaje = "Ya existe un perfil con ese nombre";
+
+        } else if (detalle.contains("uq_presentacion_producto_tipo_factor")) {
+
+            mensaje = "Ya existe una presentación con ese tipo y factor para este producto";
 
         } else if (detalle.contains("uq_categoria_nombre")) {
 
