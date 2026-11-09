@@ -12,16 +12,13 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.security.access.prepost.PreAuthorize;
-
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/perfiles")
-@PreAuthorize("hasRole('ADMIN')")
 public class PerfilController {
 
     private final PerfilService perfilService;
@@ -34,6 +31,7 @@ public class PerfilController {
     // LISTAR PERFILES
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<PerfilResponseDTO>> listarPerfiles() {
 
@@ -46,6 +44,7 @@ public class PerfilController {
     // LISTAR OPCIONES / PERMISOS DISPONIBLES
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/opciones")
     public ResponseEntity<List<OpcionResponseDTO>> listarOpciones() {
 
@@ -58,6 +57,7 @@ public class PerfilController {
     // OBTENER PERFIL POR ID
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<PerfilResponseDTO> obtenerPerfil(
             @PathVariable Integer id) {
@@ -71,6 +71,7 @@ public class PerfilController {
     // CREAR PERFIL
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<PerfilResponseDTO> crearPerfil(
             @Valid @RequestBody PerfilRequestDTO request) {
@@ -87,6 +88,7 @@ public class PerfilController {
     // ACTUALIZAR DATOS DEL PERFIL
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<PerfilResponseDTO> actualizarPerfil(
             @PathVariable Integer id,
@@ -101,6 +103,7 @@ public class PerfilController {
     // ACTUALIZAR PERMISOS DEL PERFIL
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/permisos")
     public ResponseEntity<PerfilResponseDTO> actualizarPermisos(
             @PathVariable Integer id,
@@ -115,6 +118,7 @@ public class PerfilController {
     // ACTIVAR / DESACTIVAR PERFIL
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<PerfilResponseDTO> cambiarEstado(
             @PathVariable Integer id,
@@ -129,6 +133,7 @@ public class PerfilController {
     // ELIMINACIÓN LÓGICA
     // ============================================================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarPerfil(
             @PathVariable Integer id) {
