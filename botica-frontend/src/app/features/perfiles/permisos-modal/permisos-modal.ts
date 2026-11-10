@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-
 import { finalize } from 'rxjs';
 
 import {
@@ -19,10 +18,25 @@ import {
 
 import { PerfilService } from '../services/perfil';
 
-interface GrupoOpciones {
-  modulo: string;
-  opciones: OpcionPermiso[];
-}
+const ORDEN_MODULOS = [
+  'CLIENTE_ACCESO',
+  'CATEGORIA_ACCESO',
+  'PRODUCTO_ACCESO',
+  'LOTE_ACCESO',
+  'PUNTO_VENTA_ACCESO',
+  'HISTORIAL_VENTAS_ACCESO',
+  'DESCUENTO_ACCESO'
+];
+
+const NOMBRES_MODULOS: Record<string, string> = {
+  CLIENTE_ACCESO: 'Clientes',
+  CATEGORIA_ACCESO: 'Categorías',
+  PRODUCTO_ACCESO: 'Productos',
+  LOTE_ACCESO: 'Lotes e inventario',
+  PUNTO_VENTA_ACCESO: 'Punto de venta',
+  HISTORIAL_VENTAS_ACCESO: 'Historial de ventas',
+  DESCUENTO_ACCESO: 'Descuentos'
+};
 
 @Component({
   selector: 'app-permisos-modal',
@@ -42,10 +56,10 @@ export class PermisosModalComponent implements OnInit {
   @Output() guardado = new EventEmitter<Perfil>();
 
   // ============================================================
-  // DATOS
+  // MÓDULOS DISPONIBLES
   // ============================================================
 
-  opciones: OpcionPermiso[] = [];
+  modulosDisponibles: OpcionPermiso[] = [];
 
   permisosSeleccionados = new Set<number>();
 
@@ -83,7 +97,7 @@ export class PermisosModalComponent implements OnInit {
   }
 
   // ============================================================
-  // CARGAR OPCIONES DISPONIBLES
+  // CARGAR MÓDULOS DISPONIBLES
   // ============================================================
 
   cargarOpciones(): void {
@@ -103,23 +117,40 @@ export class PermisosModalComponent implements OnInit {
 
         next: response => {
 
-          this.opciones = response ?? [];
+          this.modulosDisponibles = (response ?? [])
+            .filter(opcion =>
+              opcion.estado === 1
+              && ORDEN_MODULOS.includes(opcion.nombre)
+            )
+            .sort((a, b) =>
+              ORDEN_MODULOS.indexOf(a.nombre)
+              - ORDEN_MODULOS.indexOf(b.nombre)
+            );
 
-          this.normalizarPermisosSeleccionados();
+          // Conservar únicamente las asignaciones que corresponden a módulos disponibles.
+          const idsDisponibles = new Set(
+            this.modulosDisponibles.map(opcion => opcion.id)
+          );
+
+          this.permisosSeleccionados = new Set(
+            [...this.permisosSeleccionados].filter(id =>
+              idsDisponibles.has(id)
+            )
+          );
         },
 
         error: err => {
 
           console.error(
-            'Error al cargar los permisos:',
+            'Error al cargar los módulos:',
             err
           );
 
-          this.opciones = [];
+          this.modulosDisponibles = [];
 
           this.errorCarga = this.obtenerMensajeError(
             err,
-            'No se pudieron cargar los permisos disponibles.'
+            'No se pudieron cargar los módulos disponibles.'
           );
         }
 
@@ -127,116 +158,18 @@ export class PermisosModalComponent implements OnInit {
   }
 
   // ============================================================
-  // AGRUPAR OPCIONES POR MÓDULO
+  // OBTENER NOMBRE VISUAL DEL MÓDULO
   // ============================================================
 
-  get gruposOpciones(): GrupoOpciones[] {
+  obtenerNombreModulo(opcion: OpcionPermiso): string {
 
-    const grupos = new Map<string, OpcionPermiso[]>();
-
-    for (const opcion of this.opciones) {
-
-      const modulo = opcion.modulo || 'Otros';
-
-      if (!grupos.has(modulo)) {
-        grupos.set(modulo, []);
-      }
-
-      grupos.get(modulo)?.push(opcion);
-    }
-
-    const resultado: GrupoOpciones[] = [];
-
-    grupos.forEach((opciones, modulo) => {
-
-      resultado.push({
-
-        modulo,
-
-        opciones: [...opciones].sort((a, b) => {
-
-          const ordenA = this.obtenerOrdenAccion(a.accion);
-
-          const ordenB = this.obtenerOrdenAccion(b.accion);
-
-          if (ordenA !== ordenB) {
-            return ordenA - ordenB;
-          }
-
-          return a.accion.localeCompare(b.accion);
-        })
-
-      });
-
-    });
-
-    return resultado;
-  }
-
-  private obtenerOrdenAccion(accion: string): number {
-
-    const orden = [
-      'Consultar',
-      'Previsualizar',
-      'Registrar',
-      'Editar',
-      'Cambiar estado',
-      'Ajustar',
-      'Ver detalle',
-      'Anular',
-      'Eliminar',
-      'Descargar',
-      'Imprimir',
-      'Exportar PDF',
-      'Exportar Excel',
-      'Restablecer contraseña'
-    ];
-
-    const indice = orden.indexOf(accion);
-
-    return indice === -1 ? orden.length : indice;
+    return NOMBRES_MODULOS[opcion.nombre]
+      || opcion.modulo
+      || 'Módulo';
   }
 
   // ============================================================
-  // IDENTIFICAR PERMISO DE CONSULTA
-  // ============================================================
-
-  esPermisoConsulta(opcion: OpcionPermiso): boolean {
-
-    return opcion.accion.trim().toLowerCase() === 'consultar';
-  }
-
-  // ============================================================
-  // NORMALIZAR SELECCIÓN INICIAL
-  // ============================================================
-
-  private normalizarPermisosSeleccionados(): void {
-
-    for (const opcion of this.opciones) {
-
-      if (
-        this.esPermisoConsulta(opcion)
-        || !this.permisosSeleccionados.has(opcion.id)
-      ) {
-        continue;
-      }
-
-      const permisoConsulta = this.opciones.find(item =>
-        item.modulo === opcion.modulo
-        && this.esPermisoConsulta(item)
-      );
-
-      if (permisoConsulta) {
-
-        this.permisosSeleccionados.add(
-          permisoConsulta.id
-        );
-      }
-    }
-  }
-
-  // ============================================================
-  // VERIFICAR SI UNA OPCIÓN ESTÁ SELECCIONADA
+  // VERIFICAR SI UN MÓDULO ESTÁ HABILITADO
   // ============================================================
 
   estaSeleccionado(opcion: OpcionPermiso): boolean {
@@ -245,68 +178,10 @@ export class PermisosModalComponent implements OnInit {
   }
 
   // ============================================================
-  // VERIFICAR ACCIONES SELECCIONADAS EN UN MÓDULO
-  // ============================================================
-
-  tieneAccionesSeleccionadas(modulo: string): boolean {
-
-    return this.opciones.some(opcion =>
-
-      opcion.modulo === modulo
-      && !this.esPermisoConsulta(opcion)
-      && this.permisosSeleccionados.has(opcion.id)
-
-    );
-  }
-
-  // ============================================================
-  // VERIFICAR SI TODO EL MÓDULO ESTÁ SELECCIONADO
-  // ============================================================
-
-  moduloSeleccionado(modulo: string): boolean {
-
-    const opcionesModulo = this.opciones.filter(
-      opcion => opcion.modulo === modulo
-    );
-
-    return opcionesModulo.length > 0
-      && opcionesModulo.every(opcion =>
-          this.permisosSeleccionados.has(opcion.id)
-      );
-  }
-
-  // ============================================================
-  // SELECCIONAR / DESELECCIONAR TODO UN MÓDULO
+  // ACTIVAR / DESACTIVAR MÓDULO
   // ============================================================
 
   alternarModulo(
-    modulo: string,
-    seleccionado: boolean
-  ): void {
-
-    if (this.isSaving) {
-      return;
-    }
-
-    const opcionesModulo = this.opciones.filter(
-      opcion => opcion.modulo === modulo
-    );
-
-    for (const opcion of opcionesModulo) {
-
-      if (seleccionado) {
-        this.permisosSeleccionados.add(opcion.id);
-      } else {
-        this.permisosSeleccionados.delete(opcion.id);
-      }
-    }
-  }
-
-  // ============================================================
-  // SELECCIONAR / DESELECCIONAR PERMISOS
-  // ============================================================
-
-  alternarPermiso(
     opcion: OpcionPermiso,
     seleccionado: boolean
   ): void {
@@ -315,35 +190,9 @@ export class PermisosModalComponent implements OnInit {
       return;
     }
 
-    // Consultar no se puede retirar mientras existan
-    // otras acciones seleccionadas del mismo módulo.
-    if (
-      this.esPermisoConsulta(opcion)
-      && !seleccionado
-      && this.tieneAccionesSeleccionadas(opcion.modulo)
-    ) {
-      return;
-    }
-
     if (seleccionado) {
 
       this.permisosSeleccionados.add(opcion.id);
-
-      // Al seleccionar otra acción, agregar Consultar.
-      if (!this.esPermisoConsulta(opcion)) {
-
-        const permisoConsulta = this.opciones.find(item =>
-          item.modulo === opcion.modulo
-          && this.esPermisoConsulta(item)
-        );
-
-        if (permisoConsulta) {
-
-          this.permisosSeleccionados.add(
-            permisoConsulta.id
-          );
-        }
-      }
 
     } else {
 
@@ -352,12 +201,14 @@ export class PermisosModalComponent implements OnInit {
   }
 
   // ============================================================
-  // TOTAL DE PERMISOS SELECCIONADOS
+  // TOTAL DE MÓDULOS HABILITADOS
   // ============================================================
 
-  get totalPermisosSeleccionados(): number {
+  get totalModulosSeleccionados(): number {
 
-    return this.permisosSeleccionados.size;
+    return this.modulosDisponibles.filter(opcion =>
+      this.permisosSeleccionados.has(opcion.id)
+    ).length;
   }
 
   // ============================================================
@@ -374,18 +225,25 @@ export class PermisosModalComponent implements OnInit {
   }
 
   // ============================================================
-  // GUARDAR PERMISOS
+  // GUARDAR MÓDULOS
   // ============================================================
 
   guardarPermisos(): void {
 
-    if (this.isLoading || this.isSaving || this.errorCarga) {
+    if (
+      this.isLoading
+      || this.isSaving
+      || this.errorCarga
+    ) {
       return;
     }
 
-    const opcionIds = Array.from(
-      this.permisosSeleccionados
-    ).sort((a, b) => a - b);
+    const opcionIds = this.modulosDisponibles
+      .filter(opcion =>
+        this.permisosSeleccionados.has(opcion.id)
+      )
+      .map(opcion => opcion.id)
+      .sort((a, b) => a - b);
 
     this.errorMessage = '';
     this.isSaving = true;
@@ -413,13 +271,13 @@ export class PermisosModalComponent implements OnInit {
         error: err => {
 
           console.error(
-            'Error al actualizar los permisos:',
+            'Error al actualizar los módulos:',
             err
           );
 
           this.errorMessage = this.obtenerMensajeError(
             err,
-            'No se pudieron actualizar los permisos del perfil.'
+            'No se pudieron actualizar los módulos del perfil.'
           );
         }
 
