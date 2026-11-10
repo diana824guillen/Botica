@@ -26,9 +26,9 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    // ==================== CREAR PRODUCTO ====================
+    // REGISTRAR PRODUCTO.
 
-    @PreAuthorize("hasAuthority('PRODUCTO_CREAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ProductoResponseDTO> crearProducto(
             @Valid @RequestBody ProductoRequestDTO request) {
@@ -36,12 +36,14 @@ public class ProductoController {
         ProductoResponseDTO response =
                 productoService.crearProducto(request);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(response);
     }
 
-    // ==================== LISTAR PRODUCTOS ====================
+    // CONSULTAR PRODUCTOS:
+    // Productos, Punto de venta o Lotes.
 
-    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<ProductoResponseDTO>> listarProductos(
             @RequestParam(required = false) Integer categoriaId) {
@@ -52,12 +54,12 @@ public class ProductoController {
             );
         }
 
-        return ResponseEntity.ok(productoService.listarProductos());
+        return ResponseEntity.ok(
+                productoService.listarProductos()
+        );
     }
 
-    // ==================== OBTENER PRODUCTO ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ProductoResponseDTO> obtenerProducto(
             @PathVariable Integer id) {
@@ -67,9 +69,7 @@ public class ProductoController {
         );
     }
 
-    // ==================== LISTAR PRESENTACIONES DE UN PRODUCTO ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{id}/presentaciones")
     public ResponseEntity<List<PresentacionInfoDTO>> listarPresentaciones(
             @PathVariable Integer id) {
@@ -79,9 +79,9 @@ public class ProductoController {
         );
     }
 
-    // ==================== AGREGAR PRESENTACIONES ====================
+    // GESTIONAR PRESENTACIONES.
 
-    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PostMapping("/{id}/presentaciones")
     public ResponseEntity<ProductoResponseDTO> agregarPresentaciones(
             @PathVariable Integer id,
@@ -92,9 +92,7 @@ public class ProductoController {
         );
     }
 
-    // ==================== ACTUALIZAR PRESENTACIÓN ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PutMapping("/{id}/presentaciones/{idPresentacion}")
     public ResponseEntity<PresentacionInfoDTO> actualizarPresentacion(
             @PathVariable Integer id,
@@ -110,9 +108,7 @@ public class ProductoController {
         );
     }
 
-    // ==================== ACTIVAR / DESACTIVAR PRESENTACIÓN ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PatchMapping("/{id}/presentaciones/{idPresentacion}/estado")
     public ResponseEntity<ProductoResponseDTO> cambiarEstadoPresentacion(
             @PathVariable Integer id,
@@ -128,9 +124,7 @@ public class ProductoController {
         );
     }
 
-    // ==================== ELIMINAR PRESENTACIÓN ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @DeleteMapping("/{id}/presentaciones/{idPresentacion}")
     public ResponseEntity<Void> eliminarPresentacion(
             @PathVariable Integer id,
@@ -141,19 +135,18 @@ public class ProductoController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== STOCK BAJO ====================
+    // CONSULTAS DE INVENTARIO RELACIONADAS CON PRODUCTOS.
 
-    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/stock-bajo")
     public ResponseEntity<List<ProductoResponseDTO>> listarStockBajo() {
+
         return ResponseEntity.ok(
                 productoService.listarProductosConStockBajo()
         );
     }
 
-    // ==================== LOTES POR VENCER ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/por-vencer")
     public ResponseEntity<List<ProductoResponseDTO>> listarPorVencer(
             @RequestParam(defaultValue = "30") int dias) {
@@ -163,19 +156,18 @@ public class ProductoController {
         );
     }
 
-    // ==================== LOTES VENCIDOS ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/vencidos")
     public ResponseEntity<List<ProductoResponseDTO>> listarVencidos() {
+
         return ResponseEntity.ok(
                 productoService.listarProductosConLotesVencidos()
         );
     }
 
-    // ==================== ACTUALIZAR PRODUCTO ====================
+    // EDITAR PRODUCTO.
 
-    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponseDTO> actualizarProducto(
             @PathVariable Integer id,
@@ -186,9 +178,7 @@ public class ProductoController {
         );
     }
 
-    // ==================== ACTIVAR / DESACTIVAR PRODUCTO ====================
-
-    @PreAuthorize("hasAuthority('PRODUCTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<ProductoResponseDTO> cambiarEstado(
             @PathVariable Integer id,
@@ -199,9 +189,9 @@ public class ProductoController {
         );
     }
 
-    // ==================== ELIMINAR PRODUCTO ====================
+    // ELIMINAR PRODUCTO.
 
-    @PreAuthorize("hasAuthority('PRODUCTO_ELIMINAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarProducto(
             @PathVariable Integer id) {

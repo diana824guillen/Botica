@@ -24,11 +24,9 @@ public class DescuentoController {
         this.descuentoService = descuentoService;
     }
 
-    // ============================================================
-    // CREAR DESCUENTO
-    // ============================================================
+    // REGISTRAR DESCUENTO.
 
-    @PreAuthorize("hasAuthority('DESCUENTO_CREAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DESCUENTO_ACCESO') or hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<DescuentoResponseDTO> crearDescuento(
             @Valid @RequestBody DescuentoRequestDTO request) {
@@ -37,11 +35,9 @@ public class DescuentoController {
                 .body(descuentoService.crearDescuento(request));
     }
 
-    // ============================================================
-    // LISTAR DESCUENTOS
-    // ============================================================
+    // CONSULTAR DESCUENTOS.
 
-    @PreAuthorize("hasAuthority('DESCUENTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DESCUENTO_ACCESO') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<DescuentoResponseDTO>> listarDescuentos() {
 
@@ -50,11 +46,7 @@ public class DescuentoController {
         );
     }
 
-    // ============================================================
-    // OBTENER DESCUENTO POR ID
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('DESCUENTO_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DESCUENTO_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<DescuentoResponseDTO> obtenerPorId(
             @PathVariable Integer id) {
@@ -64,11 +56,9 @@ public class DescuentoController {
         );
     }
 
-    // ============================================================
-    // ACTUALIZAR DESCUENTO
-    // ============================================================
+    // EDITAR DESCUENTO.
 
-    @PreAuthorize("hasAuthority('DESCUENTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DESCUENTO_ACCESO') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<DescuentoResponseDTO> actualizarDescuento(
             @PathVariable Integer id,
@@ -79,11 +69,7 @@ public class DescuentoController {
         );
     }
 
-    // ============================================================
-    // ACTIVAR / DESACTIVAR DESCUENTO
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('DESCUENTO_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DESCUENTO_ACCESO') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<DescuentoResponseDTO> cambiarEstado(
             @PathVariable Integer id,
@@ -94,11 +80,9 @@ public class DescuentoController {
         );
     }
 
-    // ============================================================
-    // ELIMINAR DESCUENTO
-    // ============================================================
+    // ELIMINAR DESCUENTO.
 
-    @PreAuthorize("hasAuthority('DESCUENTO_ELIMINAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DESCUENTO_ACCESO') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarDescuento(
             @PathVariable Integer id) {

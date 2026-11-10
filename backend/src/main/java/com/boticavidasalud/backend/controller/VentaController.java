@@ -30,11 +30,9 @@ public class VentaController {
         this.ventaService = ventaService;
     }
 
-    // ============================================================
-    // PREVISUALIZAR VENTA
-    // ============================================================
+    // PUNTO DE VENTA.
 
-    @PreAuthorize("hasAuthority('PUNTO_VENTA_PREVISUALIZAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
     @PostMapping("/previsualizacion")
     public ResponseEntity<VentaPrevisualizacionResponseDTO> previsualizarVenta(
             @Valid @RequestBody VentaPrevisualizacionRequestDTO request) {
@@ -44,11 +42,7 @@ public class VentaController {
         );
     }
 
-    // ============================================================
-    // REGISTRAR VENTA
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('PUNTO_VENTA_REGISTRAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<VentaResponseDTO> registrarVenta(
             @Valid @RequestBody VentaRequestDTO request) {
@@ -60,14 +54,11 @@ public class VentaController {
                 .body(response);
     }
 
-    // ============================================================
-    // HISTORIAL GENERAL DE VENTAS
-    // ============================================================
+    // HISTORIAL DE VENTAS.
 
-    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_ACCESO') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<VentaListadoDTO>> listarVentas(
-
             @RequestParam(required = false)
             String buscar,
 
@@ -96,11 +87,7 @@ public class VentaController {
         );
     }
 
-    // ============================================================
-    // CONSULTAR UNA VENTA COMPLETA
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_CONSULTAR_DETALLE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{idVenta}")
     public ResponseEntity<VentaResponseDTO> obtenerVentaPorId(
             @PathVariable Integer idVenta) {
@@ -110,11 +97,7 @@ public class VentaController {
         );
     }
 
-    // ============================================================
-    // HISTORIAL DE COMPRAS DE UN CLIENTE
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/cliente/{idCliente}")
     public ResponseEntity<List<HistorialCompraDTO>> obtenerHistorialCompras(
             @PathVariable Integer idCliente) {

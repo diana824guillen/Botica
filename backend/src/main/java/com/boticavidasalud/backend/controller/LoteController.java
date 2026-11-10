@@ -24,11 +24,9 @@ public class LoteController {
         this.loteService = loteService;
     }
 
-    // ============================================================
-    // LISTAR TODOS LOS LOTES
-    // ============================================================
+    // CONSULTAR LOTES.
 
-    @PreAuthorize("hasAuthority('LOTE_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/lotes")
     public ResponseEntity<List<LoteResponseDTO>> listarLotes() {
 
@@ -37,11 +35,9 @@ public class LoteController {
         );
     }
 
-    // ============================================================
-    // CREAR LOTE
-    // ============================================================
+    // REGISTRAR LOTE.
 
-    @PreAuthorize("hasAuthority('LOTE_CREAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @PostMapping("/productos/{idProducto}/lotes")
     public ResponseEntity<LoteResponseDTO> crearLote(
             @PathVariable Integer idProducto,
@@ -51,11 +47,7 @@ public class LoteController {
                 .body(loteService.crearLote(idProducto, request));
     }
 
-    // ============================================================
-    // LISTAR LOTES POR PRODUCTO
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('LOTE_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/productos/{idProducto}/lotes")
     public ResponseEntity<List<LoteResponseDTO>> listarLotesPorProducto(
             @PathVariable Integer idProducto) {
@@ -65,11 +57,7 @@ public class LoteController {
         );
     }
 
-    // ============================================================
-    // OBTENER LOTE POR ID
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('LOTE_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/lotes/{id}")
     public ResponseEntity<LoteResponseDTO> obtenerLote(
             @PathVariable Integer id) {
@@ -79,11 +67,7 @@ public class LoteController {
         );
     }
 
-    // ============================================================
-    // LOTES POR VENCER
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('LOTE_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/lotes/por-vencer")
     public ResponseEntity<List<LoteResponseDTO>> listarLotesPorVencer(
             @RequestParam(defaultValue = "30") int dias) {
@@ -93,11 +77,7 @@ public class LoteController {
         );
     }
 
-    // ============================================================
-    // LOTES VENCIDOS
-    // ============================================================
-
-    @PreAuthorize("hasAuthority('LOTE_LEER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/lotes/vencidos")
     public ResponseEntity<List<LoteResponseDTO>> listarLotesVencidos() {
 
@@ -106,11 +86,9 @@ public class LoteController {
         );
     }
 
-    // ============================================================
-    // AJUSTAR EXISTENCIAS
-    // ============================================================
+    // AJUSTAR EXISTENCIAS.
 
-    @PreAuthorize("hasAuthority('LOTE_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @PatchMapping("/lotes/{id}/ajustar")
     public ResponseEntity<LoteResponseDTO> ajustarLote(
             @PathVariable Integer id,
@@ -121,11 +99,9 @@ public class LoteController {
         );
     }
 
-    // ============================================================
-    // ACTIVAR / DESACTIVAR LOTE
-    // ============================================================
+    // ACTIVAR / DESACTIVAR LOTE.
 
-    @PreAuthorize("hasAuthority('LOTE_EDITAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @PatchMapping("/lotes/{id}/estado")
     public ResponseEntity<LoteResponseDTO> cambiarEstado(
             @PathVariable Integer id,
@@ -136,11 +112,9 @@ public class LoteController {
         );
     }
 
-    // ============================================================
-    // ELIMINAR LOTE LÓGICAMENTE
-    // ============================================================
+    // ELIMINAR LOTE.
 
-    @PreAuthorize("hasAuthority('LOTE_ELIMINAR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('LOTE_ACCESO') or hasRole('ADMIN')")
     @DeleteMapping("/lotes/{id}")
     public ResponseEntity<Void> eliminarLote(
             @PathVariable Integer id) {

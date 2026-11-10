@@ -25,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -258,9 +257,10 @@ public class PerfilService {
     // ACTUALIZAR PERMISOS DE UN PERFIL
     // ============================================================
 
+    
     public PerfilResponseDTO actualizarPermisos(
-            Integer id,
-            PerfilPermisosRequestDTO request) {
+                Integer id,
+                PerfilPermisosRequestDTO request) {
 
         Perfil perfil = obtenerPerfilBloqueado(id);
 
@@ -268,13 +268,23 @@ public class PerfilService {
         validarPerfilNoEliminado(perfil);
 
         if (request == null || request.getOpcionIds() == null) {
-            throw new BusinessException(
-                    "Debe enviar la lista de permisos del perfil"
-            );
+                throw new BusinessException(
+                        "Debe seleccionar los módulos del perfil"
+                );
         }
 
         Set<Integer> idsSolicitados =
                 new LinkedHashSet<>(request.getOpcionIds());
+
+        Set<String> modulosPermitidos = Set.of(
+                "CLIENTE_ACCESO",
+                "CATEGORIA_ACCESO",
+                "PRODUCTO_ACCESO",
+                "LOTE_ACCESO",
+                "PUNTO_VENTA_ACCESO",
+                "HISTORIAL_VENTAS_ACCESO",
+                "DESCUENTO_ACCESO"
+        );
 
         List<Opcion> opcionesActivas =
                 opcionRepository.findByEstadoOrderByRutaAscNombreAsc(
@@ -285,96 +295,34 @@ public class PerfilService {
 
         for (Opcion opcion : opcionesActivas) {
 
-            if (opcion != null && opcion.getId() != null) {
+                if (opcion != null && opcion.getId() != null) {
                 opcionesPorId.put(opcion.getId(), opcion);
-            }
+                }
         }
-
-        // Verificar que todos los permisos existan y estén activos.
-        for (Integer opcionId : idsSolicitados) {
-
-            if (opcionId == null || !opcionesPorId.containsKey(opcionId)) {
-                throw new BusinessException(
-                        "Uno o más permisos seleccionados no existen "
-                        + "o se encuentran inactivos"
-                );
-            }
-        }
-
-        // Identificar módulos que necesitan el permiso de consulta.
-        Set<String> modulosQueNecesitanLectura = new HashSet<>();
 
         for (Integer opcionId : idsSolicitados) {
 
-            Opcion opcion = opcionesPorId.get(opcionId);
+                Opcion opcion = opcionesPorId.get(opcionId);
 
-            if (opcion == null) {
-                continue;
-            }
-
-            DatosPermiso datos =
-                    obtenerDatosPermiso(opcion.getNombre());
-
-            if (!esPermisoConsulta(datos.accionClave())) {
-
-                modulosQueNecesitanLectura.add(
-                        datos.moduloClave()
-                );
-            }
-        }
-
-        // Agregar automáticamente el permiso de consulta cuando
-        // se selecciona una acción de ese mismo módulo.
-        for (String moduloClave : modulosQueNecesitanLectura) {
-
-            Opcion permisoLectura = null;
-
-            for (Opcion opcion : opcionesActivas) {
-
-                if (opcion == null) {
-                    continue;
-                }
-
-                DatosPermiso datos =
-                        obtenerDatosPermiso(opcion.getNombre());
-
-                if (datos.moduloClave().equals(moduloClave)
-                        && esPermisoConsulta(datos.accionClave())) {
-
-                    permisoLectura = opcion;
-                    break;
-                }
-            }
-
-            if (permisoLectura == null
-                    || permisoLectura.getId() == null) {
+                if (opcion == null ||
+                        !modulosPermitidos.contains(opcion.getNombre())) {
 
                 throw new BusinessException(
-                        "El módulo " + formatearTexto(moduloClave)
-                        + " no tiene un permiso de consulta activo"
+                        "Uno o más módulos seleccionados no están disponibles"
                 );
-            }
-
-            idsSolicitados.add(permisoLectura.getId());
+                }
         }
 
-        // Construir la nueva relación perfil - opciones.
         Set<Opcion> nuevasOpciones = new LinkedHashSet<>();
 
-        for (Opcion opcion : opcionesActivas) {
-
-            if (opcion != null
-                    && opcion.getId() != null
-                    && idsSolicitados.contains(opcion.getId())) {
-
-                nuevasOpciones.add(opcion);
-            }
+        for (Integer opcionId : idsSolicitados) {
+                nuevasOpciones.add(opcionesPorId.get(opcionId));
         }
 
         if (perfil.getOpciones() == null) {
-            perfil.setOpciones(new LinkedHashSet<>());
+                perfil.setOpciones(new LinkedHashSet<>());
         } else {
-            perfil.getOpciones().clear();
+                perfil.getOpciones().clear();
         }
 
         perfil.getOpciones().addAll(nuevasOpciones);
@@ -617,16 +565,6 @@ public class PerfilService {
                 nombre,
                 "ACCEDER"
         );
-    }
-
-    // ============================================================
-    // IDENTIFICAR PERMISO DE CONSULTA
-    // ============================================================
-
-    private boolean esPermisoConsulta(String accion) {
-
-        return "LEER".equals(accion)
-                || "CONSULTAR".equals(accion);
     }
 
     // ============================================================
