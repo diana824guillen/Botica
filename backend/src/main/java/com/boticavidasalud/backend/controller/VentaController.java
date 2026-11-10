@@ -34,7 +34,7 @@ public class VentaController {
     // PREVISUALIZAR VENTA
     // ============================================================
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasAuthority('PUNTO_VENTA_PREVISUALIZAR') or hasRole('ADMIN')")
     @PostMapping("/previsualizacion")
     public ResponseEntity<VentaPrevisualizacionResponseDTO> previsualizarVenta(
             @Valid @RequestBody VentaPrevisualizacionRequestDTO request) {
@@ -48,7 +48,7 @@ public class VentaController {
     // REGISTRAR VENTA
     // ============================================================
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasAuthority('PUNTO_VENTA_REGISTRAR') or hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<VentaResponseDTO> registrarVenta(
             @Valid @RequestBody VentaRequestDTO request) {
@@ -64,7 +64,7 @@ public class VentaController {
     // HISTORIAL GENERAL DE VENTAS
     // ============================================================
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_LEER') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<VentaListadoDTO>> listarVentas(
 
@@ -100,7 +100,7 @@ public class VentaController {
     // CONSULTAR UNA VENTA COMPLETA
     // ============================================================
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_CONSULTAR_DETALLE') or hasRole('ADMIN')")
     @GetMapping("/{idVenta}")
     public ResponseEntity<VentaResponseDTO> obtenerVentaPorId(
             @PathVariable Integer idVenta) {
@@ -114,7 +114,7 @@ public class VentaController {
     // HISTORIAL DE COMPRAS DE UN CLIENTE
     // ============================================================
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_LEER') or hasRole('ADMIN')")
     @GetMapping("/cliente/{idCliente}")
     public ResponseEntity<List<HistorialCompraDTO>> obtenerHistorialCompras(
             @PathVariable Integer idCliente) {

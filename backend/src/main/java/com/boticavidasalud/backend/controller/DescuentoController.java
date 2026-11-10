@@ -4,7 +4,9 @@ import com.boticavidasalud.backend.dto.DescuentoRequestDTO;
 import com.boticavidasalud.backend.dto.DescuentoResponseDTO;
 import com.boticavidasalud.backend.dto.DescuentoUpdateDTO;
 import com.boticavidasalud.backend.service.DescuentoService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,45 +24,87 @@ public class DescuentoController {
         this.descuentoService = descuentoService;
     }
 
-    // Solo el administrador puede gestionar promociones
-    @PreAuthorize("hasRole('ADMIN')")
+    // ============================================================
+    // CREAR DESCUENTO
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('DESCUENTO_CREAR') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<DescuentoResponseDTO> crearDescuento(@Valid @RequestBody DescuentoRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(descuentoService.crearDescuento(request));
+    public ResponseEntity<DescuentoResponseDTO> crearDescuento(
+            @Valid @RequestBody DescuentoRequestDTO request) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(descuentoService.crearDescuento(request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // ============================================================
+    // LISTAR DESCUENTOS
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('DESCUENTO_LEER') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<DescuentoResponseDTO>> listarDescuentos() {
-        return ResponseEntity.ok(descuentoService.listarDescuentos());
+
+        return ResponseEntity.ok(
+                descuentoService.listarDescuentos()
+        );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // ============================================================
+    // OBTENER DESCUENTO POR ID
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('DESCUENTO_LEER') or hasRole('ADMIN')")
     @GetMapping("/{id}")
-    public ResponseEntity<DescuentoResponseDTO> obtenerPorId(@PathVariable Integer id) {
-        return ResponseEntity.ok(descuentoService.obtenerPorId(id));
+    public ResponseEntity<DescuentoResponseDTO> obtenerPorId(
+            @PathVariable Integer id) {
+
+        return ResponseEntity.ok(
+                descuentoService.obtenerPorId(id)
+        );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // ============================================================
+    // ACTUALIZAR DESCUENTO
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('DESCUENTO_EDITAR') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<DescuentoResponseDTO> actualizarDescuento(
-            @PathVariable Integer id, 
+            @PathVariable Integer id,
             @Valid @RequestBody DescuentoUpdateDTO request) {
-        return ResponseEntity.ok(descuentoService.actualizarDescuento(id, request));
+
+        return ResponseEntity.ok(
+                descuentoService.actualizarDescuento(id, request)
+        );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // ============================================================
+    // ACTIVAR / DESACTIVAR DESCUENTO
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('DESCUENTO_EDITAR') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<DescuentoResponseDTO> cambiarEstado(
-            @PathVariable Integer id, 
+            @PathVariable Integer id,
             @RequestParam Short estado) {
-        return ResponseEntity.ok(descuentoService.cambiarEstado(id, estado));
+
+        return ResponseEntity.ok(
+                descuentoService.cambiarEstado(id, estado)
+        );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // ============================================================
+    // ELIMINAR DESCUENTO
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('DESCUENTO_ELIMINAR') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarDescuento(@PathVariable Integer id) {
+    public ResponseEntity<Void> eliminarDescuento(
+            @PathVariable Integer id) {
+
         descuentoService.eliminarLogicamente(id);
+
         return ResponseEntity.noContent().build();
     }
 }
