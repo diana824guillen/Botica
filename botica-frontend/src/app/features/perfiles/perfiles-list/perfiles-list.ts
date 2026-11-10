@@ -2,6 +2,7 @@ import {
   ChangeDetectorRef,
   Component,
   OnInit,
+  OnDestroy,
   inject
 } from '@angular/core';
 
@@ -44,7 +45,7 @@ interface ConfirmacionPerfil {
   templateUrl: './perfiles-list.html',
   styleUrls: ['./perfiles-list.scss']
 })
-export class PerfilesListComponent implements OnInit {
+export class PerfilesListComponent implements OnInit, OnDestroy {
 
   // ============================================================
   // DATOS
@@ -56,7 +57,9 @@ export class PerfilesListComponent implements OnInit {
 
   errorCarga = '';
 
-  mensajeExito = '';
+  mensajeNotificacion = '';
+
+  private notificacionTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // ============================================================
   // BÚSQUEDA Y PAGINACIÓN
@@ -106,6 +109,31 @@ export class PerfilesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarPerfiles();
+  }
+
+  ngOnDestroy(): void {
+    if (this.notificacionTimeout) {
+      clearTimeout(this.notificacionTimeout);
+      this.notificacionTimeout = null;
+    }
+  }
+
+  mostrarNotificacion(mensaje: string): void {
+
+    if (this.notificacionTimeout) {
+      clearTimeout(this.notificacionTimeout);
+    }
+
+    this.mensajeNotificacion = mensaje;
+
+    this.notificacionTimeout = setTimeout(() => {
+
+      this.mensajeNotificacion = '';
+      this.notificacionTimeout = null;
+
+      this.cdr.detectChanges();
+
+    }, 2500);
   }
 
   // ============================================================
@@ -248,10 +276,11 @@ export class PerfilesListComponent implements OnInit {
 
   // Se ejecuta después de guardar desde PerfilModal.
   alGuardarPerfil(): void {
-
-    this.mensajeExito = this.perfilSeleccionado
+    const mensaje = this.perfilSeleccionado
       ? 'Los datos del perfil se actualizaron correctamente.'
       : 'El perfil se registró correctamente.';
+
+    this.mostrarNotificacion(mensaje);
 
     this.cargarPerfiles();
   }
@@ -287,8 +316,9 @@ export class PerfilesListComponent implements OnInit {
         : perfil
     );
 
-    this.mensajeExito =
-      'Los permisos del perfil se actualizaron correctamente.';
+    this.mostrarNotificacion(
+      'Los módulos del perfil se actualizaron correctamente.'
+    );
   }
 
   // ============================================================
@@ -417,12 +447,13 @@ export class PerfilesListComponent implements OnInit {
 
         next: () => {
 
-          this.mensajeExito =
+          this.mostrarNotificacion(
             accion.tipo === 'eliminar'
               ? 'El perfil se eliminó correctamente.'
               : accion.tipo === 'activar'
                 ? 'El perfil se activó correctamente.'
-                : 'El perfil se desactivó correctamente.';
+                : 'El perfil se desactivó correctamente.'
+          );
 
           this.confirmacion = null;
 

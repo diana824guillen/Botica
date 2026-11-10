@@ -5,7 +5,7 @@
 
     <p class="page-description">
       Administra los perfiles del sistema y define a qué módulos
-      y acciones puede acceder cada uno.
+      puede acceder cada uno.
     </p>
   </div>
 
@@ -21,26 +21,19 @@
 </div>
 
 <!-- ========================================================= -->
-<!-- MENSAJE DE ÉXITO -->
+<!-- NOTIFICACIÓN TEMPORAL -->
 <!-- ========================================================= -->
 
 <div
-  class="success-banner"
-  *ngIf="mensajeExito"
+  class="perfil-toast"
+  *ngIf="mensajeNotificacion"
   role="status"
   aria-live="polite"
 >
   <i class="bi bi-check-circle"></i>
 
-  <span>{{ mensajeExito }}</span>
+  {{ mensajeNotificacion }}
 
-  <button
-    type="button"
-    aria-label="Cerrar mensaje"
-    (click)="mensajeExito = ''"
-  >
-    <i class="bi bi-x-lg"></i>
-  </button>
 </div>
 
 <!-- ========================================================= -->
@@ -97,7 +90,7 @@
         <th>Perfil</th>
         <th>Descripción</th>
         <th>Usuarios</th>
-        <th>Permisos</th>
+        <th>Módulos</th>
         <th>Estado</th>
         <th>Acciones</th>
       </tr>
@@ -177,8 +170,8 @@
           {{ perfil.totalUsuarios }}
         </td>
 
-        <!-- PERMISOS -->
-        <td data-label="Permisos">
+        <!-- MÓDULOS -->
+        <td data-label="Módulos">
 
           <span class="permission-count">
 
@@ -186,8 +179,8 @@
 
             {{
               perfil.totalPermisos === 1
-                ? 'permiso'
-                : 'permisos'
+                ? 'módulo'
+                : 'módulos'
             }}
 
           </span>

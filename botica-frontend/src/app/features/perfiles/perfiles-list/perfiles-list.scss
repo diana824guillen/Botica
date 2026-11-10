@@ -48,44 +48,44 @@
   }
 }
 
-/* MENSAJES */
+/* NOTIFICACIÓN TEMPORAL */
 
-.success-banner,
-.load-error {
+.perfil-toast {
+  position: fixed;
+  top: 88px;
+  right: 28px;
+  z-index: 1200;
+
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.55rem;
 
-  margin-bottom: 1rem;
-  padding: 0.85rem 1rem;
+  max-width: min(380px, calc(100vw - 40px));
+  padding: 0.8rem 1rem;
 
-  border-radius: v.$radius-md;
+  color: #087443;
+  background: #ecfdf3;
+  border: 1px solid #b7ebce;
+  border-radius: 9px;
 
-  span {
-    flex: 1;
-  }
+  box-shadow: 0 5px 18px rgb(0 0 0 / 12%);
 
-  button {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
 
-    padding: 0.4rem 0.65rem;
-
-    color: inherit;
-    background: transparent;
-    border: 1px solid currentColor;
-    border-radius: v.$radius-md;
-
-    cursor: pointer;
-  }
+  animation: perfilToastEntrada 0.2s ease;
 }
 
-.success-banner {
-  color: #065f46;
-  background: #d1fae5;
-  border: 1px solid #a7f3d0;
+@keyframes perfilToastEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .load-error {
@@ -562,6 +562,12 @@
     button {
       width: 100%;
     }
+  }
+
+  .perfil-toast {
+    top: 82px;
+    right: 12px;
+    max-width: calc(100vw - 24px);
   }
 }
 
