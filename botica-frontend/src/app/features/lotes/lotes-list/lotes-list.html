@@ -16,7 +16,7 @@
   <button
     type="button"
     class="btn-primary"
-    *appHasPermission="'LOTE_CREAR'"
+    *appHasPermission="'LOTE_ACCESO'"
     (click)="abrirModalIngreso()"
   >
     <i class="bi bi-plus-circle"></i>
@@ -257,7 +257,7 @@
           <button
             type="button"
             class="action-btn adjust"
-            *appHasPermission="'LOTE_EDITAR'"
+            *appHasPermission="'LOTE_ACCESO'"
             title="Ajustar existencias"
             aria-label="Ajustar existencias"
             [disabled]="lote.estado !== 1 || procesando"
@@ -270,7 +270,7 @@
           <button
             type="button"
             class="action-btn toggle"
-            *appHasPermission="'LOTE_EDITAR'"
+            *appHasPermission="'LOTE_ACCESO'"
             [title]="
               lote.estado === 1
                 ? 'Desactivar lote'
@@ -298,7 +298,7 @@
           <button
             type="button"
             class="action-btn delete"
-            *appHasPermission="'LOTE_ELIMINAR'"
+            *appHasPermission="'LOTE_ACCESO'"
             title="Eliminar lote"
             aria-label="Eliminar lote"
             [disabled]="procesando"

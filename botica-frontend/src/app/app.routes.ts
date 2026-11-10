@@ -5,6 +5,8 @@ import { DashboardComponent } from './features/dashboard/dashboard/dashboard';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout';
 
 import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 import { ClientesListComponent } from './features/clientes/clientes-list/clientes-list';
 import { CategoriasListComponent } from './features/categorias/categorias-list/categorias-list';
@@ -16,7 +18,6 @@ import { VentasPosComponent } from './features/ventas/ventas-pos/ventas-pos';
 import { VentasHistorialComponent } from './features/ventas/ventas-historial/ventas-historial';
 
 import { PerfilesListComponent } from './features/perfiles/perfiles-list/perfiles-list';
-import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
 
@@ -45,37 +46,58 @@ export const routes: Routes = [
 
       {
         path: 'ventas',
-        component: VentasPosComponent
+        component: VentasPosComponent,
+        canActivate: [
+          permissionGuard('PUNTO_VENTA_ACCESO')
+        ]
       },
 
       {
         path: 'historial-ventas',
-        component: VentasHistorialComponent
+        component: VentasHistorialComponent,
+        canActivate: [
+          permissionGuard('HISTORIAL_VENTAS_ACCESO')
+        ]
       },
 
       {
         path: 'clientes',
-        component: ClientesListComponent
+        component: ClientesListComponent,
+        canActivate: [
+          permissionGuard('CLIENTE_ACCESO')
+        ]
       },
 
       {
         path: 'categorias',
-        component: CategoriasListComponent
+        component: CategoriasListComponent,
+        canActivate: [
+          permissionGuard('CATEGORIA_ACCESO')
+        ]
       },
 
       {
         path: 'productos',
-        component: ProductosListComponent
+        component: ProductosListComponent,
+        canActivate: [
+          permissionGuard('PRODUCTO_ACCESO')
+        ]
       },
 
       {
         path: 'lotes',
-        component: LotesListComponent
+        component: LotesListComponent,
+        canActivate: [
+          permissionGuard('LOTE_ACCESO')
+        ]
       },
 
       {
         path: 'descuentos',
-        component: DescuentosListComponent
+        component: DescuentosListComponent,
+        canActivate: [
+          permissionGuard('DESCUENTO_ACCESO')
+        ]
       },
 
       {

@@ -12,7 +12,7 @@
   <button
     type="button"
     class="btn-primary"
-    *appHasPermission="'PRODUCTO_CREAR'"
+    *appHasPermission="'PRODUCTO_ACCESO'"
     (click)="abrirModalProducto()"
   >
     <i class="bi bi-plus-circle"></i>
@@ -197,7 +197,7 @@
           <button
             type="button"
             class="action-btn edit"
-            *appHasPermission="'PRODUCTO_EDITAR'"
+            *appHasPermission="'PRODUCTO_ACCESO'"
             title="Editar producto"
             aria-label="Editar producto"
             (click)="abrirModalProducto(producto)"
@@ -209,7 +209,7 @@
           <button
             type="button"
             class="action-btn presentations"
-            *appHasPermission="'PRODUCTO_EDITAR'"
+            *appHasPermission="'PRODUCTO_ACCESO'"
             title="Gestionar presentaciones"
             aria-label="Gestionar presentaciones"
             (click)="abrirModalPresentaciones(producto)"
@@ -221,7 +221,7 @@
           <button
             type="button"
             class="action-btn toggle"
-            *appHasPermission="'PRODUCTO_EDITAR'"
+            *appHasPermission="'PRODUCTO_ACCESO'"
             [title]="
               producto.estado === 1
                 ? 'Desactivar producto'
@@ -253,7 +253,7 @@
           <button
             type="button"
             class="action-btn delete"
-            *appHasPermission="'PRODUCTO_ELIMINAR'"
+            *appHasPermission="'PRODUCTO_ACCESO'"
             title="Eliminar producto"
             aria-label="Eliminar producto"
             (click)="solicitarEliminacion(producto)"

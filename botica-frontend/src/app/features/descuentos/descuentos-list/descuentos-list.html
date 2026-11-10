@@ -13,7 +13,7 @@
   <button
     type="button"
     class="btn-primary"
-    *appHasPermission="'DESCUENTO_CREAR'"
+    *appHasPermission="'DESCUENTO_ACCESO'"
     (click)="abrirModal()"
   >
     <i class="bi bi-plus-circle"></i>
@@ -164,7 +164,7 @@
           <button
             type="button"
             class="action-btn edit"
-            *appHasPermission="'DESCUENTO_EDITAR'"
+            *appHasPermission="'DESCUENTO_ACCESO'"
             title="Editar promoción"
             aria-label="Editar promoción"
             (click)="abrirModal(descuento)"
@@ -176,7 +176,7 @@
           <button
             type="button"
             class="action-btn toggle"
-            *appHasPermission="'DESCUENTO_EDITAR'"
+            *appHasPermission="'DESCUENTO_ACCESO'"
             [title]="
               descuento.estado === 1
                 ? 'Desactivar promoción'
@@ -208,7 +208,7 @@
           <button
             type="button"
             class="action-btn delete"
-            *appHasPermission="'DESCUENTO_ELIMINAR'"
+            *appHasPermission="'DESCUENTO_ACCESO'"
             title="Eliminar promoción"
             aria-label="Eliminar promoción"
             (click)="solicitarEliminacion(descuento)"

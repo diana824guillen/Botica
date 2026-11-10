@@ -12,7 +12,7 @@
 
   <button
     class="btn-primary"
-    *appHasPermission="'CLIENTE_CREAR'"
+    *appHasPermission="'CLIENTE_ACCESO'"
     (click)="abrirModal()"
   >
     <i class="bi bi-person-plus"></i>
@@ -111,7 +111,7 @@
           <button
             type="button"
             class="action-btn edit"
-            *appHasPermission="'CLIENTE_EDITAR'"
+            *appHasPermission="'CLIENTE_ACCESO'"
             (click)="abrirModal(c)"
             title="Editar datos"
             aria-label="Editar cliente"
@@ -123,7 +123,7 @@
           <button
             type="button"
             class="action-btn toggle"
-            *appHasPermission="'CLIENTE_EDITAR'"
+            *appHasPermission="'CLIENTE_ACCESO'"
             (click)="
               solicitarCambioEstado(
                 c,
@@ -155,7 +155,7 @@
           <button
             type="button"
             class="action-btn delete"
-            *appHasPermission="'CLIENTE_ELIMINAR'"
+            *appHasPermission="'CLIENTE_ACCESO'"
             title="Eliminar cliente"
             aria-label="Eliminar cliente"
             (click)="solicitarEliminacion(c)"

@@ -1,42 +1,45 @@
-import { Directive, Input, TemplateRef, ViewContainerRef, OnInit } from '@angular/core';
+import {
+  Directive,
+  Input,
+  OnInit,
+  TemplateRef,
+  ViewContainerRef,
+  inject
+} from '@angular/core';
+
+import { AuthService } from '../services/auth.service';
 
 @Directive({
   selector: '[appHasPermission]',
   standalone: true
 })
 export class HasPermissionDirective implements OnInit {
+
   @Input() appHasPermission: string | string[] = [];
 
+  private readonly authService = inject(AuthService);
+
   constructor(
-    private templateRef: TemplateRef<any>,
-    private viewContainer: ViewContainerRef
+    private readonly templateRef: TemplateRef<unknown>,
+    private readonly viewContainer: ViewContainerRef
   ) {}
 
-  ngOnInit() {
-    const user = localStorage.getItem('user');
-    if (!user) return;
+  ngOnInit(): void {
 
-    const userData = JSON.parse(user);
-    const userPermissions: string[] = userData.permisos || [];
-    const requiredPermissions = Array.isArray(this.appHasPermission) 
-      ? this.appHasPermission 
-      : [this.appHasPermission];
+    this.viewContainer.clear();
 
-    // Si es ADMIN, tiene acceso a todo
-    if (userData.perfil === 'ADMIN') {
-      this.viewContainer.createEmbeddedView(this.templateRef);
-      return;
-    }
+    if (
+      this.authService.hasAnyPermission(
+        this.appHasPermission
+      )
+    ) {
 
-    // Verificamos si el usuario tiene el permiso
-    const hasPermission = requiredPermissions.some(p => userPermissions.includes(p));
-
-    if (hasPermission) {
-      this.viewContainer.createEmbeddedView(this.templateRef);
-    } else {
-      this.viewContainer.clear(); // Lo borra del DOM
+      this.viewContainer.createEmbeddedView(
+        this.templateRef
+      );
     }
   }
+
 }
 
 

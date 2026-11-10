@@ -664,6 +664,59 @@ export class AuthService {
     }
   }
 
+  getUserPermissions(): string[] {
+
+    const user = localStorage.getItem('user');
+
+    if (!user) {
+      return [];
+    }
+
+    try {
+
+      const permisos = JSON.parse(user).permisos;
+
+      return Array.isArray(permisos)
+        ? permisos.filter(
+            (permiso: unknown): permiso is string =>
+              typeof permiso === 'string'
+          )
+        : [];
+
+    } catch {
+
+      return [];
+    }
+  }
+
+  hasPermission(permission: string): boolean {
+
+    if (this.getUserRole() === 'ADMIN') {
+      return true;
+    }
+
+    return this.getUserPermissions().includes(permission);
+  }
+
+  hasAnyPermission(
+    requiredPermissions: string | string[]
+  ): boolean {
+
+    if (this.getUserRole() === 'ADMIN') {
+      return true;
+    }
+
+    const requeridos = Array.isArray(requiredPermissions)
+      ? requiredPermissions
+      : [requiredPermissions];
+
+    const permisosUsuario = this.getUserPermissions();
+
+    return requeridos.some(permiso =>
+      permisosUsuario.includes(permiso)
+    );
+  }
+
   // ============================================================
   // RUTA DESPUÉS DE INICIAR SESIÓN
   // ============================================================

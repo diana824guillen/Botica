@@ -16,7 +16,7 @@ interface MenuItem {
   label: string;
   route: string;
   icon: string;
-  roles: string[];
+  roles?: string[];
   permission?: string;
 }
 
@@ -45,7 +45,6 @@ export class AdminLayoutComponent {
 
   userRole = '';
   userName = '';
-  userPermissions: string[] = [];
 
   // ============================================================
   // ESTADO DE LA INTERFAZ
@@ -53,15 +52,13 @@ export class AdminLayoutComponent {
 
   isSidebarOpen = true;
 
-  // Estado del aviso de expiración.
   sessionWarning$ = this.authService.sessionWarning$;
 
-  // Cuenta regresiva.
   sessionSecondsRemaining$ =
     this.authService.sessionSecondsRemaining$;
 
-  // Indica si se está esperando una operación activa.
-  sessionClosing$ = this.authService.sessionClosing$;
+  sessionClosing$ =
+    this.authService.sessionClosing$;
 
   // ============================================================
   // ELEMENTOS DEL MENÚ
@@ -72,61 +69,56 @@ export class AdminLayoutComponent {
     {
       label: 'Inicio',
       route: '/dashboard',
-      icon: 'bi-house-door',
-      roles: ['ADMIN', 'VENDEDOR']
+      icon: 'bi-house-door'
     },
 
     {
       label: 'Punto de Venta',
       route: '/ventas',
       icon: 'bi-cart3',
-      roles: ['ADMIN', 'VENDEDOR']
+      permission: 'PUNTO_VENTA_ACCESO'
     },
 
     {
       label: 'Historial de ventas',
       route: '/historial-ventas',
       icon: 'bi-receipt',
-      roles: ['ADMIN', 'VENDEDOR']
+      permission: 'HISTORIAL_VENTAS_ACCESO'
     },
 
     {
       label: 'Clientes',
       route: '/clientes',
       icon: 'bi-people',
-      roles: ['ADMIN', 'VENDEDOR']
+      permission: 'CLIENTE_ACCESO'
     },
 
     {
       label: 'Categorías',
       route: '/categorias',
       icon: 'bi-tags',
-      roles: ['ADMIN'],
-      permission: 'CATEGORIA_LEER'
+      permission: 'CATEGORIA_ACCESO'
     },
 
     {
       label: 'Productos',
       route: '/productos',
       icon: 'bi-box-seam',
-      roles: ['ADMIN'],
-      permission: 'PRODUCTO_LEER'
+      permission: 'PRODUCTO_ACCESO'
     },
 
     {
       label: 'Lotes',
       route: '/lotes',
       icon: 'bi-boxes',
-      roles: ['ADMIN', 'VENDEDOR'],
-      permission: 'LOTE_LEER'
+      permission: 'LOTE_ACCESO'
     },
 
     {
       label: 'Descuentos',
       route: '/descuentos',
       icon: 'bi-percent',
-      roles: ['ADMIN'],
-      permission: 'DESCUENTO_LEER'
+      permission: 'DESCUENTO_ACCESO'
     },
 
     {
@@ -171,10 +163,6 @@ export class AdminLayoutComponent {
         this.userName =
           `${userData.nombres || ''} ${userData.apellidos || ''}`.trim();
 
-        this.userPermissions = Array.isArray(userData.permisos)
-          ? userData.permisos
-          : [];
-
       } catch (error) {
 
         console.error(
@@ -193,13 +181,23 @@ export class AdminLayoutComponent {
 
     return this.menuItems.filter(item => {
 
+      // Los módulos requieren su permiso correspondiente.
       if (item.permission) {
 
-        return this.userRole === 'ADMIN' ||
-          this.userPermissions.includes(item.permission);
+        return this.authService.hasPermission(
+          item.permission
+        );
       }
 
-      return item.roles.includes(this.userRole);
+      // Las opciones administrativas dependen del rol.
+      if (item.roles) {
+
+        return item.roles.includes(this.userRole);
+      }
+
+      // Inicio está disponible para cualquier usuario
+      // que haya iniciado sesión.
+      return true;
     });
   }
 
@@ -213,7 +211,7 @@ export class AdminLayoutComponent {
   }
 
   // ============================================================
-  // CERRAR SESIÓN VOLUNTARIAMENTE
+  // CERRAR SESIÓN
   // ============================================================
 
   cerrarSesion(): void {
