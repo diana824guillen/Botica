@@ -15,6 +15,9 @@ import { DescuentosListComponent } from './features/descuentos/descuentos-list/d
 import { VentasPosComponent } from './features/ventas/ventas-pos/ventas-pos';
 import { VentasHistorialComponent } from './features/ventas/ventas-historial/ventas-historial';
 
+import { PerfilesListComponent } from './features/perfiles/perfiles-list/perfiles-list';
+import { adminGuard } from './core/guards/admin.guard';
+
 export const routes: Routes = [
 
   {
@@ -73,6 +76,12 @@ export const routes: Routes = [
       {
         path: 'descuentos',
         component: DescuentosListComponent
+      },
+
+      {
+        path: 'perfiles',
+        component: PerfilesListComponent,
+        canActivate: [adminGuard]
       }
 
     ]

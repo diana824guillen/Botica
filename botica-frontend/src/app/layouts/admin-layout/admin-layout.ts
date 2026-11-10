@@ -130,6 +130,13 @@ export class AdminLayoutComponent {
     },
 
     {
+      label: 'Perfiles y permisos',
+      route: '/perfiles',
+      icon: 'bi-shield-lock',
+      roles: ['ADMIN']
+    },
+
+    {
       label: 'Reportes',
       route: '/reportes',
       icon: 'bi-bar-chart',

@@ -1,0 +1,257 @@
+<div
+  class="modal-backdrop"
+  (click)="cerrarModal()"
+>
+
+  <section
+    class="modal-card permissions-modal card"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Gestionar permisos del perfil"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- ENCABEZADO -->
+    <div class="modal-header">
+
+      <div>
+        <h3>Gestionar permisos</h3>
+
+        <p>
+          Perfil:
+          <strong>{{ perfil.nombre }}</strong>
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrarModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <!-- RESUMEN DE SELECCIÓN -->
+    <div class="permissions-summary">
+
+      <div>
+        <i class="bi bi-shield-check"></i>
+
+        <strong>
+          {{ totalPermisosSeleccionados }}
+
+          {{
+            totalPermisosSeleccionados === 1
+              ? 'permiso seleccionado'
+              : 'permisos seleccionados'
+          }}
+        </strong>
+      </div>
+
+      <p>
+        Selecciona los módulos y las acciones que podrá utilizar este perfil.
+      </p>
+
+    </div>
+
+    <!-- INFORMACIÓN -->
+    <div class="info-banner">
+
+      <i class="bi bi-info-circle"></i>
+
+      <span>
+        Al seleccionar una acción, el permiso
+        <strong>Consultar</strong> del mismo módulo se agregará automáticamente.
+
+        Puedes dejar este perfil sin permisos si así lo necesitas.
+      </span>
+
+    </div>
+
+    <!-- CARGANDO -->
+    <div
+      class="permissions-loading"
+      *ngIf="isLoading"
+    >
+      <i class="bi bi-arrow-repeat"></i>
+
+      Cargando permisos disponibles...
+    </div>
+
+    <!-- ERROR DE CARGA -->
+    <div
+      class="error-banner"
+      *ngIf="!isLoading && errorCarga"
+      role="alert"
+      aria-live="polite"
+    >
+
+      <i class="bi bi-exclamation-circle"></i>
+
+      <span>{{ errorCarga }}</span>
+
+      <button
+        type="button"
+        (click)="cargarOpciones()"
+        [disabled]="isLoading"
+      >
+        Reintentar
+      </button>
+
+    </div>
+
+    <!-- ERROR AL GUARDAR -->
+    <div
+      class="error-banner"
+      *ngIf="errorMessage"
+      role="alert"
+      aria-live="polite"
+    >
+
+      <i class="bi bi-exclamation-circle"></i>
+
+      <span>{{ errorMessage }}</span>
+
+    </div>
+
+    <!-- MÓDULOS Y PERMISOS -->
+    <div
+      class="permissions-content"
+      *ngIf="
+        !isLoading
+        && !errorCarga
+        && gruposOpciones.length > 0
+      "
+    >
+
+      <section
+        class="permission-group"
+        *ngFor="let grupo of gruposOpciones"
+      >
+
+        <!-- Nombre del módulo -->
+        <div class="permission-group-header">
+
+          <h4>{{ grupo.modulo }}</h4>
+
+          <span>
+            {{ grupo.opciones.length }}
+
+            {{
+              grupo.opciones.length === 1
+                ? 'acción'
+                : 'acciones'
+            }}
+          </span>
+
+        </div>
+
+        <!-- Acciones del módulo -->
+        <div class="permission-options">
+
+          <label
+            class="permission-option"
+            *ngFor="let opcion of grupo.opciones"
+            [class.selected]="estaSeleccionado(opcion)"
+            [class.permission-disabled]="
+              isSaving
+              ||
+              (
+                esPermisoConsulta(opcion)
+                && tieneAccionesSeleccionadas(grupo.modulo)
+              )
+            "
+          >
+
+            <input
+              type="checkbox"
+              [checked]="estaSeleccionado(opcion)"
+              [disabled]="
+                isSaving
+                ||
+                (
+                  esPermisoConsulta(opcion)
+                  && tieneAccionesSeleccionadas(grupo.modulo)
+                )
+              "
+              (change)="
+                alternarPermiso(
+                  opcion,
+                  $any($event.target).checked
+                )
+              "
+            />
+
+            <span class="permission-label">
+              {{ opcion.accion }}
+            </span>
+
+            <span
+              class="permission-code"
+              [title]="opcion.nombre"
+            >
+              {{ opcion.nombre }}
+            </span>
+
+          </label>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- SIN PERMISOS DISPONIBLES -->
+    <div
+      class="empty-permissions"
+      *ngIf="
+        !isLoading
+        && !errorCarga
+        && gruposOpciones.length === 0
+      "
+    >
+
+      <i class="bi bi-shield-x"></i>
+
+      <p>
+        No hay permisos activos disponibles para asignar.
+      </p>
+
+    </div>
+
+    <!-- BOTONES -->
+    <div class="modal-footer">
+
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="isSaving"
+        (click)="cerrarModal()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="isLoading || isSaving || !!errorCarga"
+        (click)="guardarPermisos()"
+      >
+        {{
+          isSaving
+            ? 'Guardando permisos...'
+            : 'Guardar permisos'
+        }}
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+

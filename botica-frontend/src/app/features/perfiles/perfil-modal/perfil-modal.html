@@ -1,0 +1,196 @@
+<div
+  class="modal-backdrop"
+  (click)="cerrarModal()"
+>
+
+  <section
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="
+      perfilEditar
+        ? 'Editar perfil'
+        : 'Registrar nuevo perfil'
+    "
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- Encabezado -->
+    <div class="modal-header">
+
+      <div>
+        <h3>
+          {{
+            perfilEditar
+              ? 'Editar perfil'
+              : 'Registrar nuevo perfil'
+          }}
+        </h3>
+
+        <p>
+          {{
+            perfilEditar
+              ? 'Actualiza los datos generales del perfil.'
+              : 'Registra un perfil para organizar los accesos al sistema.'
+          }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrarModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <!-- Formulario -->
+    <form
+      [formGroup]="perfilForm"
+      (ngSubmit)="guardar()"
+      novalidate
+    >
+
+      <!-- Nombre -->
+      <div class="form-group">
+
+        <label for="nombrePerfil">
+          Nombre del perfil
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="nombrePerfil"
+          type="text"
+          formControlName="nombre"
+          maxlength="50"
+          autocomplete="off"
+          placeholder="Ej. ENCARGADO"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            perfilForm.get('nombre')?.touched
+            && perfilForm.get('nombre')?.hasError('required')
+          "
+        >
+          El nombre del perfil es obligatorio.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            perfilForm.get('nombre')?.touched
+            && perfilForm.get('nombre')?.hasError('pattern')
+          "
+        >
+          El nombre no puede contener solamente espacios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            perfilForm.get('nombre')?.touched
+            && perfilForm.get('nombre')?.hasError('maxlength')
+          "
+        >
+          El nombre no puede superar los 50 caracteres.
+        </span>
+
+      </div>
+
+      <!-- Descripción -->
+      <div class="form-group">
+
+        <label for="descripcionPerfil">
+          Descripción
+          <span class="optional">(Opcional)</span>
+        </label>
+
+        <textarea
+          id="descripcionPerfil"
+          formControlName="descripcion"
+          maxlength="255"
+          rows="4"
+          placeholder="Describe brevemente la función de este perfil"
+        ></textarea>
+
+        <span
+          class="error-text"
+          *ngIf="
+            perfilForm.get('descripcion')?.touched
+            && perfilForm.get('descripcion')?.hasError('maxlength')
+          "
+        >
+          La descripción no puede superar los 255 caracteres.
+        </span>
+
+      </div>
+
+      <!-- Información -->
+      <div class="info-banner" *ngIf="!perfilEditar">
+
+        <i class="bi bi-info-circle"></i>
+
+        <span>
+          Los perfiles nuevos se registran sin permisos.
+          Podrás asignarlos después desde la opción
+          <strong>Gestionar permisos</strong>.
+        </span>
+
+      </div>
+
+      <!-- Error -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+
+        <i class="bi bi-exclamation-circle"></i>
+
+        <span>{{ errorMessage }}</span>
+
+      </div>
+
+      <!-- Botones -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isSaving"
+          (click)="cerrarModal()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="perfilForm.invalid || isSaving"
+        >
+          {{
+            isSaving
+              ? 'Guardando...'
+              : perfilEditar
+                ? 'Guardar cambios'
+                : 'Registrar perfil'
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  </section>
+
+</div>
+
+

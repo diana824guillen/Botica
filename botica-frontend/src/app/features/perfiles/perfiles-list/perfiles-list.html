@@ -1,0 +1,461 @@
+<div class="page-header">
+
+  <div>
+    <h2>Gestión de Perfiles y Permisos</h2>
+
+    <p class="page-description">
+      Administra los perfiles del sistema y define a qué módulos
+      y acciones puede acceder cada uno.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    class="btn-primary"
+    (click)="abrirModalPerfil()"
+  >
+    <i class="bi bi-plus-circle"></i>
+    Nuevo perfil
+  </button>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- MENSAJE DE ÉXITO -->
+<!-- ========================================================= -->
+
+<div
+  class="success-banner"
+  *ngIf="mensajeExito"
+  role="status"
+  aria-live="polite"
+>
+  <i class="bi bi-check-circle"></i>
+
+  <span>{{ mensajeExito }}</span>
+
+  <button
+    type="button"
+    aria-label="Cerrar mensaje"
+    (click)="mensajeExito = ''"
+  >
+    <i class="bi bi-x-lg"></i>
+  </button>
+</div>
+
+<!-- ========================================================= -->
+<!-- BUSCADOR -->
+<!-- ========================================================= -->
+
+<div class="search-bar card">
+
+  <i class="bi bi-search"></i>
+
+  <input
+    type="text"
+    [(ngModel)]="searchTerm"
+    (ngModelChange)="onSearchChange()"
+    placeholder="Buscar por nombre o descripción..."
+    aria-label="Buscar perfiles"
+  />
+
+</div>
+
+<!-- ========================================================= -->
+<!-- ERROR DE CARGA -->
+<!-- ========================================================= -->
+
+<div
+  class="load-error"
+  *ngIf="errorCarga && !isLoading"
+  role="alert"
+  aria-live="polite"
+>
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarPerfiles()"
+  >
+    Reintentar
+  </button>
+</div>
+
+<!-- ========================================================= -->
+<!-- TABLA DE PERFILES -->
+<!-- ========================================================= -->
+
+<div class="table-container card">
+
+  <table class="responsive-table">
+
+    <thead>
+
+      <tr>
+        <th>Perfil</th>
+        <th>Descripción</th>
+        <th>Usuarios</th>
+        <th>Permisos</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+
+    </thead>
+
+    <tbody>
+
+      <!-- CARGANDO -->
+      <tr *ngIf="isLoading">
+
+        <td colspan="6" class="text-center">
+          Cargando perfiles...
+        </td>
+
+      </tr>
+
+      <!-- ERROR -->
+      <tr *ngIf="!isLoading && errorCarga">
+
+        <td colspan="6" class="text-center">
+          No se pudo cargar la información.
+        </td>
+
+      </tr>
+
+      <!-- SIN RESULTADOS -->
+      <tr
+        *ngIf="
+          !isLoading
+          && !errorCarga
+          && perfilesFiltrados.length === 0
+        "
+      >
+
+        <td colspan="6" class="text-center">
+
+          {{
+            searchTerm
+              ? 'No se encontraron perfiles con esa búsqueda.'
+              : 'Todavía no hay perfiles registrados.'
+          }}
+
+        </td>
+
+      </tr>
+
+      <!-- REGISTROS -->
+      <tr *ngFor="let perfil of perfilesPaginados">
+
+        <!-- PERFIL -->
+        <td data-label="Perfil">
+
+          <div class="profile-name">
+
+            <strong>{{ perfil.nombre }}</strong>
+
+            <span
+              class="protected-badge"
+              *ngIf="perfil.protegido"
+            >
+              <i class="bi bi-shield-lock-fill"></i>
+              Protegido
+            </span>
+
+          </div>
+
+        </td>
+
+        <!-- DESCRIPCIÓN -->
+        <td data-label="Descripción">
+          {{ perfil.descripcion || 'Sin descripción' }}
+        </td>
+
+        <!-- USUARIOS -->
+        <td data-label="Usuarios">
+          {{ perfil.totalUsuarios }}
+        </td>
+
+        <!-- PERMISOS -->
+        <td data-label="Permisos">
+
+          <span class="permission-count">
+
+            {{ perfil.totalPermisos }}
+
+            {{
+              perfil.totalPermisos === 1
+                ? 'permiso'
+                : 'permisos'
+            }}
+
+          </span>
+
+        </td>
+
+        <!-- ESTADO -->
+        <td data-label="Estado">
+
+          <span
+            class="status-badge"
+            [ngClass]="
+              perfil.estado === 1
+                ? 'active'
+                : 'inactive'
+            "
+          >
+
+            {{
+              perfil.estado === 1
+                ? 'Activo'
+                : 'Inactivo'
+            }}
+
+          </span>
+
+        </td>
+
+        <!-- ACCIONES -->
+        <td data-label="Acciones" class="actions-cell">
+
+          <!-- GESTIONAR PERMISOS -->
+          <button
+            type="button"
+            class="action-btn permissions"
+            *ngIf="!perfil.protegido"
+            title="Gestionar permisos"
+            aria-label="Gestionar permisos"
+            (click)="abrirModalPermisos(perfil)"
+          >
+            <i class="bi bi-shield-check"></i>
+          </button>
+
+          <!-- EDITAR -->
+          <button
+            type="button"
+            class="action-btn edit"
+            *ngIf="!perfil.protegido"
+            title="Editar perfil"
+            aria-label="Editar perfil"
+            (click)="abrirModalPerfil(perfil)"
+          >
+            <i class="bi bi-pencil-square"></i>
+          </button>
+
+          <!-- ACTIVAR / DESACTIVAR -->
+          <button
+            type="button"
+            class="action-btn toggle"
+            *ngIf="!perfil.protegido"
+            [title]="
+              perfil.estado === 1
+                ? 'Desactivar perfil'
+                : 'Activar perfil'
+            "
+            [attr.aria-label]="
+              perfil.estado === 1
+                ? 'Desactivar perfil'
+                : 'Activar perfil'
+            "
+            (click)="
+              solicitarCambioEstado(
+                perfil,
+                perfil.estado === 1 ? 0 : 1
+              )
+            "
+          >
+
+            <i
+              class="bi"
+              [ngClass]="
+                perfil.estado === 1
+                  ? 'bi-x-circle'
+                  : 'bi-check-circle'
+              "
+            ></i>
+
+          </button>
+
+          <!-- ELIMINAR -->
+          <button
+            type="button"
+            class="action-btn delete"
+            *ngIf="!perfil.protegido"
+            title="Eliminar perfil"
+            aria-label="Eliminar perfil"
+            (click)="solicitarEliminacion(perfil)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+
+          <!-- ADMIN PROTEGIDO -->
+          <span
+            class="protected-action"
+            *ngIf="perfil.protegido"
+            title="Este perfil no se puede modificar"
+          >
+            <i class="bi bi-lock-fill"></i>
+            No modificable
+          </span>
+
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+  <!-- ======================================================= -->
+  <!-- PAGINACIÓN -->
+  <!-- ======================================================= -->
+
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0 && !isLoading && !errorCarga"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
+    </button>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL DE REGISTRO Y EDICIÓN -->
+<!-- ========================================================= -->
+
+<app-perfil-modal
+  *ngIf="mostrarModalPerfil"
+  [perfilEditar]="perfilSeleccionado"
+  (cerrar)="cerrarModalPerfil()"
+  (guardado)="alGuardarPerfil()"
+>
+</app-perfil-modal>
+
+<!-- ========================================================= -->
+<!-- MODAL DE ASIGNACIÓN DE PERMISOS -->
+<!-- ========================================================= -->
+
+<app-permisos-modal
+  *ngIf="perfilPermisosSeleccionado as perfil"
+  [perfil]="perfil"
+  (cerrar)="cerrarModalPermisos()"
+  (guardado)="actualizarPerfilEnLista($event)"
+>
+</app-permisos-modal>
+
+<!-- ========================================================= -->
+<!-- MODAL DE CONFIRMACIÓN -->
+<!-- ========================================================= -->
+
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- ICONO -->
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+
+    </div>
+
+    <!-- TÍTULO -->
+    <h3>{{ confirmacion.titulo }}</h3>
+
+    <!-- MENSAJE -->
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <!-- PERFIL -->
+    <p class="confirm-profile-name">
+      {{ confirmacion.nombre }}
+    </p>
+
+    <!-- ERROR -->
+    <div
+      class="confirm-error"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <!-- BOTONES -->
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-cancel"
+        [disabled]="procesandoConfirmacion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoConfirmacion"
+        (click)="confirmarAccion()"
+      >
+
+        {{
+          procesandoConfirmacion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+
