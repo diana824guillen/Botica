@@ -1,14 +1,18 @@
 import {
   Component,
+  OnDestroy,
   inject
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
 import {
+  NavigationEnd,
   RouterModule,
   Router
 } from '@angular/router';
+
+import { filter, Subscription } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
 
@@ -30,7 +34,7 @@ interface MenuItem {
   templateUrl: './admin-layout.html',
   styleUrls: ['./admin-layout.scss']
 })
-export class AdminLayoutComponent {
+export class AdminLayoutComponent implements OnDestroy {
 
   // ============================================================
   // SERVICIOS
@@ -38,6 +42,10 @@ export class AdminLayoutComponent {
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+
+  private permisosSubscription: Subscription | null = null;
+
+  private navegacionSubscription: Subscription | null = null;
 
   // ============================================================
   // DATOS DEL USUARIO
@@ -171,6 +179,42 @@ export class AdminLayoutComponent {
         );
       }
     }
+
+    // Escuchar los cambios de permisos.
+    this.permisosSubscription =
+      this.authService.permissions$.subscribe(() => {
+
+        this.verificarAccesoRutaActual();
+      });
+
+    // Comprobar nuevamente la ruta cuando termina una navegación.
+    this.navegacionSubscription =
+      this.router.events
+        .pipe(
+          filter(event => event instanceof NavigationEnd)
+        )
+        .subscribe(() => {
+
+          // Esperar a que finalice la navegación actual.
+          setTimeout(() => {
+            this.verificarAccesoRutaActual();
+          }, 0);
+        });
+  }
+
+  // ============================================================
+  // DESTRUIR SUSCRIPCIONES
+  // ============================================================
+
+  ngOnDestroy(): void {
+
+    this.permisosSubscription?.unsubscribe();
+
+    this.navegacionSubscription?.unsubscribe();
+
+    this.permisosSubscription = null;
+
+    this.navegacionSubscription = null;
   }
 
   // ============================================================
@@ -199,6 +243,45 @@ export class AdminLayoutComponent {
       // que haya iniciado sesión.
       return true;
     });
+  }
+
+  // ============================================================
+  // VERIFICAR ACCESO A LA RUTA ACTUAL
+  // ============================================================
+
+  private verificarAccesoRutaActual(): void {
+
+    // No comprobar mientras existe una navegación en curso.
+    if (this.router.getCurrentNavigation()) {
+      return;
+    }
+
+    const rutaActual = this.router.url
+      .split('?')[0]
+      .split('#')[0];
+
+    const moduloActual = this.menuItems.find(item => {
+
+      if (!item.permission) {
+        return false;
+      }
+
+      return (
+        rutaActual === item.route ||
+        rutaActual.startsWith(`${item.route}/`)
+      );
+    });
+
+    if (
+      moduloActual?.permission &&
+      !this.authService.hasPermission(
+        moduloActual.permission
+      )
+    ) {
+
+      // El usuario perdió el acceso al módulo actual.
+      void this.router.navigate(['/dashboard']);
+    }
   }
 
   // ============================================================
