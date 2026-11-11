@@ -212,85 +212,89 @@
         <!-- ACCIONES -->
         <td data-label="Acciones" class="actions-cell">
 
-          <!-- GESTIONAR PERMISOS -->
-          <button
-            type="button"
-            class="action-btn permissions"
-            *ngIf="!perfil.protegido"
-            title="Gestionar permisos"
-            aria-label="Gestionar permisos"
-            (click)="abrirModalPermisos(perfil)"
-          >
-            <i class="bi bi-shield-check"></i>
-          </button>
+          <div class="actions-container">
 
-          <!-- EDITAR -->
-          <button
-            type="button"
-            class="action-btn edit"
-            *ngIf="!perfil.protegido"
-            title="Editar perfil"
-            aria-label="Editar perfil"
-            (click)="abrirModalPerfil(perfil)"
-          >
-            <i class="bi bi-pencil-square"></i>
-          </button>
+            <!-- GESTIONAR PERMISOS -->
+            <button
+              type="button"
+              class="action-btn permissions"
+              *ngIf="!perfil.protegido"
+              title="Gestionar permisos"
+              aria-label="Gestionar permisos"
+              (click)="abrirModalPermisos(perfil)"
+            >
+              <i class="bi bi-shield-check"></i>
+            </button>
 
-          <!-- ACTIVAR / DESACTIVAR -->
-          <button
-            type="button"
-            class="action-btn toggle"
-            *ngIf="!perfil.protegido"
-            [title]="
-              perfil.estado === 1
-                ? 'Desactivar perfil'
-                : 'Activar perfil'
-            "
-            [attr.aria-label]="
-              perfil.estado === 1
-                ? 'Desactivar perfil'
-                : 'Activar perfil'
-            "
-            (click)="
-              solicitarCambioEstado(
-                perfil,
-                perfil.estado === 1 ? 0 : 1
-              )
-            "
-          >
+            <!-- EDITAR -->
+            <button
+              type="button"
+              class="action-btn edit"
+              *ngIf="!perfil.protegido"
+              title="Editar perfil"
+              aria-label="Editar perfil"
+              (click)="abrirModalPerfil(perfil)"
+            >
+              <i class="bi bi-pencil-square"></i>
+            </button>
 
-            <i
-              class="bi"
-              [ngClass]="
+            <!-- ACTIVAR / DESACTIVAR -->
+            <button
+              type="button"
+              class="action-btn toggle"
+              *ngIf="!perfil.protegido"
+              [title]="
                 perfil.estado === 1
-                  ? 'bi-x-circle'
-                  : 'bi-check-circle'
+                  ? 'Desactivar perfil'
+                  : 'Activar perfil'
               "
-            ></i>
+              [attr.aria-label]="
+                perfil.estado === 1
+                  ? 'Desactivar perfil'
+                  : 'Activar perfil'
+              "
+              (click)="
+                solicitarCambioEstado(
+                  perfil,
+                  perfil.estado === 1 ? 0 : 1
+                )
+              "
+            >
 
-          </button>
+              <i
+                class="bi"
+                [ngClass]="
+                  perfil.estado === 1
+                    ? 'bi-x-circle'
+                    : 'bi-check-circle'
+                "
+              ></i>
 
-          <!-- ELIMINAR -->
-          <button
-            type="button"
-            class="action-btn delete"
-            *ngIf="!perfil.protegido"
-            title="Eliminar perfil"
-            aria-label="Eliminar perfil"
-            (click)="solicitarEliminacion(perfil)"
-          >
-            <i class="bi bi-trash"></i>
-          </button>
+            </button>
 
-          <!-- ADMIN PROTEGIDO -->
-          <span
-            class="protected-action"
-            *ngIf="perfil.protegido"
-            title="Este perfil no se puede modificar"
-          >
-            <i class="bi bi-lock-fill"></i>
-            No modificable
-          </span>
+            <!-- ELIMINAR -->
+            <button
+              type="button"
+              class="action-btn delete"
+              *ngIf="!perfil.protegido"
+              title="Eliminar perfil"
+              aria-label="Eliminar perfil"
+              (click)="solicitarEliminacion(perfil)"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+
+            <!-- ADMIN PROTEGIDO -->
+            <span
+              class="protected-action"
+              *ngIf="perfil.protegido"
+              title="Este perfil no se puede modificar"
+            >
+              <i class="bi bi-lock-fill"></i>
+              No modificable
+            </span>
+
+          </div>
 
         </td>
 

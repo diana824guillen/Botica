@@ -174,11 +174,36 @@
   }
 
   .actions-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
+    width: 190px;
+    min-width: 190px;
+    text-align: center;
     white-space: nowrap;
   }
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+
+  width: 100%;
+  min-height: 32px;
+}
+
+.protected-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+
+  min-width: 150px;
+  min-height: 32px;
+
+  color: v.$text-muted;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .profile-name {
@@ -205,15 +230,6 @@
 
   font-size: 0.72rem;
   font-weight: 600;
-}
-
-.protected-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-
-  color: v.$text-muted;
-  font-size: 0.8rem;
 }
 
 .permission-count {
@@ -523,8 +539,20 @@
     }
 
     .actions-cell {
-      justify-content: flex-end;
+      width: auto;
+      min-width: 0;
+
+      justify-content: space-between;
       padding-top: 1rem;
+    }
+
+    .actions-container {
+      justify-content: flex-end;
+      width: auto;
+    }
+
+    .protected-action {
+      min-width: 0;
     }
   }
 

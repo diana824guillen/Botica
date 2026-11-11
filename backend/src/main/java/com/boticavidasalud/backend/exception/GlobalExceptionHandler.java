@@ -41,7 +41,9 @@ public class GlobalExceptionHandler {
                 || normalizado.contains("ya existe un producto")
                 || normalizado.contains("ya existe una presentación")
                 || normalizado.contains("ya existe un lote")
-                || normalizado.contains("ya existe un perfil con ese nombre");
+                || normalizado.contains("ya existe un perfil con ese nombre")
+                || normalizado.contains("no se puede desactivar este perfil")
+                || normalizado.contains("no se puede eliminar este perfil");
 
         HttpStatus status = esConflicto
                 ? HttpStatus.CONFLICT

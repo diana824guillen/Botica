@@ -420,6 +420,27 @@ export class PerfilesListComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Comprobar si el perfil todavía tiene usuarios asociados.
+    if (
+      accion.tipo === 'desactivar'
+      || accion.tipo === 'eliminar'
+    ) {
+
+      const perfil = this.perfiles.find(
+        item => item.id === accion.id
+      );
+
+      if (perfil && perfil.totalUsuarios > 0) {
+
+        this.errorConfirmacion =
+          accion.tipo === 'desactivar'
+            ? 'Primero reasigna a los usuarios vinculados para desactivar este perfil.'
+            : 'Primero reasigna a los usuarios vinculados para eliminar este perfil.';
+
+        return;
+      }
+    }
+
     this.procesandoConfirmacion = true;
 
     this.errorConfirmacion = '';
@@ -502,7 +523,7 @@ export class PerfilesListComponent implements OnInit, OnDestroy {
     if (err?.status === 409) {
 
       return mensaje
-        || 'Ya existe un perfil con ese nombre.';
+        || 'No se pudo realizar la acción porque hay un problema con el perfil.';
     }
 
     return mensaje || mensajePredeterminado;
