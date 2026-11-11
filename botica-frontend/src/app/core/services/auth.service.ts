@@ -4,7 +4,14 @@ import { Router } from '@angular/router';
 
 import {
   BehaviorSubject,
+  EMPTY,
   Observable,
+  Subscription,
+  catchError,
+  exhaustMap,
+  interval,
+  map,
+  startWith,
   tap
 } from 'rxjs';
 
@@ -74,6 +81,16 @@ export class AuthService {
     this.sessionClosingSubject.asObservable();
 
   // ============================================================
+  // PERMISOS ACTUALES DEL USUARIO
+  // ============================================================
+
+  private permissionsSubject =
+    new BehaviorSubject<string[]>([]);
+
+  readonly permissions$ =
+    this.permissionsSubject.asObservable();
+
+  // ============================================================
   // TEMPORIZADORES
   // ============================================================
 
@@ -91,6 +108,15 @@ export class AuthService {
   private fechaExpiracion = 0;
 
   // ============================================================
+  // ACTUALIZACIÓN AUTOMÁTICA DE PERMISOS
+  // ============================================================
+
+  private permissionRefreshSubscription:
+    Subscription | null = null;
+
+  private readonly INTERVALO_PERMISOS_MS = 15000;
+
+  // ============================================================
   // CONTROL DE SOLICITUDES ACTIVAS
   // ============================================================
 
@@ -106,6 +132,11 @@ export class AuthService {
     private http: HttpClient,
     private router: Router
   ) {
+
+    // Recuperar los permisos guardados al cargar la aplicación.
+    this.permissionsSubject.next(
+      this.leerPermisosGuardados()
+    );
 
     // Recuperar el monitoreo si la página se actualiza.
     const token = localStorage.getItem('token');
@@ -162,6 +193,11 @@ export class AuthService {
             JSON.stringify(response)
           );
 
+          // Actualizar los permisos de la sesión recién iniciada.
+          this.permissionsSubject.next(
+            this.normalizarPermisos(response.permisos)
+          );
+
           // Restablecer el control de la sesión.
           this.tokenCierrePendiente = null;
           this.redireccionando = false;
@@ -170,6 +206,9 @@ export class AuthService {
 
           // Programar aviso y expiración.
           this.programarMonitoreo(response.token);
+
+          // Iniciar la actualización automática de permisos.
+          this.iniciarActualizacionPermisos();
         })
       );
   }
@@ -228,8 +267,12 @@ export class AuthService {
 
     // Garantizar que el token tenga un monitoreo activo.
     if (this.tokenMonitoreado !== token) {
-
       this.programarMonitoreo(token, expiracion);
+    }
+
+    // Iniciar la actualización automática si todavía no está activa.
+    if (!this.permissionRefreshSubscription) {
+      this.iniciarActualizacionPermisos();
     }
 
     return true;
@@ -530,6 +573,12 @@ export class AuthService {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
 
+    // Detener las consultas automáticas de permisos.
+    this.detenerActualizacionPermisos();
+
+    // Limpiar los permisos de la sesión finalizada.
+    this.permissionsSubject.next([]);
+
     this.limpiarTemporizadores();
 
     this.tokenMonitoreado = null;
@@ -641,6 +690,151 @@ export class AuthService {
     }
   }
 
+  // ============================================================
+  // SINCRONIZAR PERMISOS CON EL BACKEND
+  // ============================================================
+
+  sincronizarPermisos(): Observable<string[]> {
+
+    const tokenSesion = localStorage.getItem('token');
+
+    return this.http
+      .get<unknown>(`${this.apiUrl}/permisos`)
+      .pipe(
+
+        map(response =>
+          this.normalizarPermisos(response)
+        ),
+
+        tap(permisos => {
+
+          // Ignorar respuestas pertenecientes a otra sesión.
+          if (
+            !tokenSesion ||
+            localStorage.getItem('token') !== tokenSesion
+          ) {
+            return;
+          }
+
+          const usuarioGuardado = localStorage.getItem('user');
+
+          if (!usuarioGuardado) {
+
+            this.permissionsSubject.next([]);
+
+            return;
+          }
+
+          try {
+
+            const usuario = JSON.parse(usuarioGuardado);
+
+            usuario.permisos = permisos;
+
+            localStorage.setItem(
+              'user',
+              JSON.stringify(usuario)
+            );
+
+            this.permissionsSubject.next(permisos);
+
+          } catch {
+
+            this.permissionsSubject.next([]);
+          }
+        })
+      );
+  }
+
+  // ============================================================
+  // INICIAR ACTUALIZACIÓN AUTOMÁTICA
+  // ============================================================
+
+  private iniciarActualizacionPermisos(): void {
+
+    this.detenerActualizacionPermisos();
+
+    this.permissionRefreshSubscription = interval(
+      this.INTERVALO_PERMISOS_MS
+    )
+      .pipe(
+
+        // Consultar también inmediatamente al iniciar.
+        startWith(0),
+
+        // Evitar solicitudes simultáneas.
+        exhaustMap(() => {
+
+          const token = localStorage.getItem('token');
+
+          if (
+            !token ||
+            this.tokenCierrePendiente === token
+          ) {
+            return EMPTY;
+          }
+
+          return this.sincronizarPermisos().pipe(
+
+            // Un error temporal no detiene futuras consultas.
+            catchError(() => EMPTY)
+          );
+        })
+      )
+      .subscribe();
+  }
+
+  // ============================================================
+  // DETENER ACTUALIZACIÓN AUTOMÁTICA
+  // ============================================================
+
+  private detenerActualizacionPermisos(): void {
+
+    this.permissionRefreshSubscription?.unsubscribe();
+
+    this.permissionRefreshSubscription = null;
+  }
+
+  // ============================================================
+  // NORMALIZAR PERMISOS
+  // ============================================================
+
+  private normalizarPermisos(permisos: unknown): string[] {
+
+    return Array.isArray(permisos)
+      ? permisos.filter(
+          (permiso: unknown): permiso is string =>
+            typeof permiso === 'string'
+        )
+      : [];
+  }
+
+  // ============================================================
+  // RECUPERAR PERMISOS GUARDADOS
+  // ============================================================
+
+  private leerPermisosGuardados(): string[] {
+
+    const usuario = localStorage.getItem('user');
+
+    if (!usuario) {
+      return [];
+    }
+
+    try {
+
+      const datosUsuario = JSON.parse(usuario);
+
+      return this.normalizarPermisos(
+        datosUsuario.permisos
+      );
+
+    } catch {
+
+      return [];
+    }
+  }
+
   getCurrentUsername(): string | null {
 
     return this.obtenerUsuarioActual();
@@ -665,28 +859,7 @@ export class AuthService {
   }
 
   getUserPermissions(): string[] {
-
-    const user = localStorage.getItem('user');
-
-    if (!user) {
-      return [];
-    }
-
-    try {
-
-      const permisos = JSON.parse(user).permisos;
-
-      return Array.isArray(permisos)
-        ? permisos.filter(
-            (permiso: unknown): permiso is string =>
-              typeof permiso === 'string'
-          )
-        : [];
-
-    } catch {
-
-      return [];
-    }
+    return this.permissionsSubject.value;
   }
 
   hasPermission(permission: string): boolean {
