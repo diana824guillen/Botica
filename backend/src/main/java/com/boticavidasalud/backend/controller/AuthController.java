@@ -15,12 +15,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,6 +36,28 @@ public class AuthController {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.usuarioRepository = usuarioRepository;
+    }
+
+    // ============================================================
+    // CONSULTAR PERMISOS ACTUALES DEL USUARIO AUTENTICADO
+    // ============================================================
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/permisos")
+    public ResponseEntity<List<String>> obtenerPermisosActuales(
+            Authentication authentication) {
+
+        List<String> permisos = authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .filter(authority ->
+                        authority != null
+                        && !authority.startsWith("ROLE_")
+                )
+                .distinct()
+                .sorted()
+                .toList();
+
+        return ResponseEntity.ok(permisos);
     }
 
     @PostMapping("/login")
