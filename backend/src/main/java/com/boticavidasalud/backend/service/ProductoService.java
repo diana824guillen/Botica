@@ -178,6 +178,59 @@ public class ProductoService {
                 .collect(Collectors.toList());
     }
 
+
+    // ============================================================
+    // LISTAR PRODUCTOS DISPONIBLES PARA EL PUNTO DE VENTA
+    // Solo productos activos con presentaciones que tengan existencias disponibles y lotes vigentes.
+    // ============================================================
+
+    public List<ProductoResponseDTO> listarProductosDisponiblesParaVenta() {
+
+        return productoRepository.listarActivos()
+                .stream()
+
+                // Excluir productos inactivos.
+                .filter(producto ->
+                        EstadoRegistro.ACTIVO.getValor().equals(
+                                producto.getEstado()
+                        )
+                )
+
+                // Obtener la información del producto y sus presentaciones.
+                .map(this::mapToResponse)
+
+                // Conservar únicamente las presentaciones disponibles.
+                .map(producto -> {
+
+                        List<PresentacionInfoDTO> presentacionesDisponibles =
+                                producto.getPresentaciones() == null
+                                        ? new ArrayList<>()
+                                        : producto.getPresentaciones()
+                                                .stream()
+                                                .filter(presentacion ->
+                                                        EstadoRegistro.ACTIVO.getValor()
+                                                                .equals(presentacion.getEstado())
+                                                )
+                                                .filter(presentacion ->
+                                                        presentacion.getStockDisponible() != null
+                                                        && presentacion.getStockDisponible()
+                                                                .compareTo(BigDecimal.ZERO) > 0
+                                                )
+                                                .collect(Collectors.toList());
+
+                        producto.setPresentaciones(presentacionesDisponibles);
+
+                        return producto;
+                })
+
+                // Excluir productos sin ninguna presentación disponible.
+                .filter(producto ->
+                        !producto.getPresentaciones().isEmpty()
+                )
+
+                .collect(Collectors.toList());
+    }
+
     // ============================================================
     // OBTENER POR ID
     // ============================================================

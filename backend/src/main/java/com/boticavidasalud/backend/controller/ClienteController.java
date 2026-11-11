@@ -23,9 +23,12 @@ public class ClienteController {
         this.clienteService = clienteService;
     }
 
-    // CONSULTAR CLIENTES: módulo Clientes o Punto de venta.
+    // ============================================================
+    // LISTADO GENERAL DE CLIENTES
+    // Solo módulo Clientes o ADMIN.
+    // ============================================================
 
-    @PreAuthorize("hasAnyAuthority('CLIENTE_ACCESO', 'PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CLIENTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<ClienteResponseDTO>> listarClientes(
             @RequestParam(defaultValue = "0") int page,
@@ -37,6 +40,11 @@ public class ClienteController {
         );
     }
 
+    // ============================================================
+    // BUSCAR CLIENTE POR DOCUMENTO
+    // Permitido desde Clientes o Punto de venta. Devuelve únicamente el cliente que coincide con el documento.
+    // ============================================================
+
     @PreAuthorize("hasAnyAuthority('CLIENTE_ACCESO', 'PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{numeroDocumento}")
     public ResponseEntity<ClienteResponseDTO> obtenerPorDocumento(
@@ -47,7 +55,12 @@ public class ClienteController {
         );
     }
 
-    @PreAuthorize("hasAnyAuthority('CLIENTE_ACCESO', 'PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
+    // ============================================================
+    // CONSULTAR CLIENTE POR ID
+    // Solo módulo Clientes o ADMIN.
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('CLIENTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/id/{id}")
     public ResponseEntity<ClienteResponseDTO> obtenerPorId(
             @PathVariable Integer id) {
@@ -57,7 +70,10 @@ public class ClienteController {
         );
     }
 
-    // REGISTRAR CLIENTE.
+    // ============================================================
+    // REGISTRAR CLIENTE
+    // Solo módulo Clientes o ADMIN. El POS registra clientes nuevos dentro de la venta.
+    // ============================================================
 
     @PreAuthorize("hasAuthority('CLIENTE_ACCESO') or hasRole('ADMIN')")
     @PostMapping
@@ -71,7 +87,9 @@ public class ClienteController {
                 .body(response);
     }
 
-    // EDITAR CLIENTE.
+    // ============================================================
+    // EDITAR CLIENTE
+    // ============================================================
 
     @PreAuthorize("hasAuthority('CLIENTE_ACCESO') or hasRole('ADMIN')")
     @PutMapping("/{id}")
@@ -84,6 +102,10 @@ public class ClienteController {
         );
     }
 
+    // ============================================================
+    // CAMBIAR ESTADO
+    // ============================================================
+
     @PreAuthorize("hasAuthority('CLIENTE_ACCESO') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<ClienteResponseDTO> cambiarEstado(
@@ -95,7 +117,9 @@ public class ClienteController {
         );
     }
 
-    // ELIMINAR CLIENTE.
+    // ============================================================
+    // ELIMINAR CLIENTE
+    // ============================================================
 
     @PreAuthorize("hasAuthority('CLIENTE_ACCESO') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")

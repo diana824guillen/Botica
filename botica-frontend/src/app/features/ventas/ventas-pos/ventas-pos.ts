@@ -19,7 +19,6 @@ import {
 
 import { Cliente } from '../../../core/models/cliente.model';
 import { ClienteService } from '../../clientes/services/cliente';
-import { ProductoService } from '../../productos/services/producto';
 import { VentaService } from '../services/venta';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotaVentaPdfService } from '../services/nota-venta-pdf';
@@ -72,7 +71,11 @@ interface VentaPosDraft {
   modoCliente: ModoClientePOS;
   mostrarPanelCliente: boolean;
   documentoBusqueda: string;
-  clienteSeleccionadoId: number | null;
+  clienteSeleccionadoDocumento?: string | null;
+
+  // Compatibilidad con borradores guardados antes del cambio.
+  clienteSeleccionadoId?: number | null;
+
   modoRegistroNuevo: ModoRegistroNuevo;
 
   nuevoCliente: {
@@ -99,7 +102,6 @@ interface VentaPosDraft {
 })
 export class VentasPosComponent implements OnInit, OnDestroy {
 
-  private productoService = inject(ProductoService);
   private clienteService = inject(ClienteService);
   private ventaService = inject(VentaService);
   private cdr = inject(ChangeDetectorRef);
@@ -107,9 +109,11 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   private notaVentaPdfService = inject(NotaVentaPdfService);
 
   private restaurandoBorrador = false;
+
   // Evita recuperar varias veces la misma venta al actualizar el catálogo.
   private borradorRestaurado = false;
-  private clienteSeleccionadoIdPendiente: number | null = null;
+
+  private clienteSeleccionadoDocumentoPendiente: string | null = null;
 
   // ============================================================
   // DATOS REACTIVOS DEL CATALOGO
@@ -127,7 +131,6 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
   busqueda = '';
   categoriaSeleccionada: number | null = null;
-  mostrarSinStock = false;
 
   // Solo un producto puede estar desplegado a la vez.
   productoExpandidoId: number | null = null;
@@ -137,7 +140,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   modoCliente: ModoClientePOS = 'NINGUNO';
-  
+
   // Controla si la sección opcional de cliente está desplegada.
   mostrarPanelCliente = false;
 
@@ -252,7 +255,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
       version: 1,
 
-      // Guardar únicamente los identificadores y las cantidades. Los precios y existencias se actualizarán desde el backend.
+      // Guardar únicamente los identificadores y las cantidades.
+      // Los precios y existencias se actualizarán desde el backend.
       carrito: this.carrito.map(item => ({
         idProducto: item.idProducto,
         idPresentacion: item.idPresentacion,
@@ -265,9 +269,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
       documentoBusqueda: this.documentoBusqueda,
 
-      clienteSeleccionadoId:
-        this.clienteSeleccionado?.id ??
-        this.clienteSeleccionadoIdPendiente,
+      clienteSeleccionadoDocumento:
+        this.clienteSeleccionado?.numeroDocumento ??
+        this.clienteSeleccionadoDocumentoPendiente,
 
       modoRegistroNuevo: this.modoRegistroNuevo,
 
@@ -284,6 +288,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   }
 
   private restaurarBorradorVenta(): void {
+
     // La recuperación solo se realiza una vez por instancia del POS.
     if (
       this.borradorRestaurado ||
@@ -339,8 +344,30 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
     this.clienteSeleccionado = null;
 
-    this.clienteSeleccionadoIdPendiente =
-      borrador.clienteSeleccionadoId ?? null;
+    // Recuperar el cliente seleccionado mediante su documento.
+    // Se conserva compatibilidad con borradores anteriores.
+    const documentoClienteGuardado =
+      (borrador.clienteSeleccionadoDocumento ?? '')
+        .trim()
+        .toUpperCase();
+
+    const documentoClienteAnterior =
+      (borrador.documentoBusqueda ?? '')
+        .trim()
+        .toUpperCase();
+
+    this.clienteSeleccionadoDocumentoPendiente =
+      documentoClienteGuardado ||
+      (
+        borrador.clienteSeleccionadoId != null
+          ? documentoClienteAnterior || null
+          : null
+      );
+
+    if (this.clienteSeleccionadoDocumentoPendiente) {
+      this.documentoBusqueda =
+        this.clienteSeleccionadoDocumentoPendiente;
+    }
 
     // Reconstruir el carrito con precios y stock actualizados.
     const carritoRecuperado: ItemCarrito[] = [];
@@ -417,20 +444,23 @@ export class VentasPosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Recuperar el cliente existente desde el backend.
-    if (this.clienteSeleccionadoIdPendiente !== null) {
+    // Recuperar el cliente existente exclusivamente por documento.
+    if (this.clienteSeleccionadoDocumentoPendiente) {
 
-      const idCliente = this.clienteSeleccionadoIdPendiente;
+      const documento =
+        this.clienteSeleccionadoDocumentoPendiente;
 
       this.clienteService
-        .obtenerPorId(idCliente)
+        .buscarPorDocumento(documento)
         .subscribe({
 
           next: cliente => {
 
             this.clienteSeleccionado = cliente;
 
-            this.clienteSeleccionadoIdPendiente = null;
+            this.clienteSeleccionadoDocumentoPendiente = null;
+
+            this.documentoBusqueda = documento;
 
             this.guardarBorradorVenta();
 
@@ -441,7 +471,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
 
             this.mensajeBusquedaCliente =
               err?.error?.mensaje ||
-              'No se pudo recuperar el cliente seleccionado. Puedes volver a buscarlo.';
+              'No se pudo recuperar el cliente seleccionado. Puedes volver a buscarlo por su documento.';
 
             this.tipoMensajeBusqueda = 'error';
 
@@ -449,6 +479,15 @@ export class VentasPosComponent implements OnInit, OnDestroy {
           }
 
         });
+
+    } else if (borrador.clienteSeleccionadoId != null) {
+
+      // El borrador antiguo conservó el ID, pero no el documento.
+      // Por seguridad, no se realizará una consulta general por ID.
+      this.mensajeBusquedaCliente =
+        'La venta pendiente tenía un cliente seleccionado, pero no se conservó su documento. Vuelve a buscarlo por su número de documento.';
+
+      this.tipoMensajeBusqueda = 'error';
     }
 
     this.mostrarMensaje(
@@ -456,7 +495,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
       'warning'
     );
 
-    // Recalcular precios, descuentos y existencias. También se recupera la distribución anterior de pagos.
+    // Recalcular precios, descuentos y existencias.
+    // También se recupera la distribución anterior de pagos.
     this.previsualizarVenta(this.pagos);
 
     this.cdr.markForCheck();
@@ -471,8 +511,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     this.cargandoProductos.set(true);
     this.errorCarga.set('');
 
-    this.productoService
-      .listarProductos()
+    this.ventaService
+      .listarProductosDisponibles()
       .pipe(
         finalize(() => {
           this.cargandoProductos.set(false);
@@ -513,7 +553,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
           if (err?.status === 403) {
 
             this.errorCarga.set(
-              'Tu perfil no tiene permiso para consultar el catálogo. Se necesita el permiso PRODUCTO_LEER.'
+              'Tu perfil no tiene permiso para acceder al catálogo del Punto de venta.'
             );
 
           } else if (err?.status === 0) {
@@ -619,12 +659,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
         this.categoriaSeleccionada === null ||
         producto.categoriaId === this.categoriaSeleccionada;
 
-      const coincideStock =
-        this.mostrarSinStock || this.tieneStock(producto);
-
-      return coincideTexto &&
-        coincideCategoria &&
-        coincideStock;
+      return coincideTexto && coincideCategoria;
     });
 
     this.productosFiltrados.set(resultado);
@@ -644,16 +679,10 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     this.actualizarProductosFiltrados();
   }
 
-  cambiarMostrarSinStock(valor: boolean): void {
-    this.mostrarSinStock = valor;
-    this.actualizarProductosFiltrados();
-  }
-
   limpiarFiltros(): void {
 
     this.busqueda = '';
     this.categoriaSeleccionada = null;
-    this.mostrarSinStock = false;
     this.productoExpandidoId = null;
 
     this.actualizarProductosFiltrados();
@@ -954,6 +983,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   buscarCliente(): void {
+
     const documento = this.documentoBusqueda
       .trim()
       .toUpperCase();
@@ -972,7 +1002,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     this.clienteSeleccionado = null;
     this.mensajeBusquedaCliente = '';
     this.tipoMensajeBusqueda = '';
-    this.clienteSeleccionadoIdPendiente = null;
+    this.clienteSeleccionadoDocumentoPendiente = null;
+
     // Guardar el estado de la búsqueda.
     this.guardarBorradorVenta();
 
@@ -993,7 +1024,8 @@ export class VentasPosComponent implements OnInit, OnDestroy {
         next: cliente => {
 
           this.clienteSeleccionado = cliente;
-          // Conservar el identificador del cliente seleccionado.
+
+          // Conservar el documento del cliente seleccionado.
           this.guardarBorradorVenta();
 
           this.mensajeBusquedaCliente =
@@ -1886,7 +1918,7 @@ export class VentasPosComponent implements OnInit, OnDestroy {
   // ============================================================
   // CONFIRMAR Y REGISTRAR VENTA
   // ============================================================
-  
+
   confirmarVenta(): void {
 
     // Evitar confirmaciones simultáneas o repetidas.
@@ -2013,7 +2045,9 @@ export class VentasPosComponent implements OnInit, OnDestroy {
         next: respuesta => {
 
           this.ventaRegistrada = respuesta;
-          // La venta ya está registrada. Eliminar el borrador para impedir que se recupere como pendiente.
+
+          // La venta ya está registrada. Eliminar el borrador
+          // para impedir que se recupere como pendiente.
           this.authService.eliminarBorradorVenta();
 
           this.errorVenta = '';
@@ -2211,15 +2245,14 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     this.mensajeCarrito.set('');
   }
 
-
   // ============================================================
   // LIMPIAR DATOS DEL CLIENTE
   // ============================================================
 
   private limpiarDatosCliente(): void {
 
-    // Limpiar el identificador pendiente de recuperación.
-    this.clienteSeleccionadoIdPendiente = null;
+    // Limpiar el documento pendiente de recuperación.
+    this.clienteSeleccionadoDocumentoPendiente = null;
 
     // Limpiar búsqueda de cliente existente.
     this.documentoBusqueda = '';
@@ -2242,8 +2275,6 @@ export class VentasPosComponent implements OnInit, OnDestroy {
     // Limpiar validaciones anteriores.
     this.errorNuevoCliente = '';
   }
-
-
 }
 
 

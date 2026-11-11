@@ -1,8 +1,11 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
+
+import { Producto } from '../../../core/models/producto.model';
 
 import {
   VentaPrevisualizacionRequest,
@@ -21,6 +24,17 @@ export class VentaService {
   private apiUrl = `${environment.apiUrl}/ventas`;
 
   constructor(private http: HttpClient) {}
+
+  // ============================================================
+  // CATÁLOGO DE PRODUCTOS DISPONIBLES PARA EL POS
+  // ============================================================
+
+  listarProductosDisponibles(): Observable<Producto[]> {
+
+    return this.http.get<Producto[]>(
+      `${this.apiUrl}/catalogo/productos`
+    );
+  }
 
   // ============================================================
   // PREVISUALIZAR VENTA

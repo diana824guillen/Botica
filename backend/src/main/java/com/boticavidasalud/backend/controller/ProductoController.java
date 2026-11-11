@@ -26,7 +26,9 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    // REGISTRAR PRODUCTO.
+    // ============================================================
+    // REGISTRAR PRODUCTO
+    // ============================================================
 
     @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PostMapping
@@ -40,10 +42,13 @@ public class ProductoController {
                 .body(response);
     }
 
-    // CONSULTAR PRODUCTOS:
-    // Productos, Punto de venta o Lotes.
+    // ============================================================
+    // LISTADO GENERAL DE PRODUCTOS
+    // Productos, Lotes o ADMIN.
+    // El Punto de venta utiliza una consulta independiente.
+    // ============================================================
 
-    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<ProductoResponseDTO>> listarProductos(
             @RequestParam(required = false) Integer categoriaId) {
@@ -59,7 +64,11 @@ public class ProductoController {
         );
     }
 
-    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
+    // ============================================================
+    // CONSULTAR PRODUCTO POR ID
+    // ============================================================
+
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ProductoResponseDTO> obtenerProducto(
             @PathVariable Integer id) {
@@ -69,7 +78,11 @@ public class ProductoController {
         );
     }
 
-    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
+    // ============================================================
+    // CONSULTAR PRESENTACIONES
+    // ============================================================
+
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{id}/presentaciones")
     public ResponseEntity<List<PresentacionInfoDTO>> listarPresentaciones(
             @PathVariable Integer id) {
@@ -79,7 +92,9 @@ public class ProductoController {
         );
     }
 
-    // GESTIONAR PRESENTACIONES.
+    // ============================================================
+    // GESTIONAR PRESENTACIONES
+    // ============================================================
 
     @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PostMapping("/{id}/presentaciones")
@@ -135,9 +150,11 @@ public class ProductoController {
         return ResponseEntity.noContent().build();
     }
 
-    // CONSULTAS DE INVENTARIO RELACIONADAS CON PRODUCTOS.
+    // ============================================================
+    // CONSULTAS DE INVENTARIO Y VENCIMIENTOS
+    // ============================================================
 
-    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/stock-bajo")
     public ResponseEntity<List<ProductoResponseDTO>> listarStockBajo() {
 
@@ -146,7 +163,7 @@ public class ProductoController {
         );
     }
 
-    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/por-vencer")
     public ResponseEntity<List<ProductoResponseDTO>> listarPorVencer(
             @RequestParam(defaultValue = "30") int dias) {
@@ -156,7 +173,7 @@ public class ProductoController {
         );
     }
 
-    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'PUNTO_VENTA_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTO_ACCESO', 'LOTE_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/vencidos")
     public ResponseEntity<List<ProductoResponseDTO>> listarVencidos() {
 
@@ -165,7 +182,9 @@ public class ProductoController {
         );
     }
 
-    // EDITAR PRODUCTO.
+    // ============================================================
+    // EDITAR PRODUCTO
+    // ============================================================
 
     @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PutMapping("/{id}")
@@ -178,6 +197,10 @@ public class ProductoController {
         );
     }
 
+    // ============================================================
+    // CAMBIAR ESTADO
+    // ============================================================
+
     @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<ProductoResponseDTO> cambiarEstado(
@@ -189,7 +212,9 @@ public class ProductoController {
         );
     }
 
-    // ELIMINAR PRODUCTO.
+    // ============================================================
+    // ELIMINAR PRODUCTO
+    // ============================================================
 
     @PreAuthorize("hasAuthority('PRODUCTO_ACCESO') or hasRole('ADMIN')")
     @DeleteMapping("/{id}")

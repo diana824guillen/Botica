@@ -59,12 +59,7 @@
           <h2>Catálogo de productos</h2>
 
           <p>
-            {{ productosFiltrados().length }}
-            {{
-              mostrarSinStock
-                ? 'productos encontrados'
-                : 'productos con stock'
-            }}
+            {{ productosFiltrados().length }} productos disponibles
           </p>
         </div>
 
@@ -141,19 +136,6 @@
           </div>
 
         </div>
-
-        <!-- INCLUIR PRODUCTOS AGOTADOS -->
-        <label class="stock-filter">
-
-          <input
-            type="checkbox"
-            [ngModel]="mostrarSinStock"
-            (ngModelChange)="cambiarMostrarSinStock($event)"
-          />
-
-          <span>Incluir productos agotados</span>
-
-        </label>
 
       </div>
 
@@ -379,11 +361,8 @@
           <h3>No se encontraron productos</h3>
 
           <p>
-            {{
-              !mostrarSinStock
-                ? 'No hay productos disponibles con stock para esta búsqueda.'
-                : 'Prueba con otro nombre o selecciona una categoría diferente.'
-            }}
+            No hay productos disponibles para esta búsqueda.
+            Prueba con otro nombre o selecciona una categoría diferente.
           </p>
 
           <button
@@ -1131,8 +1110,6 @@
 
         </section>
 
-
-
         <!-- ======================================== -->
         <!-- MÉTODOS DE PAGO -->
         <!-- ======================================== -->
@@ -1348,7 +1325,7 @@
 
           <!-- RESUMEN DE PAGOS -->
           <div class="payment-summary" *ngIf="totalVenta > 0">
-            
+
             <div class="payment-summary-row">
 
               <span>Total distribuido</span>

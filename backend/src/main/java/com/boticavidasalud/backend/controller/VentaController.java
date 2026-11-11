@@ -1,11 +1,14 @@
+
 package com.boticavidasalud.backend.controller;
 
 import com.boticavidasalud.backend.dto.HistorialCompraDTO;
+import com.boticavidasalud.backend.dto.ProductoResponseDTO;
 import com.boticavidasalud.backend.dto.VentaListadoDTO;
 import com.boticavidasalud.backend.dto.VentaPrevisualizacionRequestDTO;
 import com.boticavidasalud.backend.dto.VentaPrevisualizacionResponseDTO;
 import com.boticavidasalud.backend.dto.VentaRequestDTO;
 import com.boticavidasalud.backend.dto.VentaResponseDTO;
+import com.boticavidasalud.backend.service.ProductoService;
 import com.boticavidasalud.backend.service.VentaService;
 
 import jakarta.validation.Valid;
@@ -25,12 +28,33 @@ import org.springframework.web.bind.annotation.*;
 public class VentaController {
 
     private final VentaService ventaService;
+    private final ProductoService productoService;
 
-    public VentaController(VentaService ventaService) {
+    public VentaController(
+            VentaService ventaService,
+            ProductoService productoService) {
+
         this.ventaService = ventaService;
+        this.productoService = productoService;
     }
 
-    // PUNTO DE VENTA.
+    // ============================================================
+    // CATÁLOGO DE PRODUCTOS DISPONIBLES PARA EL PUNTO DE VENTA
+    // No permite consultar el catálogo general de Productos.
+    // ============================================================
+
+    @PreAuthorize("hasAuthority('PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
+    @GetMapping("/catalogo/productos")
+    public ResponseEntity<List<ProductoResponseDTO>> listarProductosDisponibles() {
+
+        return ResponseEntity.ok(
+                productoService.listarProductosDisponiblesParaVenta()
+        );
+    }
+
+    // ============================================================
+    // PREVISUALIZAR VENTA
+    // ============================================================
 
     @PreAuthorize("hasAuthority('PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
     @PostMapping("/previsualizacion")
@@ -41,6 +65,11 @@ public class VentaController {
                 ventaService.previsualizarVenta(request)
         );
     }
+
+    // ============================================================
+    // REGISTRAR VENTA
+    // También permite registrar un cliente nuevo dentro de la venta.
+    // ============================================================
 
     @PreAuthorize("hasAuthority('PUNTO_VENTA_ACCESO') or hasRole('ADMIN')")
     @PostMapping
@@ -54,7 +83,9 @@ public class VentaController {
                 .body(response);
     }
 
-    // HISTORIAL DE VENTAS.
+    // ============================================================
+    // HISTORIAL GENERAL DE VENTAS
+    // ============================================================
 
     @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_ACCESO') or hasRole('ADMIN')")
     @GetMapping
@@ -87,6 +118,10 @@ public class VentaController {
         );
     }
 
+    // ============================================================
+    // DETALLE COMPLETO DE UNA VENTA
+    // ============================================================
+
     @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/{idVenta}")
     public ResponseEntity<VentaResponseDTO> obtenerVentaPorId(
@@ -96,6 +131,10 @@ public class VentaController {
                 ventaService.obtenerVentaPorId(idVenta)
         );
     }
+
+    // ============================================================
+    // HISTORIAL DE COMPRAS DE UN CLIENTE
+    // ============================================================
 
     @PreAuthorize("hasAuthority('HISTORIAL_VENTAS_ACCESO') or hasRole('ADMIN')")
     @GetMapping("/cliente/{idCliente}")
