@@ -18,7 +18,7 @@ import {
 
 import { finalize } from 'rxjs';
 
-import { Usuario } from '../../../core/models/usuario.model';
+import type { Usuario } from '../../../core/models/usuario.model';
 
 import { UsuarioService } from '../services/usuario';
 
@@ -46,7 +46,10 @@ export class UsuarioClaveModalComponent {
 
   errorMessage = '';
 
-  mostrarClave = false;
+  // Cada contraseña tiene su propio control de visibilidad.
+  mostrarNuevaClave = false;
+
+  mostrarConfirmarClave = false;
 
   private readonly fb = inject(FormBuilder);
 
@@ -77,6 +80,18 @@ export class UsuarioClaveModalComponent {
       ]
 
     });
+  }
+
+  // ============================================================
+  // VISUALIZAR CONTRASEÑAS
+  // ============================================================
+
+  alternarVisibilidadNuevaClave(): void {
+    this.mostrarNuevaClave = !this.mostrarNuevaClave;
+  }
+
+  alternarVisibilidadConfirmarClave(): void {
+    this.mostrarConfirmarClave = !this.mostrarConfirmarClave;
   }
 
   // ============================================================

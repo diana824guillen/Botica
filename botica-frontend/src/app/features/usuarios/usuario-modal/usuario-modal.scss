@@ -130,6 +130,63 @@ form {
   }
 }
 
+/* CAMPO DE CONTRASEÑA */
+
+.password-input {
+  display: flex;
+  align-items: center;
+
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+  background: white;
+
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 2px v.$primary-light;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+
+    border: none;
+    background: transparent;
+
+    &:focus {
+      border: none;
+      box-shadow: none;
+    }
+  }
+
+  button {
+    display: grid;
+    place-items: center;
+
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+
+    color: v.$text-muted;
+    background: transparent;
+    border: none;
+    border-radius: v.$radius-md;
+
+    font-size: 1.1rem;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: v.$primary-color;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
 .required {
   color: v.$danger-color;
   margin-left: 2px;

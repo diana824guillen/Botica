@@ -64,6 +64,9 @@ export class UsuarioModalComponent implements OnInit {
 
   errorMessage = '';
 
+  // Control independiente para mostrar u ocultar la contraseña inicial.
+  mostrarClave = false;
+
   private readonly fb = inject(FormBuilder);
 
   private readonly usuarioService = inject(UsuarioService);
@@ -91,8 +94,13 @@ export class UsuarioModalComponent implements OnInit {
 
     this.usuarioForm = this.fb.group({
 
+      // El selector inicia deshabilitado mientras se cargan
+      // los perfiles. Su estado se controla desde TypeScript.
       perfilId: [
-        this.usuarioEditar?.perfilId ?? null,
+        {
+          value: this.usuarioEditar?.perfilId ?? null,
+          disabled: true
+        },
         [
           Validators.required
         ]
@@ -166,6 +174,14 @@ export class UsuarioModalComponent implements OnInit {
   }
 
   // ============================================================
+  // VISUALIZAR CONTRASEÑA
+  // ============================================================
+
+  alternarVisibilidadClave(): void {
+    this.mostrarClave = !this.mostrarClave;
+  }
+
+  // ============================================================
   // VALIDACIÓN SEGÚN TIPO DE DOCUMENTO
   // ============================================================
 
@@ -227,6 +243,8 @@ export class UsuarioModalComponent implements OnInit {
 
           this.isLoadingProfiles = false;
 
+          this.actualizarEstadoControlPerfil();
+
           this.cdr.detectChanges();
         })
       )
@@ -256,6 +274,32 @@ export class UsuarioModalComponent implements OnInit {
         }
 
       });
+  }
+
+  // ============================================================
+  // CONTROLAR ESTADO DEL SELECTOR DE PERFIL
+  // ============================================================
+
+  private actualizarEstadoControlPerfil(): void {
+
+    const control = this.usuarioForm?.get('perfilId');
+
+    if (!control) {
+      return;
+    }
+
+    if (this.perfiles.length > 0) {
+
+      control.enable({
+        emitEvent: false
+      });
+
+    } else {
+
+      control.disable({
+        emitEvent: false
+      });
+    }
   }
 
   // ============================================================
@@ -296,6 +340,10 @@ export class UsuarioModalComponent implements OnInit {
       return;
     }
 
+    if (this.isLoadingProfiles || this.perfiles.length === 0) {
+      return;
+    }
+
     if (this.usuarioForm.invalid) {
 
       this.usuarioForm.markAllAsTouched();
@@ -319,7 +367,7 @@ export class UsuarioModalComponent implements OnInit {
       return;
     }
 
-    // Validar el tipo de documento sin utilizar conversiones de tipo.
+    // Validar el tipo de documento.
     const tipoDocumento = String(valores.tipoDocumento ?? '');
 
     if (

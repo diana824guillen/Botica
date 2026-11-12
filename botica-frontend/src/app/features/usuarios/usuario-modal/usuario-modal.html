@@ -63,7 +63,6 @@
         <select
           id="perfilUsuario"
           formControlName="perfilId"
-          [disabled]="isLoadingProfiles || perfiles.length === 0"
         >
 
           <option [ngValue]="null" disabled>
@@ -387,14 +386,39 @@
           <span class="required">*</span>
         </label>
 
-        <input
-          id="claveUsuario"
-          type="password"
-          formControlName="clave"
-          maxlength="72"
-          autocomplete="new-password"
-          placeholder="Ingresa una contraseña"
-        />
+        <div class="password-input">
+
+          <input
+            id="claveUsuario"
+            [type]="mostrarClave ? 'text' : 'password'"
+            formControlName="clave"
+            maxlength="72"
+            autocomplete="new-password"
+            placeholder="Ingresa una contraseña"
+          />
+
+          <button
+            type="button"
+            [disabled]="isSaving"
+            (click)="alternarVisibilidadClave()"
+            [attr.aria-label]="
+              mostrarClave
+                ? 'Ocultar contraseña'
+                : 'Mostrar contraseña'
+            "
+            [attr.aria-pressed]="mostrarClave"
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                mostrarClave
+                  ? 'bi-eye-slash'
+                  : 'bi-eye'
+              "
+            ></i>
+          </button>
+
+        </div>
 
         <small class="field-hint">
           Debe tener entre 8 y 72 caracteres.
@@ -472,8 +496,7 @@
         <i class="bi bi-info-circle"></i>
 
         <span>
-          La cuenta se registrará activa. La contraseña se almacenará
-          cifrada mediante el backend.
+          La cuenta se registrará como activa.
         </span>
       </div>
 

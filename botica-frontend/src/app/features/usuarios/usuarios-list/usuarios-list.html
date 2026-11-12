@@ -20,9 +20,7 @@
 
 </div>
 
-<!-- ========================================================= -->
 <!-- NOTIFICACIÓN -->
-<!-- ========================================================= -->
 
 <div
   class="usuario-toast"
@@ -34,9 +32,7 @@
   {{ mensajeNotificacion }}
 </div>
 
-<!-- ========================================================= -->
 <!-- BUSCADOR -->
-<!-- ========================================================= -->
 
 <div class="search-bar card">
 
@@ -52,9 +48,7 @@
 
 </div>
 
-<!-- ========================================================= -->
 <!-- ERROR DE CARGA -->
-<!-- ========================================================= -->
 
 <div
   class="load-error"
@@ -74,9 +68,7 @@
   </button>
 </div>
 
-<!-- ========================================================= -->
 <!-- TABLA DE USUARIOS -->
-<!-- ========================================================= -->
 
 <div class="table-container card">
 
@@ -88,6 +80,7 @@
         <th>N° Documento</th>
         <th>Nombres y Apellidos</th>
         <th>Usuario</th>
+        <th>Correo</th>
         <th>Perfil</th>
         <th>Estado</th>
         <th>Acciones</th>
@@ -98,14 +91,14 @@
 
       <!-- CARGANDO -->
       <tr *ngIf="isLoading">
-        <td colspan="7" class="text-center">
+        <td colspan="8" class="text-center">
           Cargando usuarios...
         </td>
       </tr>
 
       <!-- ERROR -->
       <tr *ngIf="!isLoading && errorCarga">
-        <td colspan="7" class="text-center">
+        <td colspan="8" class="text-center">
           No se pudo cargar la información.
         </td>
       </tr>
@@ -118,7 +111,7 @@
           && usuarios.length === 0
         "
       >
-        <td colspan="7" class="text-center">
+        <td colspan="8" class="text-center">
           {{
             searchTerm
               ? 'No se encontraron usuarios con esa búsqueda.'
@@ -179,6 +172,11 @@
 
           </div>
 
+        </td>
+
+        <!-- CORREO -->
+        <td data-label="Correo">
+          {{ usuario.correo || '—' }}
         </td>
 
         <!-- PERFIL -->
@@ -298,9 +296,7 @@
 
   </table>
 
-  <!-- ======================================================= -->
   <!-- PAGINACIÓN -->
-  <!-- ======================================================= -->
 
   <div
     class="pagination"
@@ -333,9 +329,7 @@
 
 </div>
 
-<!-- ========================================================= -->
 <!-- MODAL DE REGISTRO Y EDICIÓN -->
-<!-- ========================================================= -->
 
 <app-usuario-modal
   *ngIf="mostrarModalUsuario"
@@ -345,9 +339,7 @@
 >
 </app-usuario-modal>
 
-<!-- ========================================================= -->
 <!-- MODAL DE RESTABLECIMIENTO DE CONTRASEÑA -->
-<!-- ========================================================= -->
 
 <app-usuario-clave-modal
   *ngIf="mostrarModalClave && usuarioClaveSeleccionado"
@@ -357,9 +349,7 @@
 >
 </app-usuario-clave-modal>
 
-<!-- ========================================================= -->
 <!-- MODAL DE CONFIRMACIÓN -->
-<!-- ========================================================= -->
 
 <div
   class="confirm-backdrop"
