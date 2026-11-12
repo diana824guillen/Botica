@@ -43,7 +43,9 @@ public class GlobalExceptionHandler {
                 || normalizado.contains("ya existe un lote")
                 || normalizado.contains("ya existe un perfil con ese nombre")
                 || normalizado.contains("no se puede desactivar este perfil")
-                || normalizado.contains("no se puede eliminar este perfil");
+                || normalizado.contains("no se puede eliminar este perfil")
+                || normalizado.contains("ya existe un usuario con ese documento")
+                || normalizado.contains("ya existe un usuario con ese nombre de acceso");
 
         HttpStatus status = esConflicto
                 ? HttpStatus.CONFLICT
