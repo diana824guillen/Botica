@@ -106,6 +106,14 @@ export class PresentacionesModalComponent implements OnInit {
           Validators.required,
           Validators.min(0.01)
         ]
+      ],
+
+      stockMinimo: [
+        0,
+        [
+          Validators.required,
+          Validators.min(0)
+        ]
       ]
 
     });
@@ -160,7 +168,14 @@ export class PresentacionesModalComponent implements OnInit {
     this.presentacionForm.patchValue({
       tipo: presentacion.tipo,
       factorConversion: presentacion.factorConversion,
-      precioVenta: presentacion.precioVenta
+      precioVenta: presentacion.precioVenta,
+      stockMinimo: presentacion.stockMinimo ?? 0
+    });
+
+    // El factor de conversión queda bloqueado después de crear
+    // la presentación, para evitar alterar su equivalencia.
+    this.presentacionForm.get('factorConversion')?.disable({
+      emitEvent: false
     });
   }
 
@@ -172,7 +187,14 @@ export class PresentacionesModalComponent implements OnInit {
     this.presentacionForm.reset({
       tipo: 'UNIDAD',
       factorConversion: 1,
-      precioVenta: null
+      precioVenta: null,
+      stockMinimo: 0
+    });
+
+    // Al cancelar la edición, el formulario vuelve a permitir
+    // ingresar el factor de una nueva presentación.
+    this.presentacionForm.get('factorConversion')?.enable({
+      emitEvent: false
     });
   }
 
@@ -187,12 +209,14 @@ export class PresentacionesModalComponent implements OnInit {
       return;
     }
 
+    // getRawValue() incluye el factor de conversión aunque esté deshabilitado.
     const valores = this.presentacionForm.getRawValue();
 
     const solicitud: PresentacionRequest = {
       tipo: valores.tipo as TipoPresentacion,
       factorConversion: Number(valores.factorConversion),
-      precioVenta: Number(valores.precioVenta)
+      precioVenta: Number(valores.precioVenta),
+      stockMinimo: Number(valores.stockMinimo ?? 0)
     };
 
     // Comprobar que no exista otra presentación con el mismo tipo

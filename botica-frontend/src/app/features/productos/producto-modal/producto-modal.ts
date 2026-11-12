@@ -102,14 +102,6 @@ export class ProductoModalComponent implements OnInit {
 
       requiereReceta: [false],
 
-      stockMinimo: [
-        0,
-        [
-          Validators.required,
-          Validators.min(0)
-        ]
-      ],
-
       presentaciones: this.fb.array([])
     });
 
@@ -119,8 +111,7 @@ export class ProductoModalComponent implements OnInit {
         categoriaId: this.productoEditar.categoriaId,
         nombre: this.productoEditar.nombre,
         descripcion: this.productoEditar.descripcion || '',
-        requiereReceta: this.productoEditar.requiereReceta,
-        stockMinimo: this.productoEditar.stockMinimo
+        requiereReceta: this.productoEditar.requiereReceta
       });
 
     } else {
@@ -153,6 +144,14 @@ export class ProductoModalComponent implements OnInit {
         [
           Validators.required,
           Validators.min(0.01)
+        ]
+      ],
+
+      stockMinimo: [
+        0,
+        [
+          Validators.required,
+          Validators.min(0)
         ]
       ]
 
@@ -254,17 +253,6 @@ export class ProductoModalComponent implements OnInit {
       return;
     }
 
-    const stockMinimo = Number(valores.stockMinimo);
-
-    if (!Number.isFinite(stockMinimo) || stockMinimo < 0) {
-
-      this.productoForm.get('stockMinimo')?.setErrors({
-        min: true
-      });
-
-      return;
-    }
-
     const categoriaId = Number(valores.categoriaId);
 
     let peticion: Observable<Producto>;
@@ -276,7 +264,10 @@ export class ProductoModalComponent implements OnInit {
         nombre,
         descripcion: String(valores.descripcion || '').trim() || null,
         requiereReceta: Boolean(valores.requiereReceta),
-        stockMinimo
+
+        // Se conserva el valor anterior del campo general mientras
+        // terminamos de retirar esa propiedad del backend y la BD.
+        stockMinimo: Number(this.productoEditar.stockMinimo ?? 0)
       };
 
       peticion = this.productoService.actualizarProducto(
@@ -289,10 +280,18 @@ export class ProductoModalComponent implements OnInit {
       const presentaciones = this.presentacionesForm.controls.map(
         control => ({
           tipo: control.get('tipo')?.value as TipoPresentacion,
+
           factorConversion: Number(
             control.get('factorConversion')?.value
           ),
-          precioVenta: Number(control.get('precioVenta')?.value)
+
+          precioVenta: Number(
+            control.get('precioVenta')?.value
+          ),
+
+          stockMinimo: Number(
+            control.get('stockMinimo')?.value ?? 0
+          )
         })
       );
 
@@ -313,7 +312,10 @@ export class ProductoModalComponent implements OnInit {
         nombre,
         descripcion: String(valores.descripcion || '').trim() || null,
         requiereReceta: Boolean(valores.requiereReceta),
-        stockMinimo,
+
+        // El mínimo general ya no se configura desde la interfaz.
+        stockMinimo: 0,
+
         presentaciones
       };
 

@@ -84,8 +84,19 @@
                 step="1"
               />
 
-              <span class="help-text">
-                Unidades contenidas.
+              <span
+                class="help-text"
+                *ngIf="!presentacionEditar"
+              >
+                Unidades contenidas en esta presentación.
+              </span>
+
+              <span
+                class="help-text"
+                *ngIf="presentacionEditar"
+              >
+                Este valor no se puede modificar después de crear
+                la presentación.
               </span>
 
               <span
@@ -123,6 +134,37 @@
               </span>
 
             </div>
+
+          </div>
+
+          <!-- Stock mínimo de esta presentación -->
+          <div class="form-group">
+
+            <label>Stock mínimo de esta presentación</label>
+
+            <input
+              type="number"
+              formControlName="stockMinimo"
+              min="0"
+              step="0.01"
+              placeholder="0"
+            />
+
+            <span class="help-text">
+              Se generará una alerta cuando el stock disponible
+              sea igual o menor a esta cantidad. Use 0 si no
+              desea establecer una alerta.
+            </span>
+
+            <span
+              class="error-text"
+              *ngIf="
+                presentacionForm.get('stockMinimo')?.touched
+                && presentacionForm.get('stockMinimo')?.invalid
+              "
+            >
+              El stock mínimo debe ser igual o mayor que cero.
+            </span>
 
           </div>
 
@@ -192,6 +234,8 @@
                 <th>Tipo</th>
                 <th>Factor</th>
                 <th>Precio</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -200,7 +244,7 @@
             <tbody>
 
               <tr *ngIf="presentaciones.length === 0">
-                <td colspan="5" class="text-center">
+                <td colspan="7" class="text-center">
                   No hay presentaciones registradas.
                 </td>
               </tr>
@@ -217,6 +261,14 @@
 
                 <td data-label="Precio">
                   S/ {{ p.precioVenta | number:'1.2-2' }}
+                </td>
+
+                <td data-label="Stock actual">
+                  {{ (p.stockDisponible ?? 0) | number:'1.0-2' }}
+                </td>
+
+                <td data-label="Stock mínimo">
+                  {{ (p.stockMinimo ?? 0) | number:'1.0-2' }}
                 </td>
 
                 <td data-label="Estado">

@@ -805,24 +805,36 @@ public class ProductoService {
         }
     }
 
+    
     private void validarCambioEstructuraPresentacion(
-            Presentacion existente,
-            PresentacionDTO request) {
-
-        boolean cambioTipo = !existente.getTipo().equals(request.getTipo());
+                Presentacion existente,
+                PresentacionDTO request) {
 
         boolean cambioFactor = !existente.getFactorConversion()
                 .equals(request.getFactorConversion());
 
-        if ((cambioTipo || cambioFactor)
+        // El factor de conversión sin modificar, independientemente de que tenga inventario.
+        if (cambioFactor) {
+                throw new BusinessException(
+                        "El factor de conversión no se puede modificar después "
+                        + "de crear la presentación. Si necesita otra equivalencia, "
+                        + "registre una nueva presentación."
+                );
+        }
+
+        boolean cambioTipo = !existente.getTipo().equals(request.getTipo());
+
+        // Se conserva la restricción actual para el cambio de tipo:
+        // no se permite si la presentación ya tiene historial de inventario.
+        if (cambioTipo
                 && lotePresentacionRepository.existsByPresentacion_Id(
                         existente.getId())) {
 
-            throw new BusinessException(
-                    "No se puede modificar el tipo ni el factor de conversión "
-                    + "porque esta presentación ya tiene historial de inventario. "
-                    + "Registre una nueva presentación para utilizar otro formato."
-            );
+                throw new BusinessException(
+                        "No se puede modificar el tipo de presentación porque "
+                        + "ya tiene historial de inventario. Registre una nueva "
+                        + "presentación para utilizar otro formato."
+                );
         }
     }
 

@@ -127,6 +127,13 @@
       border-color: v.$primary-color;
       box-shadow: 0 0 0 2px v.$primary-light;
     }
+
+    &:disabled {
+      background: #e9ecef;
+      color: v.$text-muted;
+      cursor: not-allowed;
+      opacity: 1;
+    }
   }
 }
 

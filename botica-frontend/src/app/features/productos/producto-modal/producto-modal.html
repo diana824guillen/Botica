@@ -63,6 +63,7 @@
             {{ categoria.nombre }}
             {{ categoria.estado === 1 ? '' : '(Inactiva)' }}
           </option>
+
         </select>
 
         <span
@@ -143,38 +144,6 @@
 
       </div>
 
-      <!-- Stock mínimo -->
-      <div class="form-group">
-
-        <label for="stockMinimo">
-          Stock mínimo
-          <span class="required">*</span>
-        </label>
-
-        <input
-          id="stockMinimo"
-          type="number"
-          formControlName="stockMinimo"
-          min="0"
-          step="0.01"
-        />
-
-        <span class="help-text">
-          Se utilizará como referencia para identificar productos con stock bajo.
-        </span>
-
-        <span
-          class="error-text"
-          *ngIf="
-            productoForm.get('stockMinimo')?.touched
-            && productoForm.get('stockMinimo')?.invalid
-          "
-        >
-          El stock mínimo debe ser igual o mayor que cero.
-        </span>
-
-      </div>
-
       <!-- Receta médica -->
       <label class="checkbox-label">
         <input
@@ -198,7 +167,7 @@
 
             <p>
               Agregue al menos una presentación y defina su factor
-              de conversión y precio de venta.
+              de conversión, precio de venta y stock mínimo.
             </p>
           </div>
 
@@ -310,6 +279,37 @@
 
             </div>
 
+            <!-- Stock mínimo de esta presentación -->
+            <div class="form-group">
+
+              <label>Stock mínimo de esta presentación</label>
+
+              <input
+                type="number"
+                formControlName="stockMinimo"
+                min="0"
+                step="0.01"
+                placeholder="0"
+              />
+
+              <span class="help-text">
+                Se generará una alerta cuando el stock disponible
+                sea igual o menor a esta cantidad. Use 0 si no
+                desea establecer una alerta.
+              </span>
+
+              <span
+                class="error-text"
+                *ngIf="
+                  presentacion.get('stockMinimo')?.touched
+                  && presentacion.get('stockMinimo')?.invalid
+                "
+              >
+                El stock mínimo debe ser igual o mayor que cero.
+              </span>
+
+            </div>
+
           </div>
 
         </div>
@@ -324,8 +324,9 @@
         <i class="bi bi-info-circle"></i>
 
         <span>
-          Las presentaciones, sus precios y sus factores de conversión
-          se gestionan desde el botón «Presentaciones» de la tabla.
+          Las presentaciones, sus precios, sus factores de conversión
+          y sus stocks mínimos se gestionan desde el botón
+          «Presentaciones» de la tabla.
         </span>
       </div>
 

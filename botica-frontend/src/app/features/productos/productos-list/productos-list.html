@@ -5,7 +5,7 @@
 
     <p class="page-description">
       Administra los productos de la botica, sus categorías,
-      presentaciones, precios y niveles mínimos de stock.
+      presentaciones, precios y niveles mínimos de stock por presentación.
     </p>
   </div>
 
@@ -94,8 +94,7 @@
       <tr>
         <th>Producto</th>
         <th>Categoría</th>
-        <th>Stock actual</th>
-        <th>Stock mínimo</th>
+        <th>Stock total (unid. base)</th>
         <th>Receta</th>
         <th>Estado</th>
         <th>Acciones</th>
@@ -106,14 +105,14 @@
 
       <!-- Cargando -->
       <tr *ngIf="isLoading">
-        <td colspan="7" class="text-center">
+        <td colspan="6" class="text-center">
           Cargando productos...
         </td>
       </tr>
 
       <!-- Error -->
       <tr *ngIf="!isLoading && errorCarga">
-        <td colspan="7" class="text-center">
+        <td colspan="6" class="text-center">
           No se pudo cargar la información.
         </td>
       </tr>
@@ -126,7 +125,7 @@
           && productosFiltrados.length === 0
         "
       >
-        <td colspan="7" class="text-center">
+        <td colspan="6" class="text-center">
           {{
             searchTerm || categoriaSeleccionada !== null
               ? 'No se encontraron productos con los filtros seleccionados.'
@@ -153,12 +152,8 @@
           {{ producto.categoriaNombre }}
         </td>
 
-        <td data-label="Stock actual">
+        <td data-label="Stock total (unid. base)">
           {{ producto.stockActual | number:'1.0-2' }}
-        </td>
-
-        <td data-label="Stock mínimo">
-          {{ producto.stockMinimo | number:'1.0-2' }}
         </td>
 
         <td data-label="Receta">
