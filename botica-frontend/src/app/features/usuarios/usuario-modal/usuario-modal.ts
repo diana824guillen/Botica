@@ -23,10 +23,10 @@ import {
 } from 'rxjs';
 
 import {
-  Usuario,
-  UsuarioRequest,
-  UsuarioUpdate,
-  TipoDocumentoUsuario
+  TipoDocumentoUsuario,
+  type Usuario,
+  type UsuarioRequest,
+  type UsuarioUpdate
 } from '../../../core/models/usuario.model';
 
 import { Perfil } from '../../../core/models/perfil.model';
@@ -100,7 +100,7 @@ export class UsuarioModalComponent implements OnInit {
       ],
 
       tipoDocumento: [
-        this.usuarioEditar?.tipoDocumento ?? 'DNI',
+        this.usuarioEditar?.tipoDocumento ?? TipoDocumentoUsuario.DNI,
         [
           Validators.required
         ]
@@ -185,15 +185,15 @@ export class UsuarioModalComponent implements OnInit {
 
     switch (tipo) {
 
-      case 'DNI':
+      case TipoDocumentoUsuario.DNI:
         formato = /^\d{8}$/;
         break;
 
-      case 'CE':
+      case TipoDocumentoUsuario.CE:
         formato = /^[A-Z0-9]{9,11}$/i;
         break;
 
-      case 'PASAPORTE':
+      case TipoDocumentoUsuario.PASAPORTE:
         formato = /^[A-Z0-9]{9,15}$/i;
         break;
 

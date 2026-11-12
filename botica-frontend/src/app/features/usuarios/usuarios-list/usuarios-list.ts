@@ -22,8 +22,13 @@ import { Usuario } from '../../../core/models/usuario.model';
 
 import { UsuarioService } from '../services/usuario';
 
-import { UsuarioModalComponent } from '../usuario-modal/usuario-modal';
-import { UsuarioClaveModalComponent } from '../usuario-clave-modal/usuario-clave-modal';
+import {
+  UsuarioModalComponent
+} from '../usuario-modal/usuario-modal';
+
+import {
+  UsuarioClaveModalComponent
+} from '../usuario-clave-modal/usuario-clave-modal';
 
 type TipoConfirmacionUsuario =
   | 'activar'
@@ -95,7 +100,7 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
   usuarioSeleccionado: Usuario | null = null;
 
   // ============================================================
-  // MODAL DE RESTABLECIMIENTO DE CONTRASEÑA
+  // MODAL DE CONTRASEÑA
   // ============================================================
 
   mostrarModalClave = false;
@@ -265,7 +270,7 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // ABRIR / CERRAR MODAL DE USUARIO
+  // MODAL DE REGISTRO Y EDICIÓN
   // ============================================================
 
   abrirModalUsuario(usuario?: Usuario): void {
@@ -298,7 +303,7 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // ABRIR / CERRAR MODAL DE CONTRASEÑA
+  // MODAL DE CONTRASEÑA
   // ============================================================
 
   abrirModalClave(usuario: Usuario): void {
@@ -325,7 +330,6 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
       'La contraseña se restableció correctamente.'
     );
 
-    // Actualiza el estado de bloqueo del usuario.
     this.cargarUsuarios();
   }
 
@@ -461,8 +465,6 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
 
         next: () => {
 
-          // Si se elimina el último registro de la página,
-          // retrocede para evitar mostrar una página vacía.
           if (
             accion.tipo === 'eliminar'
             && this.usuarios.length === 1
@@ -496,7 +498,7 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // OBTENER MENSAJE DE ERROR
+  // MENSAJES DE ERROR
   // ============================================================
 
   private obtenerMensajeError(

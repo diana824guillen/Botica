@@ -1,4 +1,11 @@
-export type TipoDocumentoUsuario = 'DNI' | 'CE' | 'PASAPORTE';
+export const TipoDocumentoUsuario = {
+  DNI: 'DNI',
+  CE: 'CE',
+  PASAPORTE: 'PASAPORTE'
+} as const;
+
+export type TipoDocumentoUsuario =
+  typeof TipoDocumentoUsuario[keyof typeof TipoDocumentoUsuario];
 
 export interface Usuario {
   id: number;
