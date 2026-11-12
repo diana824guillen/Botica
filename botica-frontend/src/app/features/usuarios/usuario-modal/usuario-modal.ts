@@ -23,13 +23,12 @@ import {
 } from 'rxjs';
 
 import type {
-  TipoDocumentoUsuario,
   Usuario,
   UsuarioRequest,
   UsuarioUpdate
 } from '../../../core/models/usuario.model';
 
-import { Perfil } from '../../../core/models/perfil.model';
+import type { Perfil } from '../../../core/models/perfil.model';
 
 import { UsuarioService } from '../services/usuario';
 
@@ -172,8 +171,9 @@ export class UsuarioModalComponent implements OnInit {
 
   actualizarValidadoresDocumento(): void {
 
-    const tipo = this.usuarioForm?.get('tipoDocumento')?.value
-      as TipoDocumentoUsuario;
+    const tipo = String(
+      this.usuarioForm?.get('tipoDocumento')?.value ?? 'DNI'
+    );
 
     const control = this.usuarioForm?.get('numeroDocumento');
 
@@ -319,11 +319,25 @@ export class UsuarioModalComponent implements OnInit {
       return;
     }
 
+    // Validar el tipo de documento sin utilizar conversiones de tipo.
+    const tipoDocumento = String(valores.tipoDocumento ?? '');
+
+    if (
+      tipoDocumento !== 'DNI'
+      && tipoDocumento !== 'CE'
+      && tipoDocumento !== 'PASAPORTE'
+    ) {
+
+      this.errorMessage = 'Selecciona un tipo de documento válido.';
+
+      return;
+    }
+
     const datosBase: Omit<UsuarioRequest, 'clave'> = {
 
       perfilId,
 
-      tipoDocumento: valores.tipoDocumento as TipoDocumentoUsuario,
+      tipoDocumento,
 
       numeroDocumento: String(
         valores.numeroDocumento ?? ''
