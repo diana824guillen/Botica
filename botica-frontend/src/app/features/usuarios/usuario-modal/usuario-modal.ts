@@ -64,7 +64,6 @@ export class UsuarioModalComponent implements OnInit {
 
   errorMessage = '';
 
-  // Control independiente para mostrar u ocultar la contraseña inicial.
   mostrarClave = false;
 
   private readonly fb = inject(FormBuilder);
@@ -94,8 +93,6 @@ export class UsuarioModalComponent implements OnInit {
 
     this.usuarioForm = this.fb.group({
 
-      // El selector inicia deshabilitado mientras se cargan
-      // los perfiles. Su estado se controla desde TypeScript.
       perfilId: [
         {
           value: this.usuarioEditar?.perfilId ?? null,
@@ -116,8 +113,7 @@ export class UsuarioModalComponent implements OnInit {
       numeroDocumento: [
         this.usuarioEditar?.numeroDocumento ?? '',
         [
-          Validators.required,
-          Validators.maxLength(15)
+          Validators.required
         ]
       ],
 
@@ -126,7 +122,9 @@ export class UsuarioModalComponent implements OnInit {
         [
           Validators.required,
           Validators.maxLength(100),
-          Validators.pattern(/\S/)
+          Validators.pattern(
+            /^(?=.*[a-zA-ZáéíóúÁÉÍÓÚñÑ])[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+          )
         ]
       ],
 
@@ -135,7 +133,9 @@ export class UsuarioModalComponent implements OnInit {
         [
           Validators.required,
           Validators.maxLength(100),
-          Validators.pattern(/\S/)
+          Validators.pattern(
+            /^(?=.*[a-zA-ZáéíóúÁÉÍÓÚñÑ])[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+          )
         ]
       ],
 
@@ -174,11 +174,63 @@ export class UsuarioModalComponent implements OnInit {
   }
 
   // ============================================================
-  // VISUALIZAR CONTRASEÑA
+  // FILTRAR NÚMERO DE DOCUMENTO SEGÚN EL TIPO
   // ============================================================
 
-  alternarVisibilidadClave(): void {
-    this.mostrarClave = !this.mostrarClave;
+  onInputDocumento(event: Event): void {
+
+    const input = event.target as HTMLInputElement;
+
+    const tipo = String(
+      this.usuarioForm.get('tipoDocumento')?.value ?? 'DNI'
+    );
+
+    let valor = input.value;
+
+    if (tipo === 'DNI') {
+
+      valor = valor
+        .replace(/[^0-9]/g, '')
+        .substring(0, 8);
+
+    } else if (tipo === 'CE') {
+
+      valor = valor
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, 11)
+        .toUpperCase();
+
+    } else {
+
+      valor = valor
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, 15)
+        .toUpperCase();
+    }
+
+    if (input.value !== valor) {
+
+      input.value = valor;
+
+      this.usuarioForm
+        .get('numeroDocumento')
+        ?.setValue(valor);
+    }
+  }
+
+  // ============================================================
+  // CAMBIAR TIPO DE DOCUMENTO
+  // ============================================================
+
+  cambiarTipoDocumento(): void {
+
+    // Al cambiar el tipo, se limpia el número anterior para
+    // evitar conservar un documento con otro formato.
+    this.usuarioForm
+      .get('numeroDocumento')
+      ?.reset('', { emitEvent: false });
+
+    this.actualizarValidadoresDocumento();
   }
 
   // ============================================================
@@ -214,16 +266,47 @@ export class UsuarioModalComponent implements OnInit {
         break;
 
       default:
-        formato = /.+/;
+        formato = /^$/;
+        break;
     }
 
     control.setValidators([
       Validators.required,
-      Validators.maxLength(15),
       Validators.pattern(formato)
     ]);
 
     control.updateValueAndValidity();
+  }
+
+  // ============================================================
+  // FILTRAR NOMBRES Y APELLIDOS
+  // ============================================================
+
+  onInputNombre(event: Event, controlName: string): void {
+
+    const input = event.target as HTMLInputElement;
+
+    const valor = input.value.replace(
+      /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+      ''
+    );
+
+    if (input.value !== valor) {
+
+      input.value = valor;
+
+      this.usuarioForm
+        .get(controlName)
+        ?.setValue(valor);
+    }
+  }
+
+  // ============================================================
+  // VISUALIZAR CONTRASEÑA
+  // ============================================================
+
+  alternarVisibilidadClave(): void {
+    this.mostrarClave = !this.mostrarClave;
   }
 
   // ============================================================
@@ -367,7 +450,6 @@ export class UsuarioModalComponent implements OnInit {
       return;
     }
 
-    // Validar el tipo de documento.
     const tipoDocumento = String(valores.tipoDocumento ?? '');
 
     if (

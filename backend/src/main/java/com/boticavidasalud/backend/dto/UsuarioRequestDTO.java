@@ -30,12 +30,20 @@ public class UsuarioRequestDTO {
         max = 100,
         message = "Los nombres no pueden superar los 100 caracteres"
     )
+    @Pattern(
+        regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$",
+        message = "Los nombres solo pueden contener letras y espacios"
+    )
     private String nombres;
 
     @NotBlank(message = "Los apellidos son obligatorios")
     @Size(
         max = 100,
         message = "Los apellidos no pueden superar los 100 caracteres"
+    )
+    @Pattern(
+        regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$",
+        message = "Los apellidos solo pueden contener letras y espacios"
     )
     private String apellidos;
 

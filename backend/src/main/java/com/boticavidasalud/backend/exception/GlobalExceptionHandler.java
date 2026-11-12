@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 
 import java.time.LocalDateTime;
@@ -73,6 +74,21 @@ public class GlobalExceptionHandler {
     }
 
     // ============================================================
+    // CUENTA DESACTIVADA O PERFIL INACTIVO
+    // ============================================================
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Map<String, Object>> handleDisabled(
+            DisabledException ex) {
+
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                "El acceso a esta cuenta no está habilitado. "
+                + "Comunícate con la administradora para recibir ayuda."
+        );
+    }
+
+    // ============================================================
     // NO AUTENTICADO
     // ============================================================
 
@@ -130,7 +146,7 @@ public class GlobalExceptionHandler {
 
         if (detalle.contains("uq_perfil_nombre")) {
 
-                mensaje = "Ya existe un perfil con ese nombre";
+            mensaje = "Ya existe un perfil con ese nombre";
 
         } else if (detalle.contains("uq_presentacion_producto_tipo_factor")) {
 

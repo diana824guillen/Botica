@@ -147,7 +147,7 @@
           <select
             id="tipoDocumentoUsuario"
             formControlName="tipoDocumento"
-            (change)="actualizarValidadoresDocumento()"
+            (change)="cambiarTipoDocumento()"
           >
             <option value="DNI">DNI</option>
             <option value="CE">Carné de extranjería</option>
@@ -180,6 +180,7 @@
             maxlength="15"
             autocomplete="off"
             placeholder="Ingresa el documento"
+            (input)="onInputDocumento($event)"
           />
 
           <span
@@ -235,6 +236,7 @@
           maxlength="100"
           autocomplete="off"
           placeholder="Ingresa los nombres"
+          (input)="onInputNombre($event, 'nombres')"
         />
 
         <span
@@ -254,7 +256,7 @@
             && usuarioForm.get('nombres')?.hasError('pattern')
           "
         >
-          Los nombres no pueden contener solamente espacios.
+          Solo se permiten letras y espacios.
         </span>
 
         <span
@@ -284,6 +286,7 @@
           maxlength="100"
           autocomplete="off"
           placeholder="Ingresa los apellidos"
+          (input)="onInputNombre($event, 'apellidos')"
         />
 
         <span
@@ -303,7 +306,7 @@
             && usuarioForm.get('apellidos')?.hasError('pattern')
           "
         >
-          Los apellidos no pueden contener solamente espacios.
+          Solo se permiten letras y espacios.
         </span>
 
         <span
