@@ -1,0 +1,226 @@
+<div class="modal-backdrop">
+
+  <section
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Restablecer contraseña"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- ENCABEZADO -->
+    <div class="modal-header">
+
+      <div>
+        <h3>Restablecer contraseña</h3>
+
+        <p>
+          Establece una nueva contraseña para la cuenta seleccionada.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrarModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <!-- DATOS DEL USUARIO -->
+    <div class="user-info">
+
+      <div class="user-icon">
+        <i class="bi bi-person"></i>
+      </div>
+
+      <div>
+        <strong>
+          {{ usuario?.nombres }} {{ usuario?.apellidos }}
+        </strong>
+
+        <span>
+          {{ usuario?.username }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- FORMULARIO -->
+    <form
+      [formGroup]="claveForm"
+      (ngSubmit)="guardar()"
+      novalidate
+    >
+
+      <!-- NUEVA CONTRASEÑA -->
+      <div class="form-group">
+
+        <label for="nuevaClave">
+          Nueva contraseña
+          <span class="required">*</span>
+        </label>
+
+        <div class="password-input">
+
+          <input
+            id="nuevaClave"
+            [type]="mostrarClave ? 'text' : 'password'"
+            formControlName="nuevaClave"
+            maxlength="72"
+            autocomplete="new-password"
+            placeholder="Ingresa la nueva contraseña"
+          />
+
+          <button
+            type="button"
+            [disabled]="isSaving"
+            (click)="mostrarClave = !mostrarClave"
+            [attr.aria-label]="
+              mostrarClave
+                ? 'Ocultar contraseña'
+                : 'Mostrar contraseña'
+            "
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                mostrarClave
+                  ? 'bi-eye-slash'
+                  : 'bi-eye'
+              "
+            ></i>
+          </button>
+
+        </div>
+
+        <small class="field-hint">
+          Debe tener entre 8 y 72 caracteres.
+        </small>
+
+        <span
+          class="error-text"
+          *ngIf="
+            claveForm.get('nuevaClave')?.touched
+            && claveForm.get('nuevaClave')?.hasError('required')
+          "
+        >
+          La nueva contraseña es obligatoria.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            claveForm.get('nuevaClave')?.touched
+            && (
+              claveForm.get('nuevaClave')?.hasError('minlength')
+              || claveForm.get('nuevaClave')?.hasError('maxlength')
+            )
+          "
+        >
+          La contraseña debe tener entre 8 y 72 caracteres.
+        </span>
+
+      </div>
+
+      <!-- CONFIRMAR CONTRASEÑA -->
+      <div class="form-group">
+
+        <label for="confirmarClave">
+          Confirmar contraseña
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="confirmarClave"
+          [type]="mostrarClave ? 'text' : 'password'"
+          formControlName="confirmarClave"
+          maxlength="72"
+          autocomplete="new-password"
+          placeholder="Vuelve a ingresar la contraseña"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            claveForm.get('confirmarClave')?.touched
+            && claveForm.get('confirmarClave')?.hasError('required')
+          "
+        >
+          Debes confirmar la contraseña.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            claveForm.get('confirmarClave')?.touched
+            && claveForm.get('confirmarClave')?.value
+            && !clavesCoinciden
+          "
+        >
+          Las contraseñas no coinciden.
+        </span>
+
+      </div>
+
+      <!-- INFORMACIÓN -->
+      <div class="info-banner">
+
+        <i class="bi bi-info-circle"></i>
+
+        <span>
+          Al restablecer la contraseña también se quitará el bloqueo
+          temporal de la cuenta y se reiniciarán sus intentos fallidos
+          de inicio de sesión.
+        </span>
+
+      </div>
+
+      <!-- ERROR -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- BOTONES -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isSaving"
+          (click)="cerrarModal()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="claveForm.invalid || isSaving"
+        >
+          {{
+            isSaving
+              ? 'Restableciendo...'
+              : 'Restablecer contraseña'
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  </section>
+
+</div>
+
+

@@ -1,0 +1,450 @@
+<div class="page-header">
+
+  <div>
+    <h2>Gestión de Usuarios</h2>
+
+    <p class="page-description">
+      Administra las cuentas de acceso al sistema, asigna perfiles
+      y controla el estado de los usuarios registrados.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    class="btn-primary"
+    (click)="abrirModalUsuario()"
+  >
+    <i class="bi bi-person-plus"></i>
+    Nuevo usuario
+  </button>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- NOTIFICACIÓN -->
+<!-- ========================================================= -->
+
+<div
+  class="usuario-toast"
+  *ngIf="mensajeNotificacion"
+  role="status"
+  aria-live="polite"
+>
+  <i class="bi bi-check-circle"></i>
+  {{ mensajeNotificacion }}
+</div>
+
+<!-- ========================================================= -->
+<!-- BUSCADOR -->
+<!-- ========================================================= -->
+
+<div class="search-bar card">
+
+  <i class="bi bi-search"></i>
+
+  <input
+    type="text"
+    [value]="searchTerm"
+    (input)="onSearchInput($event)"
+    placeholder="Buscar por documento, nombres, usuario o perfil..."
+    aria-label="Buscar usuarios"
+  />
+
+</div>
+
+<!-- ========================================================= -->
+<!-- ERROR DE CARGA -->
+<!-- ========================================================= -->
+
+<div
+  class="load-error"
+  *ngIf="errorCarga && !isLoading"
+  role="alert"
+  aria-live="polite"
+>
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarUsuarios()"
+  >
+    Reintentar
+  </button>
+</div>
+
+<!-- ========================================================= -->
+<!-- TABLA DE USUARIOS -->
+<!-- ========================================================= -->
+
+<div class="table-container card">
+
+  <table class="responsive-table">
+
+    <thead>
+      <tr>
+        <th>Tipo Doc.</th>
+        <th>N° Documento</th>
+        <th>Nombres y Apellidos</th>
+        <th>Usuario</th>
+        <th>Perfil</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <!-- CARGANDO -->
+      <tr *ngIf="isLoading">
+        <td colspan="7" class="text-center">
+          Cargando usuarios...
+        </td>
+      </tr>
+
+      <!-- ERROR -->
+      <tr *ngIf="!isLoading && errorCarga">
+        <td colspan="7" class="text-center">
+          No se pudo cargar la información.
+        </td>
+      </tr>
+
+      <!-- SIN RESULTADOS -->
+      <tr
+        *ngIf="
+          !isLoading
+          && !errorCarga
+          && usuarios.length === 0
+        "
+      >
+        <td colspan="7" class="text-center">
+          {{
+            searchTerm
+              ? 'No se encontraron usuarios con esa búsqueda.'
+              : 'Todavía no hay usuarios registrados.'
+          }}
+        </td>
+      </tr>
+
+      <!-- REGISTROS -->
+      <tr *ngFor="let usuario of usuarios">
+
+        <!-- TIPO DE DOCUMENTO -->
+        <td data-label="Tipo Doc.">
+          {{ usuario.tipoDocumento }}
+        </td>
+
+        <!-- NÚMERO DE DOCUMENTO -->
+        <td data-label="N° Documento">
+          {{ usuario.numeroDocumento }}
+        </td>
+
+        <!-- NOMBRES -->
+        <td data-label="Nombres y Apellidos">
+
+          <div class="user-name">
+
+            <strong>
+              {{ usuario.nombres }} {{ usuario.apellidos }}
+            </strong>
+
+            <span
+              class="protected-badge"
+              *ngIf="usuario.protegido"
+            >
+              <i class="bi bi-shield-lock-fill"></i>
+              Protegido
+            </span>
+
+          </div>
+
+        </td>
+
+        <!-- NOMBRE DE USUARIO -->
+        <td data-label="Usuario">
+
+          <div class="username-cell">
+
+            <span>{{ usuario.username }}</span>
+
+            <span
+              class="locked-badge"
+              *ngIf="usuario.bloqueado"
+              title="La cuenta tiene un bloqueo temporal"
+            >
+              <i class="bi bi-lock-fill"></i>
+              Bloqueado
+            </span>
+
+          </div>
+
+        </td>
+
+        <!-- PERFIL -->
+        <td data-label="Perfil">
+          {{ usuario.perfilNombre }}
+        </td>
+
+        <!-- ESTADO -->
+        <td data-label="Estado">
+
+          <span
+            class="status-badge"
+            [ngClass]="
+              usuario.estado === 1
+                ? 'active'
+                : 'inactive'
+            "
+          >
+            {{
+              usuario.estado === 1
+                ? 'Activo'
+                : 'Inactivo'
+            }}
+          </span>
+
+        </td>
+
+        <!-- ACCIONES -->
+        <td data-label="Acciones" class="actions-cell">
+
+          <div
+            class="actions-container"
+            *ngIf="!usuario.protegido"
+          >
+
+            <!-- EDITAR -->
+            <button
+              type="button"
+              class="action-btn edit"
+              title="Editar usuario"
+              aria-label="Editar usuario"
+              (click)="abrirModalUsuario(usuario)"
+            >
+              <i class="bi bi-pencil-square"></i>
+            </button>
+
+            <!-- RESTABLECER CONTRASEÑA -->
+            <button
+              type="button"
+              class="action-btn password"
+              title="Restablecer contraseña"
+              aria-label="Restablecer contraseña"
+              (click)="abrirModalClave(usuario)"
+            >
+              <i class="bi bi-key"></i>
+            </button>
+
+            <!-- ACTIVAR / DESACTIVAR -->
+            <button
+              type="button"
+              class="action-btn toggle"
+              [title]="
+                usuario.estado === 1
+                  ? 'Desactivar usuario'
+                  : 'Activar usuario'
+              "
+              [attr.aria-label]="
+                usuario.estado === 1
+                  ? 'Desactivar usuario'
+                  : 'Activar usuario'
+              "
+              (click)="
+                solicitarCambioEstado(
+                  usuario,
+                  usuario.estado === 1 ? 0 : 1
+                )
+              "
+            >
+              <i
+                class="bi"
+                [ngClass]="
+                  usuario.estado === 1
+                    ? 'bi-x-circle'
+                    : 'bi-check-circle'
+                "
+              ></i>
+            </button>
+
+            <!-- ELIMINAR -->
+            <button
+              type="button"
+              class="action-btn delete"
+              title="Eliminar usuario"
+              aria-label="Eliminar usuario"
+              (click)="solicitarEliminacion(usuario)"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+
+          </div>
+
+          <!-- CUENTA ADMIN PROTEGIDA -->
+          <span
+            class="protected-action"
+            *ngIf="usuario.protegido"
+            title="Esta cuenta no se puede modificar"
+          >
+            <i class="bi bi-lock-fill"></i>
+            No modificable
+          </span>
+
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+  <!-- ======================================================= -->
+  <!-- PAGINACIÓN -->
+  <!-- ======================================================= -->
+
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0 && !isLoading && !errorCarga"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
+    </button>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL DE REGISTRO Y EDICIÓN -->
+<!-- ========================================================= -->
+
+<app-usuario-modal
+  *ngIf="mostrarModalUsuario"
+  [usuarioEditar]="usuarioSeleccionado"
+  (cerrar)="cerrarModalUsuario()"
+  (guardado)="alGuardarUsuario()"
+>
+</app-usuario-modal>
+
+<!-- ========================================================= -->
+<!-- MODAL DE RESTABLECIMIENTO DE CONTRASEÑA -->
+<!-- ========================================================= -->
+
+<app-usuario-clave-modal
+  *ngIf="mostrarModalClave && usuarioClaveSeleccionado"
+  [usuario]="usuarioClaveSeleccionado"
+  (cerrar)="cerrarModalClave()"
+  (guardado)="alRestablecerClave()"
+>
+</app-usuario-clave-modal>
+
+<!-- ========================================================= -->
+<!-- MODAL DE CONFIRMACIÓN -->
+<!-- ========================================================= -->
+
+<div
+  class="confirm-backdrop"
+  *ngIf="confirmacion"
+  (click)="cerrarConfirmacion()"
+>
+
+  <section
+    class="confirm-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="confirmacion.titulo"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- ICONO -->
+    <div
+      class="confirm-icon"
+      [ngClass]="confirmacion.tipo"
+    >
+
+      <i
+        class="bi"
+        [ngClass]="
+          confirmacion.tipo === 'activar'
+            ? 'bi-check-circle'
+            : confirmacion.tipo === 'desactivar'
+              ? 'bi-exclamation-triangle'
+              : 'bi-trash'
+        "
+      ></i>
+
+    </div>
+
+    <!-- TÍTULO -->
+    <h3>{{ confirmacion.titulo }}</h3>
+
+    <!-- MENSAJE -->
+    <p>{{ confirmacion.mensaje }}</p>
+
+    <!-- USUARIO -->
+    <p class="confirm-user-name">
+      {{ confirmacion.nombre }}
+    </p>
+
+    <!-- ERROR -->
+    <div
+      class="confirm-error"
+      *ngIf="errorConfirmacion"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorConfirmacion }}
+    </div>
+
+    <!-- BOTONES -->
+    <div class="confirm-footer">
+
+      <button
+        type="button"
+        class="btn-cancel"
+        [disabled]="procesandoConfirmacion"
+        (click)="cerrarConfirmacion()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-confirm"
+        [ngClass]="confirmacion.tipo"
+        [disabled]="procesandoConfirmacion"
+        (click)="confirmarAccion()"
+      >
+        {{
+          procesandoConfirmacion
+            ? 'Procesando...'
+            : confirmacion.textoBoton
+        }}
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+

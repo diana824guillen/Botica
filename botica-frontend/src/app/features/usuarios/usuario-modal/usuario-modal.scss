@@ -1,0 +1,262 @@
+@use '../../../../styles/variables' as v;
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 600px;
+  max-height: 92vh;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+
+  background: v.$bg-surface;
+  border-radius: v.$radius-lg;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+/* ENCABEZADO */
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+
+  padding: 1.5rem;
+
+  border-bottom: 1px solid v.$border-color;
+
+  h3 {
+    margin: 0 0 0.35rem;
+    color: v.$primary-color;
+  }
+
+  p {
+    margin: 0;
+    color: v.$text-muted;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .close-btn {
+    flex-shrink: 0;
+
+    background: none;
+    border: none;
+
+    color: v.$text-muted;
+    font-size: 1.2rem;
+
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: v.$danger-color;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* FORMULARIO */
+
+form {
+  padding: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+
+  margin-bottom: 1.15rem;
+
+  label {
+    color: v.$text-main;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  input,
+  select {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 0.75rem;
+
+    color: v.$text-main;
+    background: white;
+
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius-md;
+
+    font-family: inherit;
+    font-size: 0.95rem;
+
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      border-color: v.$primary-color;
+      box-shadow: 0 0 0 2px v.$primary-light;
+    }
+
+    &:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      background: v.$bg-body;
+    }
+  }
+}
+
+.required {
+  color: v.$danger-color;
+  margin-left: 2px;
+}
+
+.optional {
+  color: v.$text-muted;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.field-hint {
+  color: v.$text-muted;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.error-text {
+  color: v.$danger-color;
+  font-size: 0.8rem;
+  margin-top: 0.1rem;
+}
+
+/* MENSAJES */
+
+.info-banner,
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+
+  border-radius: v.$radius-md;
+
+  font-size: 0.9rem;
+  line-height: 1.5;
+
+  overflow-wrap: anywhere;
+
+  i {
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.info-banner {
+  color: #0369a1;
+  background: #e0f2fe;
+}
+
+.error-banner {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+/* PIE */
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+
+  padding-top: 1rem;
+  border-top: 1px solid v.$border-color;
+
+  button {
+    padding: 0.65rem 1.2rem;
+
+    border: none;
+    border-radius: v.$radius-md;
+
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-secondary {
+    color: v.$text-main;
+    background: v.$bg-body;
+
+    &:hover:not(:disabled) {
+      background: #e5e7eb;
+    }
+  }
+
+  .btn-primary {
+    color: white;
+    background: v.$primary-color;
+
+    &:hover:not(:disabled) {
+      background: v.$primary-hover;
+    }
+  }
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 540px) {
+
+  form {
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .modal-footer {
+    gap: 0.5rem;
+
+    button {
+      flex: 1;
+      padding: 0.65rem 0.75rem;
+    }
+  }
+}
+
+

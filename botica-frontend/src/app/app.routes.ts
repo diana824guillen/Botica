@@ -18,6 +18,7 @@ import { VentasPosComponent } from './features/ventas/ventas-pos/ventas-pos';
 import { VentasHistorialComponent } from './features/ventas/ventas-historial/ventas-historial';
 
 import { PerfilesListComponent } from './features/perfiles/perfiles-list/perfiles-list';
+import { UsuariosListComponent } from './features/usuarios/usuarios-list/usuarios-list';
 
 export const routes: Routes = [
 
@@ -103,6 +104,12 @@ export const routes: Routes = [
       {
         path: 'perfiles',
         component: PerfilesListComponent,
+        canActivate: [adminGuard]
+      },
+
+      {
+        path: 'usuarios',
+        component: UsuariosListComponent,
         canActivate: [adminGuard]
       }
 

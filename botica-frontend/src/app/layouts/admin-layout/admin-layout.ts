@@ -146,7 +146,7 @@ export class AdminLayoutComponent implements OnDestroy {
     {
       label: 'Usuarios',
       route: '/usuarios',
-      icon: 'bi-gear',
+      icon: 'bi-person-gear',
       roles: ['ADMIN']
     }
 

@@ -1,0 +1,530 @@
+<div class="modal-backdrop">
+
+  <section
+    class="modal-card card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="
+      usuarioEditar
+        ? 'Editar usuario'
+        : 'Registrar nuevo usuario'
+    "
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- ENCABEZADO -->
+    <div class="modal-header">
+
+      <div>
+        <h3>
+          {{
+            usuarioEditar
+              ? 'Editar usuario'
+              : 'Registrar nuevo usuario'
+          }}
+        </h3>
+
+        <p>
+          {{
+            usuarioEditar
+              ? 'Actualiza los datos y el perfil asignado al usuario.'
+              : 'Registra una nueva cuenta para acceder al sistema.'
+          }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Cerrar"
+        [disabled]="isSaving"
+        (click)="cerrarModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </div>
+
+    <!-- FORMULARIO -->
+    <form
+      [formGroup]="usuarioForm"
+      (ngSubmit)="guardar()"
+      novalidate
+    >
+
+      <!-- PERFIL -->
+      <div class="form-group">
+
+        <label for="perfilUsuario">
+          Perfil
+          <span class="required">*</span>
+        </label>
+
+        <select
+          id="perfilUsuario"
+          formControlName="perfilId"
+          [disabled]="isLoadingProfiles || perfiles.length === 0"
+        >
+
+          <option [ngValue]="null" disabled>
+            Selecciona un perfil
+          </option>
+
+          <option
+            *ngFor="let perfil of perfiles"
+            [ngValue]="perfil.id"
+          >
+            {{ perfil.nombre }}
+          </option>
+
+        </select>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('perfilId')?.touched
+            && usuarioForm.get('perfilId')?.hasError('required')
+          "
+        >
+          Debes seleccionar un perfil.
+        </span>
+
+      </div>
+
+      <!-- CARGA DE PERFILES -->
+      <div
+        class="info-banner"
+        *ngIf="isLoadingProfiles"
+      >
+        <i class="bi bi-hourglass-split"></i>
+        <span>Cargando perfiles disponibles...</span>
+      </div>
+
+      <div
+        class="error-banner"
+        *ngIf="perfilesError"
+        role="alert"
+      >
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ perfilesError }}</span>
+      </div>
+
+      <div
+        class="info-banner"
+        *ngIf="
+          !isLoadingProfiles
+          && !perfilesError
+          && perfiles.length === 0
+        "
+      >
+        <i class="bi bi-info-circle"></i>
+        <span>
+          No hay perfiles activos disponibles para asignar.
+          El perfil ADMIN está protegido y no puede asignarse a otra cuenta.
+        </span>
+      </div>
+
+      <div
+        class="info-banner"
+        *ngIf="perfilActualNoDisponible"
+      >
+        <i class="bi bi-exclamation-triangle"></i>
+        <span>
+          El perfil que tiene asignado este usuario ya no está disponible.
+          Selecciona un perfil activo para guardar los cambios.
+        </span>
+      </div>
+
+      <!-- TIPO Y NÚMERO DE DOCUMENTO -->
+      <div class="form-grid">
+
+        <div class="form-group">
+
+          <label for="tipoDocumentoUsuario">
+            Tipo de documento
+            <span class="required">*</span>
+          </label>
+
+          <select
+            id="tipoDocumentoUsuario"
+            formControlName="tipoDocumento"
+            (change)="actualizarValidadoresDocumento()"
+          >
+            <option value="DNI">DNI</option>
+            <option value="CE">Carné de extranjería</option>
+            <option value="PASAPORTE">Pasaporte</option>
+          </select>
+
+          <span
+            class="error-text"
+            *ngIf="
+              usuarioForm.get('tipoDocumento')?.touched
+              && usuarioForm.get('tipoDocumento')?.hasError('required')
+            "
+          >
+            Selecciona un tipo de documento.
+          </span>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="numeroDocumentoUsuario">
+            Número de documento
+            <span class="required">*</span>
+          </label>
+
+          <input
+            id="numeroDocumentoUsuario"
+            type="text"
+            formControlName="numeroDocumento"
+            maxlength="15"
+            autocomplete="off"
+            placeholder="Ingresa el documento"
+          />
+
+          <span
+            class="error-text"
+            *ngIf="
+              usuarioForm.get('numeroDocumento')?.touched
+              && usuarioForm.get('numeroDocumento')?.hasError('required')
+            "
+          >
+            El número de documento es obligatorio.
+          </span>
+
+          <span
+            class="error-text"
+            *ngIf="
+              usuarioForm.get('numeroDocumento')?.touched
+              && usuarioForm.get('numeroDocumento')?.hasError('pattern')
+            "
+          >
+            <ng-container
+              [ngSwitch]="usuarioForm.get('tipoDocumento')?.value"
+            >
+              <span *ngSwitchCase="'DNI'">
+                El DNI debe tener exactamente 8 dígitos.
+              </span>
+
+              <span *ngSwitchCase="'CE'">
+                El CE debe tener entre 9 y 11 caracteres alfanuméricos.
+              </span>
+
+              <span *ngSwitchCase="'PASAPORTE'">
+                El pasaporte debe tener entre 9 y 15 caracteres alfanuméricos.
+              </span>
+            </ng-container>
+          </span>
+
+        </div>
+
+      </div>
+
+      <!-- NOMBRES -->
+      <div class="form-group">
+
+        <label for="nombresUsuario">
+          Nombres
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="nombresUsuario"
+          type="text"
+          formControlName="nombres"
+          maxlength="100"
+          autocomplete="off"
+          placeholder="Ingresa los nombres"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('nombres')?.touched
+            && usuarioForm.get('nombres')?.hasError('required')
+          "
+        >
+          Los nombres son obligatorios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('nombres')?.touched
+            && usuarioForm.get('nombres')?.hasError('pattern')
+          "
+        >
+          Los nombres no pueden contener solamente espacios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('nombres')?.touched
+            && usuarioForm.get('nombres')?.hasError('maxlength')
+          "
+        >
+          Los nombres no pueden superar los 100 caracteres.
+        </span>
+
+      </div>
+
+      <!-- APELLIDOS -->
+      <div class="form-group">
+
+        <label for="apellidosUsuario">
+          Apellidos
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="apellidosUsuario"
+          type="text"
+          formControlName="apellidos"
+          maxlength="100"
+          autocomplete="off"
+          placeholder="Ingresa los apellidos"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('apellidos')?.touched
+            && usuarioForm.get('apellidos')?.hasError('required')
+          "
+        >
+          Los apellidos son obligatorios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('apellidos')?.touched
+            && usuarioForm.get('apellidos')?.hasError('pattern')
+          "
+        >
+          Los apellidos no pueden contener solamente espacios.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('apellidos')?.touched
+            && usuarioForm.get('apellidos')?.hasError('maxlength')
+          "
+        >
+          Los apellidos no pueden superar los 100 caracteres.
+        </span>
+
+      </div>
+
+      <!-- NOMBRE DE USUARIO -->
+      <div class="form-group">
+
+        <label for="usernameUsuario">
+          Nombre de usuario
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="usernameUsuario"
+          type="text"
+          formControlName="username"
+          maxlength="50"
+          autocomplete="off"
+          placeholder="Ej. carlos.ramirez"
+        />
+
+        <small class="field-hint">
+          Se guardará en minúsculas. Puedes utilizar letras,
+          números, puntos, guiones y guiones bajos.
+        </small>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('username')?.touched
+            && usuarioForm.get('username')?.hasError('required')
+          "
+        >
+          El nombre de usuario es obligatorio.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('username')?.touched
+            && (
+              usuarioForm.get('username')?.hasError('minlength')
+              || usuarioForm.get('username')?.hasError('maxlength')
+            )
+          "
+        >
+          El usuario debe tener entre 4 y 50 caracteres.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('username')?.touched
+            && usuarioForm.get('username')?.hasError('pattern')
+          "
+        >
+          El nombre de usuario contiene caracteres no permitidos.
+        </span>
+
+      </div>
+
+      <!-- CONTRASEÑA: SOLO PARA CREAR -->
+      <div
+        class="form-group"
+        *ngIf="!usuarioEditar"
+      >
+
+        <label for="claveUsuario">
+          Contraseña inicial
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="claveUsuario"
+          type="password"
+          formControlName="clave"
+          maxlength="72"
+          autocomplete="new-password"
+          placeholder="Ingresa una contraseña"
+        />
+
+        <small class="field-hint">
+          Debe tener entre 8 y 72 caracteres.
+        </small>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('clave')?.touched
+            && usuarioForm.get('clave')?.hasError('required')
+          "
+        >
+          La contraseña es obligatoria.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('clave')?.touched
+            && (
+              usuarioForm.get('clave')?.hasError('minlength')
+              || usuarioForm.get('clave')?.hasError('maxlength')
+            )
+          "
+        >
+          La contraseña debe tener entre 8 y 72 caracteres.
+        </span>
+
+      </div>
+
+      <!-- CORREO -->
+      <div class="form-group">
+
+        <label for="correoUsuario">
+          Correo electrónico
+          <span class="optional">(Opcional)</span>
+        </label>
+
+        <input
+          id="correoUsuario"
+          type="email"
+          formControlName="correo"
+          maxlength="255"
+          autocomplete="off"
+          placeholder="usuario@ejemplo.com"
+        />
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('correo')?.touched
+            && usuarioForm.get('correo')?.hasError('email')
+          "
+        >
+          Ingresa un correo electrónico válido.
+        </span>
+
+        <span
+          class="error-text"
+          *ngIf="
+            usuarioForm.get('correo')?.touched
+            && usuarioForm.get('correo')?.hasError('maxlength')
+          "
+        >
+          El correo no puede superar los 255 caracteres.
+        </span>
+
+      </div>
+
+      <!-- INFORMACIÓN -->
+      <div
+        class="info-banner"
+        *ngIf="!usuarioEditar"
+      >
+        <i class="bi bi-info-circle"></i>
+
+        <span>
+          La cuenta se registrará activa. La contraseña se almacenará
+          cifrada mediante el backend.
+        </span>
+      </div>
+
+      <!-- ERROR -->
+      <div
+        class="error-banner"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- BOTONES -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isSaving"
+          (click)="cerrarModal()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="
+            usuarioForm.invalid
+            || isSaving
+            || isLoadingProfiles
+            || perfiles.length === 0
+          "
+        >
+          {{
+            isSaving
+              ? 'Guardando...'
+              : usuarioEditar
+                ? 'Guardar cambios'
+                : 'Registrar usuario'
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  </section>
+
+</div>
+
+
