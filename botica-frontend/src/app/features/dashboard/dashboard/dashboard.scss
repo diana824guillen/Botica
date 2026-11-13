@@ -5,18 +5,253 @@
 }
 
 .welcome-header {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 
   h1 {
     color: v.$primary-color;
     font-size: 2rem;
     margin-bottom: 0.5rem;
   }
-  
+
   p {
     font-size: 1.1rem;
   }
 }
+
+/* ============================================================
+   ALERTAS DE STOCK MÍNIMO
+   ============================================================ */
+
+.stock-alerts.card {
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+
+  text-align: left;
+  cursor: default;
+
+  &:hover {
+    transform: none;
+    box-shadow: v.$shadow-sm;
+    border-color: v.$border-color;
+  }
+}
+
+.stock-alerts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  margin-bottom: 1.25rem;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    margin: 0 0 0.4rem;
+
+    color: v.$text-main;
+    font-size: 1.2rem;
+
+    i {
+      color: v.$warning-color;
+    }
+  }
+
+  p {
+    margin: 0;
+    color: v.$text-muted;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+}
+
+.btn-refresh-alerts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  padding: 0.65rem 0.9rem;
+
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+
+  color: v.$text-main;
+  background: white;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    border-color: v.$primary-color;
+    color: v.$primary-color;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.stock-alert-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.65rem;
+
+  padding: 1.5rem;
+
+  color: v.$text-muted;
+  font-size: 0.9rem;
+}
+
+.stock-alert-error {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+
+  padding: 1rem;
+
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: v.$radius-md;
+
+  font-size: 0.9rem;
+}
+
+.stock-alert-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+
+  padding: 1.1rem;
+
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: v.$radius-md;
+
+  > i {
+    font-size: 1.3rem;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    margin: 0;
+    color: v.$text-muted;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+}
+
+.stock-alert-summary {
+  margin-bottom: 1rem;
+
+  color: v.$text-muted;
+  font-size: 0.9rem;
+}
+
+.stock-alert-products {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.stock-alert-product {
+  padding: 1rem;
+
+  border: 1px solid v.$border-color;
+  border-radius: v.$radius-md;
+
+  h3 {
+    margin: 0 0 0.75rem;
+
+    color: v.$text-main;
+    font-size: 1rem;
+  }
+}
+
+.stock-alert-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  padding: 0.75rem 0;
+
+  border-top: 1px solid v.$border-color;
+}
+
+.stock-alert-presentation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  min-width: 110px;
+
+  strong {
+    color: v.$text-main;
+    font-size: 0.9rem;
+  }
+
+  span {
+    color: v.$text-muted;
+    font-size: 0.8rem;
+  }
+}
+
+.stock-alert-values {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    span {
+      color: v.$text-muted;
+      font-size: 0.75rem;
+    }
+
+    strong {
+      color: v.$text-main;
+      font-size: 0.95rem;
+    }
+  }
+}
+
+.stock-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  padding: 0.4rem 0.7rem;
+
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 20px;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+/* ============================================================
+   TARJETAS DEL DASHBOARD
+   ============================================================ */
 
 .info-cards {
   display: grid;
@@ -40,7 +275,6 @@
     border-color: v.$primary-light;
   }
 
-  /* Ajuste para los iconos de Bootstrap */
   .icon {
     font-size: 2.5rem;
     color: v.$primary-color;
@@ -61,9 +295,50 @@
   }
 }
 
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  .stock-alerts.card {
+    padding: 1rem;
+  }
+
+  .stock-alerts-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .btn-refresh-alerts {
+    width: 100%;
+  }
+
+  .stock-alert-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stock-alert-values {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .stock-alert-badge {
+    align-self: flex-start;
+  }
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 

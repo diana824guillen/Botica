@@ -85,7 +85,7 @@ export class ProductoModalComponent implements OnInit {
     this.productoForm = this.fb.group({
 
       categoriaId: [
-        null,
+        { value: null, disabled: true },
         Validators.required
       ],
 
@@ -173,11 +173,23 @@ export class ProductoModalComponent implements OnInit {
 
     this.cargandoCategorias = true;
 
+    const categoriaControl = this.productoForm.get('categoriaId');
+
+    categoriaControl?.disable({
+      emitEvent: false
+    });
+
     this.categoriaService
       .listarCategorias()
       .pipe(
         finalize(() => {
+
           this.cargandoCategorias = false;
+
+          categoriaControl?.enable({
+            emitEvent: false
+          });
+
           this.cdr.detectChanges();
         })
       )
@@ -192,8 +204,7 @@ export class ProductoModalComponent implements OnInit {
             categoria => categoria.estado === 1
           );
 
-          // Al editar, mantener visible la categoría ya asociada,
-          // incluso si está inactiva.
+          // Al editar, mantener visible la categoría ya asociada, incluso si está inactiva.
           if (this.productoEditar) {
 
             const categoriaActual = recibidas.find(

@@ -172,8 +172,11 @@ export class PresentacionesModalComponent implements OnInit {
       stockMinimo: presentacion.stockMinimo ?? 0
     });
 
-    // El factor de conversión queda bloqueado después de crear
-    // la presentación, para evitar alterar su equivalencia.
+    // El tipo y el factor de conversión no se modifican después de crear una presentación.
+    this.presentacionForm.get('tipo')?.disable({
+      emitEvent: false
+    });
+
     this.presentacionForm.get('factorConversion')?.disable({
       emitEvent: false
     });
@@ -191,8 +194,11 @@ export class PresentacionesModalComponent implements OnInit {
       stockMinimo: 0
     });
 
-    // Al cancelar la edición, el formulario vuelve a permitir
-    // ingresar el factor de una nueva presentación.
+    // Habilitar ambos campos para registrar otra presentación.
+    this.presentacionForm.get('tipo')?.enable({
+      emitEvent: false
+    });
+
     this.presentacionForm.get('factorConversion')?.enable({
       emitEvent: false
     });

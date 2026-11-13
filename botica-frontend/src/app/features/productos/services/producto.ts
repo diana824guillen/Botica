@@ -21,7 +21,10 @@ export class ProductoService {
 
   constructor(private http: HttpClient) {}
 
-  // Productos
+  // ============================================================
+  // PRODUCTOS
+  // ============================================================
+
   listarProductos(categoriaId?: number): Observable<Producto[]> {
 
     const url = categoriaId != null
@@ -63,7 +66,21 @@ export class ProductoService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // Presentaciones
+  // ============================================================
+  // ALERTAS DE INVENTARIO
+  // ============================================================
+
+  listarProductosConStockBajo(): Observable<Producto[]> {
+
+    return this.http.get<Producto[]>(
+      `${this.apiUrl}/stock-bajo`
+    );
+  }
+
+  // ============================================================
+  // PRESENTACIONES
+  // ============================================================
+
   listarPresentaciones(idProducto: number): Observable<Presentacion[]> {
     return this.http.get<Presentacion[]>(
       `${this.apiUrl}/${idProducto}/presentaciones`
