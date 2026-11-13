@@ -1,14 +1,11 @@
 package com.boticavidasalud.backend.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -24,14 +21,6 @@ public class ProductoUpdateDTO {
     private String descripcion;
 
     private Boolean requiereReceta = false;
-
-    @PositiveOrZero(message = "El stock mínimo no puede ser negativo")
-    @Digits(
-        integer = 8,
-        fraction = 2,
-        message = "El stock mínimo admite hasta dos decimales"
-    )
-    private BigDecimal stockMinimo = BigDecimal.ZERO;
 
     // Opcional: actualizar presentaciones existentes mediante sus IDs.
     @Valid

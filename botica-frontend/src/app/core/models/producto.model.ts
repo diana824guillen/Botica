@@ -35,7 +35,6 @@ export interface Producto {
 
   requiereReceta: boolean;
 
-  stockMinimo: number;
   stockActual: number;
 
   estado: number;
@@ -49,7 +48,6 @@ export interface ProductoRequest {
   nombre: string;
   descripcion: string | null;
   requiereReceta: boolean;
-  stockMinimo: number;
   presentaciones: PresentacionRequest[];
 }
 
@@ -58,7 +56,6 @@ export interface ProductoUpdateRequest {
   nombre: string;
   descripcion: string | null;
   requiereReceta: boolean;
-  stockMinimo: number;
 }
 
 

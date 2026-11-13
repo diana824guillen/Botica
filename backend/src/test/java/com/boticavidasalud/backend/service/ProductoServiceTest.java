@@ -55,7 +55,6 @@ class ProductoServiceTest {
         requestDTO.setNombre("Paracetamol");
         requestDTO.setDescripcion("Analgésico");
         requestDTO.setRequiereReceta(false);
-        requestDTO.setStockMinimo(BigDecimal.TEN);
 
         List<PresentacionDTO> presentaciones = new ArrayList<>();
         PresentacionDTO pres1 = new PresentacionDTO();
@@ -108,7 +107,6 @@ class ProductoServiceTest {
         productoMock.setNombre("Paracetamol");
         productoMock.setDescripcion("Analgésico");
         productoMock.setRequiereReceta(false);
-        productoMock.setStockMinimo(BigDecimal.TEN);
         productoMock.setEstado((short) 1);
         productoMock.setPresentaciones(new ArrayList<>());
 

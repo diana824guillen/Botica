@@ -122,11 +122,7 @@ public class ProductoService {
                         ? request.getRequiereReceta()
                         : false
         );
-        producto.setStockMinimo(
-                request.getStockMinimo() != null
-                        ? request.getStockMinimo()
-                        : BigDecimal.ZERO
-        );
+        
         producto.setEstado(EstadoRegistro.ACTIVO.getValor());
 
         List<Presentacion> presentaciones = new ArrayList<>();
@@ -339,11 +335,6 @@ public class ProductoService {
                 request.getRequiereReceta() != null
                         ? request.getRequiereReceta()
                         : false
-        );
-        producto.setStockMinimo(
-                request.getStockMinimo() != null
-                        ? request.getStockMinimo()
-                        : BigDecimal.ZERO
         );
 
         // Actualizar presentaciones existentes mediante sus IDs.
@@ -934,7 +925,6 @@ public class ProductoService {
         dto.setDescripcion(producto.getDescripcion());
 
         dto.setRequiereReceta(producto.getRequiereReceta());
-        dto.setStockMinimo(producto.getStockMinimo());
         dto.setEstado(producto.getEstado());
         dto.setFechaCreacion(producto.getFechaCreacion());
 

@@ -35,12 +35,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
     @Query("SELECT p FROM Producto p WHERE p.categoria.id = :categoriaId AND p.estado IN (0, 1) ORDER BY p.id DESC")
     List<Producto> listarPorCategoria(@Param("categoriaId") Integer categoriaId);
 
-    // Productos con stock bajo (suma de lotes ≤ stock mínimo)
-    @Query("SELECT p FROM Producto p WHERE p.estado = 1 AND " +
-           "(SELECT COALESCE(SUM(l.cantidad), 0) FROM Lote l " +
-           " WHERE l.producto = p AND l.estado = 1) <= p.stockMinimo")
-    List<Producto> listarConStockBajo();
-
     // Productos con lotes por vencer entre hoy y hoy + días
     @Query("SELECT DISTINCT p FROM Producto p " +
            "JOIN p.lotes l " +

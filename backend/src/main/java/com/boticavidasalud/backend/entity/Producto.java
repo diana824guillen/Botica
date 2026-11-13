@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +35,6 @@ public class Producto {
     @Column(name = "requiere_receta", nullable = false)
     private Boolean requiereReceta = false;
 
-    @Column(name = "stock_minimo", nullable = false, precision = 10, scale = 2)
-    private BigDecimal stockMinimo = BigDecimal.ZERO;
-
     @Column(nullable = false)
     private Short estado = 1;
 
@@ -65,7 +61,6 @@ public class Producto {
         fechaCreacion = LocalDateTime.now();
         if (estado == null) estado = 1;
         if (requiereReceta == null) requiereReceta = false;
-        if (stockMinimo == null) stockMinimo = BigDecimal.ZERO;
     }
 
     @PreUpdate

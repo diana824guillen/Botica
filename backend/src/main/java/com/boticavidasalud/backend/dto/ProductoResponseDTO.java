@@ -22,7 +22,6 @@ public class ProductoResponseDTO {
 
     private Boolean requiereReceta;
 
-    private BigDecimal stockMinimo;
     private BigDecimal stockActual;
 
     private Short estado;

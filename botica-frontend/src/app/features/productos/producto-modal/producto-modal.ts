@@ -275,10 +275,6 @@ export class ProductoModalComponent implements OnInit {
         nombre,
         descripcion: String(valores.descripcion || '').trim() || null,
         requiereReceta: Boolean(valores.requiereReceta),
-
-        // Se conserva el valor anterior del campo general mientras
-        // terminamos de retirar esa propiedad del backend y la BD.
-        stockMinimo: Number(this.productoEditar.stockMinimo ?? 0)
       };
 
       peticion = this.productoService.actualizarProducto(
@@ -323,9 +319,6 @@ export class ProductoModalComponent implements OnInit {
         nombre,
         descripcion: String(valores.descripcion || '').trim() || null,
         requiereReceta: Boolean(valores.requiereReceta),
-
-        // El mínimo general ya no se configura desde la interfaz.
-        stockMinimo: 0,
 
         presentaciones
       };
