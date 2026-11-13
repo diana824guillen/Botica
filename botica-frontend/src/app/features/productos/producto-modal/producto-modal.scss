@@ -17,10 +17,11 @@
   width: 100%;
   max-width: 650px;
   max-height: 92vh;
-  overflow-y: auto;
 
   display: flex;
   flex-direction: column;
+
+  overflow: hidden;
 
   background: v.$bg-surface;
   border-radius: v.$radius-lg;
@@ -28,9 +29,8 @@
 }
 
 .modal-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex: 0 0 auto;
+  z-index: 2;
 
   display: flex;
   justify-content: space-between;
@@ -63,7 +63,10 @@
   }
 }
 
-form {
+.modal-form {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: 1.5rem;
 }
 
