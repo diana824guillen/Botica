@@ -48,7 +48,7 @@ public class MovimientoInventario {
     @Column(name = "stock_nuevo", nullable = false, precision = 10, scale = 2)
     private BigDecimal stockNuevo;
 
-    @Column(length = 50)
+    @Column(length = 255)
     private String motivo;
 
     @Column(nullable = false)
