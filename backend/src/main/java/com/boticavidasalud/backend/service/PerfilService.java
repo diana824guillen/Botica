@@ -283,7 +283,8 @@ public class PerfilService {
                 "LOTE_ACCESO",
                 "PUNTO_VENTA_ACCESO",
                 "HISTORIAL_VENTAS_ACCESO",
-                "DESCUENTO_ACCESO"
+                "DESCUENTO_ACCESO",
+                "MOVIMIENTO_INVENTARIO_ACCESO"
         );
 
         List<Opcion> opcionesActivas =
