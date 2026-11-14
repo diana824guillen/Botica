@@ -19,6 +19,7 @@ import { VentasHistorialComponent } from './features/ventas/ventas-historial/ven
 
 import { PerfilesListComponent } from './features/perfiles/perfiles-list/perfiles-list';
 import { UsuariosListComponent } from './features/usuarios/usuarios-list/usuarios-list';
+import { MovimientosListComponent } from './features/movimientos/movimientos-list/movimientos-list';
 
 export const routes: Routes = [
 
@@ -90,6 +91,14 @@ export const routes: Routes = [
         component: LotesListComponent,
         canActivate: [
           permissionGuard('LOTE_ACCESO')
+        ]
+      },
+
+      {
+        path: 'movimientos',
+        component: MovimientosListComponent,
+        canActivate: [
+          permissionGuard('MOVIMIENTO_INVENTARIO_ACCESO')
         ]
       },
 

@@ -1,0 +1,602 @@
+<!-- ============================================================
+     ENCABEZADO
+============================================================ -->
+
+<div class="page-header">
+
+  <div>
+    <h2>Movimientos de inventario</h2>
+
+    <p class="page-description">
+      Consulta el historial de ingresos, salidas, ajustes, mermas
+      y devoluciones de las existencias de la botica.
+    </p>
+  </div>
+
+  <div class="header-reference">
+    <i class="bi bi-arrow-left-right"></i>
+    <span>Registro de movimientos</span>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     RESUMEN
+============================================================ -->
+
+<div class="history-summary">
+
+  <div class="summary-card">
+
+    <div class="summary-icon">
+      <i class="bi bi-arrow-left-right"></i>
+    </div>
+
+    <div>
+      <span>Movimientos encontrados</span>
+
+      <strong>
+        {{ totalElements }}
+      </strong>
+    </div>
+
+  </div>
+
+  <div class="summary-card summary-information">
+
+    <i class="bi bi-info-circle"></i>
+
+    <span>
+      Los movimientos se muestran desde el más reciente.
+      Este historial permite consultar las variaciones de existencias
+      y el usuario responsable de cada operación.
+    </span>
+
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     FILTROS
+============================================================ -->
+
+<section class="filters-card">
+
+  <div class="filters-heading">
+
+    <div>
+      <h3>
+        <i class="bi bi-funnel"></i>
+        Buscar movimientos
+      </h3>
+
+      <p>
+        Puedes combinar la búsqueda con el tipo de movimiento y las fechas.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-clear-filters"
+      (click)="limpiarFiltros()"
+      [disabled]="isLoading"
+    >
+      <i class="bi bi-arrow-counterclockwise"></i>
+      Limpiar filtros
+    </button>
+
+  </div>
+
+
+  <div class="filters-grid">
+
+    <!-- BÚSQUEDA -->
+
+    <div class="filter-group search-group">
+
+      <label for="buscarMovimiento">
+        Producto, lote, usuario o motivo
+      </label>
+
+      <div class="search-input-wrapper">
+
+        <i class="bi bi-search"></i>
+
+        <input
+          id="buscarMovimiento"
+          type="text"
+          [value]="terminoBusqueda"
+          (input)="onSearchInput($event)"
+          placeholder="Ej. Omeprazol, OME-VIG-001, duena..."
+          autocomplete="off"
+        />
+
+      </div>
+
+    </div>
+
+
+    <!-- TIPO DE MOVIMIENTO -->
+
+    <div class="filter-group">
+
+      <label for="filtroTipo">
+        Tipo de movimiento
+      </label>
+
+      <select
+        id="filtroTipo"
+        name="filtroTipo"
+        [(ngModel)]="filtroTipo"
+      >
+
+        <option value="">Todos los tipos</option>
+
+        <option value="INGRESO">Ingreso</option>
+
+        <option value="SALIDA_VENTA">Salida por venta</option>
+
+        <option value="AJUSTE">Ajuste</option>
+
+        <option value="MERMA">Merma</option>
+
+        <option value="DEVOLUCION">Devolución</option>
+
+      </select>
+
+    </div>
+
+
+    <!-- FECHA DESDE -->
+
+    <div class="filter-group">
+
+      <label for="fechaDesde">
+        Desde
+      </label>
+
+      <input
+        id="fechaDesde"
+        type="date"
+        name="fechaDesde"
+        [(ngModel)]="fechaDesde"
+      />
+
+    </div>
+
+
+    <!-- FECHA HASTA -->
+
+    <div class="filter-group">
+
+      <label for="fechaHasta">
+        Hasta
+      </label>
+
+      <input
+        id="fechaHasta"
+        type="date"
+        name="fechaHasta"
+        [(ngModel)]="fechaHasta"
+      />
+
+    </div>
+
+
+    <!-- BOTÓN APLICAR -->
+
+    <div class="filter-action">
+
+      <button
+        type="button"
+        class="btn-apply-filters"
+        (click)="aplicarFiltros()"
+        [disabled]="isLoading"
+      >
+        <i class="bi bi-funnel"></i>
+        Aplicar
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ============================================================
+     ERROR DE CARGA
+============================================================ -->
+
+<div
+  class="history-error"
+  *ngIf="errorCarga"
+  role="alert"
+  aria-live="polite"
+>
+
+  <i class="bi bi-exclamation-circle"></i>
+
+  <span>{{ errorCarga }}</span>
+
+  <button
+    type="button"
+    (click)="cargarMovimientos()"
+    [disabled]="isLoading"
+  >
+    Reintentar
+  </button>
+
+</div>
+
+
+<!-- ============================================================
+     TABLA DE MOVIMIENTOS
+============================================================ -->
+
+<section class="history-table-card">
+
+  <div class="table-heading">
+
+    <div>
+      <h3>Historial de movimientos</h3>
+
+      <p>
+        Consulta las variaciones de existencias y sus responsables.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-refresh"
+      (click)="cargarMovimientos()"
+      [disabled]="isLoading"
+      title="Actualizar movimientos"
+    >
+      <i
+        class="bi bi-arrow-clockwise"
+        [class.spinning]="isLoading"
+      ></i>
+
+      Actualizar
+    </button>
+
+  </div>
+
+
+  <div class="table-wrapper">
+
+    <table class="responsive-table">
+
+      <thead>
+
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Producto / Lote</th>
+          <th>Presentación</th>
+          <th class="text-center">Variación</th>
+          <th class="text-right">Stock anterior</th>
+          <th class="text-right">Stock nuevo</th>
+          <th>Responsable</th>
+          <th>Motivo</th>
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <!-- CARGANDO -->
+
+        <tr *ngIf="isLoading">
+
+          <td colspan="9" class="table-message">
+
+            <div class="loading-indicator">
+
+              <span class="spinner"></span>
+
+              <span>Cargando movimientos de inventario...</span>
+
+            </div>
+
+          </td>
+
+        </tr>
+
+
+        <!-- SIN RESULTADOS -->
+
+        <tr
+          *ngIf="
+            !isLoading &&
+            !errorCarga &&
+            movimientos.length === 0
+          "
+        >
+
+          <td colspan="9" class="table-message">
+
+            <div class="empty-state">
+
+              <i class="bi bi-inbox"></i>
+
+              <strong>No se encontraron movimientos</strong>
+
+              <span>
+                Intenta modificar los criterios de búsqueda
+                o limpiar los filtros.
+              </span>
+
+            </div>
+
+          </td>
+
+        </tr>
+
+
+        <!-- REGISTROS -->
+
+        <tr
+          *ngFor="let movimiento of movimientos"
+          class="movement-row"
+        >
+
+          <!-- FECHA -->
+
+          <td data-label="Fecha">
+
+            <span class="date-value">
+              {{ movimiento.fecha | date:'dd/MM/yyyy' }}
+            </span>
+
+            <small class="time-value">
+              {{ movimiento.fecha | date:'HH:mm:ss' }}
+            </small>
+
+          </td>
+
+
+          <!-- TIPO -->
+
+          <td data-label="Tipo">
+
+            <span
+              class="movement-badge"
+              [ngClass]="obtenerClaseTipo(movimiento.tipoMovimiento)"
+            >
+              {{ obtenerNombreTipo(movimiento.tipoMovimiento) }}
+            </span>
+
+          </td>
+
+
+          <!-- PRODUCTO Y LOTE -->
+
+          <td data-label="Producto / Lote">
+
+            <div class="product-information">
+
+              <strong>
+                {{ movimiento.productoNombre || 'Producto no disponible' }}
+              </strong>
+
+              <small>
+                Lote:
+                {{ movimiento.numeroLote || 'No asociado' }}
+              </small>
+
+            </div>
+
+          </td>
+
+
+          <!-- PRESENTACIÓN -->
+
+          <td data-label="Presentación">
+
+            <div class="presentation-information">
+
+              <span>
+                {{
+                  obtenerNombrePresentacion(
+                    movimiento.tipoPresentacion
+                  )
+                }}
+              </span>
+
+              <small
+                *ngIf="
+                  movimiento.factorConversion &&
+                  movimiento.factorConversion > 1
+                "
+              >
+                {{ movimiento.factorConversion }} unidades base
+              </small>
+
+            </div>
+
+          </td>
+
+
+          <!-- VARIACIÓN -->
+
+          <td
+            data-label="Variación"
+            class="text-center"
+          >
+
+            <div
+              class="quantity-information"
+              [ngClass]="obtenerClaseCantidad(movimiento.cantidad)"
+            >
+
+              <strong>
+                {{
+                  movimiento.cantidad > 0
+                    ? '+'
+                    : ''
+                }}{{ movimiento.cantidad | number:'1.0-2' }}
+              </strong>
+
+              <small>unid. base</small>
+
+              <span
+                class="commercial-quantity"
+                *ngIf="
+                  movimiento.cantidadPresentacion !== null &&
+                  movimiento.cantidadPresentacion !== undefined
+                "
+              >
+                {{
+                  movimiento.cantidadPresentacion > 0
+                    ? '+'
+                    : ''
+                }}{{ movimiento.cantidadPresentacion | number:'1.0-2' }}
+                {{
+                  obtenerNombrePresentacion(
+                    movimiento.tipoPresentacion
+                  )
+                }}
+              </span>
+
+            </div>
+
+          </td>
+
+
+          <!-- STOCK ANTERIOR -->
+
+          <td
+            data-label="Stock anterior"
+            class="text-right stock-value"
+          >
+
+            {{ movimiento.stockAnterior | number:'1.0-2' }}
+
+            <small>unid. base</small>
+
+          </td>
+
+
+          <!-- STOCK NUEVO -->
+
+          <td
+            data-label="Stock nuevo"
+            class="text-right stock-value"
+          >
+
+            <strong>
+              {{ movimiento.stockNuevo | number:'1.0-2' }}
+            </strong>
+
+            <small>unid. base</small>
+
+          </td>
+
+
+          <!-- RESPONSABLE -->
+
+          <td data-label="Responsable">
+
+            <div class="user-information">
+
+              <strong>
+                {{ movimiento.usuarioNombre || movimiento.usuarioUsername || 'No disponible' }}
+              </strong>
+
+              <small
+                *ngIf="
+                  movimiento.usuarioUsername &&
+                  movimiento.usuarioNombre !== movimiento.usuarioUsername
+                "
+              >
+                @{{ movimiento.usuarioUsername }}
+              </small>
+
+            </div>
+
+          </td>
+
+
+          <!-- MOTIVO -->
+
+          <td data-label="Motivo">
+
+            <span
+              class="reason-value"
+              [title]="movimiento.motivo || 'Sin motivo registrado'"
+            >
+              {{ movimiento.motivo || 'Sin motivo registrado' }}
+            </span>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- ========================================================
+       PAGINACIÓN
+  ========================================================= -->
+
+  <div
+    class="pagination-container"
+    *ngIf="!isLoading && totalElements > 0"
+  >
+
+    <div class="pagination-information">
+
+      <span>
+        Mostrando
+        <strong>{{ primerRegistro }}</strong>
+        -
+        <strong>{{ ultimoRegistro }}</strong>
+        de
+        <strong>{{ totalElements }}</strong>
+        movimientos
+      </span>
+
+    </div>
+
+
+    <div class="pagination-controls">
+
+      <button
+        type="button"
+        (click)="cambiarPagina(currentPage - 1)"
+        [disabled]="currentPage === 0 || isLoading"
+      >
+        <i class="bi bi-chevron-left"></i>
+        Anterior
+      </button>
+
+      <span>
+        Página {{ currentPage + 1 }}
+        de {{ totalPages }}
+      </span>
+
+      <button
+        type="button"
+        (click)="cambiarPagina(currentPage + 1)"
+        [disabled]="currentPage >= totalPages - 1 || isLoading"
+      >
+        Siguiente
+        <i class="bi bi-chevron-right"></i>
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+

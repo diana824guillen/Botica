@@ -123,6 +123,13 @@ export class AdminLayoutComponent implements OnDestroy {
     },
 
     {
+      label: 'Movimientos de inventario',
+      route: '/movimientos',
+      icon: 'bi-arrow-left-right',
+      permission: 'MOVIMIENTO_INVENTARIO_ACCESO'
+    },
+
+    {
       label: 'Descuentos',
       route: '/descuentos',
       icon: 'bi-percent',
