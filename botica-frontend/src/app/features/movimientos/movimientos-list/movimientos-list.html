@@ -277,9 +277,9 @@
           <th>Tipo</th>
           <th>Producto / Lote</th>
           <th>Presentación</th>
-          <th class="text-center">Variación</th>
-          <th class="text-right">Stock anterior</th>
-          <th class="text-right">Stock nuevo</th>
+          <th class="text-right">Stock anterior del lote</th>
+          <th class="text-center">Cantidad del movimiento</th>
+          <th class="text-right">Stock nuevo del lote</th>
           <th>Responsable</th>
           <th>Motivo</th>
         </tr>
@@ -414,54 +414,11 @@
                   movimiento.factorConversion > 1
                 "
               >
+                1
+                {{ obtenerNombrePresentacion(movimiento.tipoPresentacion) }}
+                =
                 {{ movimiento.factorConversion }} unidades base
               </small>
-
-            </div>
-
-          </td>
-
-
-          <!-- VARIACIÓN -->
-
-          <td
-            data-label="Variación"
-            class="text-center"
-          >
-
-            <div
-              class="quantity-information"
-              [ngClass]="obtenerClaseCantidad(movimiento.cantidad)"
-            >
-
-              <strong>
-                {{
-                  movimiento.cantidad > 0
-                    ? '+'
-                    : ''
-                }}{{ movimiento.cantidad | number:'1.0-2' }}
-              </strong>
-
-              <small>unid. base</small>
-
-              <span
-                class="commercial-quantity"
-                *ngIf="
-                  movimiento.cantidadPresentacion !== null &&
-                  movimiento.cantidadPresentacion !== undefined
-                "
-              >
-                {{
-                  movimiento.cantidadPresentacion > 0
-                    ? '+'
-                    : ''
-                }}{{ movimiento.cantidadPresentacion | number:'1.0-2' }}
-                {{
-                  obtenerNombrePresentacion(
-                    movimiento.tipoPresentacion
-                  )
-                }}
-              </span>
 
             </div>
 
@@ -471,13 +428,85 @@
           <!-- STOCK ANTERIOR -->
 
           <td
-            data-label="Stock anterior"
+            data-label="Stock anterior del lote"
             class="text-right stock-value"
           >
 
             {{ movimiento.stockAnterior | number:'1.0-2' }}
 
-            <small>unid. base</small>
+            <small>unidades base</small>
+
+          </td>
+
+
+          <!-- CANTIDAD DEL MOVIMIENTO -->
+
+          <td
+            data-label="Cantidad del movimiento"
+            class="text-center"
+          >
+
+            <div
+              class="quantity-information"
+              [ngClass]="obtenerClaseCantidad(movimiento.cantidad)"
+            >
+
+              <ng-container
+                *ngIf="
+                  movimiento.cantidadPresentacion !== null &&
+                  movimiento.cantidadPresentacion !== undefined;
+                  else movimientoSinPresentacion
+                "
+              >
+
+                <strong>
+                  {{
+                    movimiento.cantidadPresentacion > 0
+                      ? '+'
+                      : ''
+                  }}{{ movimiento.cantidadPresentacion | number:'1.0-2' }}
+
+                  {{
+                    obtenerNombrePresentacionCantidad(
+                      movimiento.tipoPresentacion,
+                      movimiento.cantidadPresentacion
+                    )
+                  }}
+                </strong>
+
+                <small>
+                  Equivale a
+                  {{
+                    movimiento.cantidad > 0
+                      ? '+'
+                      : ''
+                  }}{{ movimiento.cantidad | number:'1.0-2' }}
+                  unidades base
+                </small>
+
+              </ng-container>
+
+
+              <!-- MOVIMIENTO SIN PRESENTACIÓN ASOCIADA -->
+
+              <ng-template #movimientoSinPresentacion>
+
+                <strong>
+                  {{
+                    movimiento.cantidad > 0
+                      ? '+'
+                      : ''
+                  }}{{ movimiento.cantidad | number:'1.0-2' }}
+                  unidades base
+                </strong>
+
+                <small>
+                  Sin presentación asociada
+                </small>
+
+              </ng-template>
+
+            </div>
 
           </td>
 
@@ -485,7 +514,7 @@
           <!-- STOCK NUEVO -->
 
           <td
-            data-label="Stock nuevo"
+            data-label="Stock nuevo del lote"
             class="text-right stock-value"
           >
 
@@ -493,7 +522,7 @@
               {{ movimiento.stockNuevo | number:'1.0-2' }}
             </strong>
 
-            <small>unid. base</small>
+            <small>unidades base</small>
 
           </td>
 

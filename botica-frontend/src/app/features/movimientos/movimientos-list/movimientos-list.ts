@@ -385,6 +385,41 @@ export class MovimientosListComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
+  // NOMBRE DE LA PRESENTACIÓN SEGÚN LA CANTIDAD
+  // ============================================================
+
+  obtenerNombrePresentacionCantidad(
+    tipo: string | null,
+    cantidad: number
+  ): string {
+
+    // Cuando la cantidad es uno, utilizar el singular.
+    if (Math.abs(cantidad) === 1) {
+      return this.obtenerNombrePresentacion(tipo);
+    }
+
+    // Cuando hay varias presentaciones, utilizar el plural.
+    const nombresPlurales: Record<string, string> = {
+
+      UNIDAD: 'unidades',
+
+      BLISTER: 'blísteres',
+
+      CAJA: 'cajas',
+
+      FRASCO: 'frascos',
+
+      TIRA: 'tiras',
+
+      OTRO: 'presentaciones'
+    };
+
+    return tipo && nombresPlurales[tipo]
+      ? nombresPlurales[tipo]
+      : 'presentaciones';
+  }
+
+  // ============================================================
   // CLASE DE LA VARIACIÓN DE EXISTENCIAS
   // ============================================================
 
