@@ -277,9 +277,9 @@
           <th>Tipo</th>
           <th>Producto / Lote</th>
           <th>Presentación</th>
-          <th class="text-right">Stock anterior del lote</th>
+          <th class="text-center">Stock anterior</th>
           <th class="text-center">Cantidad del movimiento</th>
-          <th class="text-right">Stock nuevo del lote</th>
+          <th class="text-center">Stock nuevo</th>
           <th>Responsable</th>
           <th>Motivo</th>
         </tr>
@@ -414,10 +414,7 @@
                   movimiento.factorConversion > 1
                 "
               >
-                1
-                {{ obtenerNombrePresentacion(movimiento.tipoPresentacion) }}
-                =
-                {{ movimiento.factorConversion }} unidades base
+                Factor de conversión: {{ movimiento.factorConversion }}
               </small>
 
             </div>
@@ -429,12 +426,12 @@
 
           <td
             data-label="Stock anterior del lote"
-            class="text-right stock-value"
+            class="text-center stock-value"
           >
 
-            {{ movimiento.stockAnterior | number:'1.0-2' }}
-
-            <small>unidades base</small>
+            <strong>
+              {{ movimiento.stockAnterior | number:'1.0-2' }}
+            </strong>
 
           </td>
 
@@ -474,14 +471,18 @@
                   }}
                 </strong>
 
-                <small>
-                  Equivale a
+                <small
+                  *ngIf="
+                    movimiento.factorConversion &&
+                    movimiento.factorConversion > 1
+                  "
+                >
+                  Cantidad equivalente:
                   {{
                     movimiento.cantidad > 0
                       ? '+'
                       : ''
                   }}{{ movimiento.cantidad | number:'1.0-2' }}
-                  unidades base
                 </small>
 
               </ng-container>
@@ -497,7 +498,6 @@
                       ? '+'
                       : ''
                   }}{{ movimiento.cantidad | number:'1.0-2' }}
-                  unidades base
                 </strong>
 
                 <small>
@@ -515,14 +515,12 @@
 
           <td
             data-label="Stock nuevo del lote"
-            class="text-right stock-value"
+            class="text-center stock-value"
           >
 
             <strong>
               {{ movimiento.stockNuevo | number:'1.0-2' }}
             </strong>
-
-            <small>unidades base</small>
 
           </td>
 
