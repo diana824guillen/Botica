@@ -505,17 +505,8 @@
             <div class="user-information">
 
               <strong>
-                {{ movimiento.usuarioNombre || movimiento.usuarioUsername || 'No disponible' }}
+                {{ movimiento.usuarioNombre || 'No disponible' }}
               </strong>
-
-              <small
-                *ngIf="
-                  movimiento.usuarioUsername &&
-                  movimiento.usuarioNombre !== movimiento.usuarioUsername
-                "
-              >
-                @{{ movimiento.usuarioUsername }}
-              </small>
 
             </div>
 

@@ -807,4 +807,151 @@
 
 }
 
+/* ============================================================
+   AJUSTES VISUALES - CONSISTENCIA CON HISTORIAL DE VENTAS
+============================================================ */
+
+.page-header h2 {
+  font-size: 1.35rem;
+}
+
+.page-description {
+  font-size: 0.82rem;
+}
+
+.filters-heading,
+.table-heading {
+
+  h3 {
+    font-size: 0.9rem;
+  }
+
+  p {
+    font-size: 0.75rem;
+  }
+}
+
+.filter-group {
+
+  label {
+    font-size: 0.72rem;
+  }
+
+  input,
+  select {
+    font-size: 0.78rem;
+  }
+}
+
+.btn-clear-filters,
+.btn-refresh {
+  font-size: 0.75rem;
+}
+
+.filter-action .btn-apply-filters {
+  font-size: 0.78rem;
+}
+
+.table-wrapper {
+  border: 1px solid v.$border-color;
+  border-radius: 7px;
+  background: white;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table {
+
+  th {
+    padding: 0.85rem 0.8rem;
+    font-size: 0.72rem;
+  }
+
+  td {
+    padding: 0.9rem 0.8rem;
+    font-size: 0.76rem;
+  }
+}
+
+.date-value {
+  font-size: 0.76rem;
+}
+
+.time-value {
+  font-size: 0.7rem;
+}
+
+.product-information strong,
+.user-information strong {
+  font-size: 0.78rem;
+}
+
+.product-information small,
+.presentation-information small,
+.user-information small {
+  font-size: 0.7rem;
+}
+
+.presentation-information > span {
+  font-size: 0.76rem;
+}
+
+.movement-badge {
+  font-size: 0.7rem;
+  padding: 0.32rem 0.6rem;
+}
+
+.quantity-information {
+
+  strong {
+    font-size: 0.9rem;
+  }
+
+  > small,
+  .commercial-quantity {
+    font-size: 0.69rem;
+  }
+}
+
+.stock-value {
+  font-size: 0.76rem;
+
+  small {
+    font-size: 0.68rem;
+  }
+}
+
+.reason-value {
+  font-size: 0.74rem;
+}
+
+.pagination-information {
+  font-size: 0.72rem;
+}
+
+.pagination-controls {
+
+  span {
+    font-size: 0.72rem;
+  }
+
+  button {
+    font-size: 0.72rem;
+  }
+}
+
+.loading-indicator {
+  font-size: 0.78rem;
+}
+
+.empty-state {
+
+  strong {
+    font-size: 0.85rem;
+  }
+
+  span {
+    font-size: 0.74rem;
+  }
+}
+
 

@@ -123,7 +123,7 @@ export class AdminLayoutComponent implements OnDestroy {
     },
 
     {
-      label: 'Movimientos de inventario',
+      label: 'Mov. inventario',
       route: '/movimientos',
       icon: 'bi-arrow-left-right',
       permission: 'MOVIMIENTO_INVENTARIO_ACCESO'

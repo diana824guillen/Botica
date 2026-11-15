@@ -234,4 +234,42 @@
 
 }
 
+/* ============================================================
+   AJUSTE DE ESPACIADO DEL MENÚ LATERAL
+============================================================ */
+
+.sidebar-header {
+  padding: 1.1rem 0.8rem;
+}
+
+.sidebar-menu {
+  padding: 0.55rem 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  ul {
+    li {
+      a {
+        min-width: 0;
+        padding: 0.62rem 1.25rem;
+        line-height: 1.25;
+        font-size: 0.88rem;
+
+        .icon {
+          flex-shrink: 0;
+          width: 22px;
+          margin-right: 0.8rem;
+          font-size: 1.1rem;
+        }
+
+        .label {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+  }
+}
+
 
