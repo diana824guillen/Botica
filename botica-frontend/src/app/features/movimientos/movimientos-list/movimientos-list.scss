@@ -1124,4 +1124,27 @@
   }
 }
 
+/* ============================================================
+   ENCABEZADOS DE STOCK EN DOS LÍNEAS
+============================================================ */
+
+.responsive-table th.stock-header {
+  min-width: 105px;
+  white-space: normal;
+  line-height: 1.3;
+
+  span,
+  small {
+    display: block;
+  }
+
+  small {
+    margin-top: 0.12rem;
+    color: v.$text-muted;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+}
+
 

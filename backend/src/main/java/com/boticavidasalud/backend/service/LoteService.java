@@ -267,7 +267,7 @@ public class LoteService {
                     stockAnterior,
                     cantidadBase,
                     stockAcumulado,
-                    "Ingreso inicial de lote en " + presentacion.getTipo()
+                    "Ingreso de lote en " + presentacion.getTipo()
             );
         }
 
