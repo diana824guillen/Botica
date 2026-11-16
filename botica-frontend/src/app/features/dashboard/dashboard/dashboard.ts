@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import {
+  ChangeDetectorRef,
   Component,
   OnDestroy,
   OnInit,
@@ -87,6 +88,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
 
   // ============================================================
@@ -345,6 +347,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.errorFiltroFechas = '';
 
     this.cargandoVentas = true;
+    this.cdr.markForCheck();
 
     this.ventasSubscription = this.dashboardService
       .obtenerResumenVentas(
@@ -355,11 +358,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       )
       .pipe(
         finalize(() => {
-
           if (requestVersion === this.ventasRequestVersion) {
 
             this.cargandoVentas = false;
             this.ventasSubscription = null;
+
+            this.cdr.markForCheck();
           }
         })
       )
@@ -372,6 +376,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
 
           this.resumenVentas = respuesta;
+          this.cdr.markForCheck();
         },
 
         error: (error: unknown) => {
@@ -391,6 +396,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
             error,
             'No se pudo cargar el resumen de ventas.'
           );
+
+          this.cdr.markForCheck();
         }
 
       });
@@ -744,16 +751,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.errorInventario = '';
 
     this.cargandoInventario = true;
+    this.cdr.markForCheck();
 
-    this.dashboardService
+    this.inventarioSubscription = this.dashboardService
       .obtenerResumenInventario(this.diasAnticipacion)
       .pipe(
         finalize(() => {
-
           if (requestVersion === this.inventarioRequestVersion) {
 
             this.cargandoInventario = false;
             this.inventarioSubscription = null;
+
+            this.cdr.markForCheck();
           }
         })
       )
@@ -769,8 +778,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
           // Adaptación temporal para que la plantilla actual
           // pueda mostrar las alertas del endpoint consolidado.
-          this.productosStockBajo =
-            this.crearVistaAlertasStock(respuesta);
+          this.productosStockBajo = this.crearVistaAlertasStock(respuesta);
+          this.cdr.markForCheck();
         },
 
         error: (error: unknown) => {
@@ -791,6 +800,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
             error,
             'No se pudo cargar el resumen de inventario.'
           );
+
+          this.cdr.markForCheck();
         }
 
       });
@@ -966,16 +977,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.errorMovimientos = '';
 
     this.cargandoMovimientos = true;
+    this.cdr.markForCheck();
 
-    this.dashboardService
+    this.movimientosSubscription = this.dashboardService
       .listarMovimientosRecientes()
       .pipe(
         finalize(() => {
-
           if (requestVersion === this.movimientosRequestVersion) {
 
             this.cargandoMovimientos = false;
             this.movimientosSubscription = null;
+
+            this.cdr.markForCheck();
           }
         })
       )
@@ -988,6 +1001,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
 
           this.movimientosRecientes = respuesta ?? [];
+          this.cdr.markForCheck();
         },
 
         error: (error: unknown) => {
@@ -1007,6 +1021,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
             error,
             'No se pudieron cargar los movimientos recientes.'
           );
+
+          this.cdr.markForCheck();
         }
 
       });
@@ -1061,6 +1077,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.resumenVentas = null;
     this.errorVentas = '';
     this.errorFiltroFechas = '';
+    this.cdr.markForCheck();
   }
 
 
@@ -1071,6 +1088,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.resumenInventario = null;
     this.productosStockBajo = [];
     this.errorInventario = '';
+    this.cdr.markForCheck();
   }
 
 
@@ -1080,6 +1098,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.movimientosRecientes = [];
     this.errorMovimientos = '';
+    this.cdr.markForCheck();
   }
 
 
