@@ -96,34 +96,40 @@ public class DashboardService {
         // TOTALES DEL PERIODO ACTUAL
         // --------------------------------------------------------
 
-        Object[] resumenActual =
+        List<Object[]> resumenActual =
                 ventaRepository.obtenerResumenVentasDashboard(
                         fechaDesde,
                         fechaHasta
                 );
 
+        Object[] filaResumenActual =
+                obtenerFilaResumen(resumenActual);
+
         BigDecimal totalVendido =
-                convertirBigDecimal(resumenActual[0]);
+                convertirBigDecimal(filaResumenActual[0]);
 
         Long cantidadNotas =
-                convertirLong(resumenActual[1]);
+                convertirLong(filaResumenActual[1]);
 
 
         // --------------------------------------------------------
         // TOTALES DEL PERIODO DE COMPARACIÓN
         // --------------------------------------------------------
 
-        Object[] resumenAnterior =
+        List<Object[]> resumenAnterior =
                 ventaRepository.obtenerResumenVentasDashboard(
                         fechaDesdeComparacion,
                         fechaHastaComparacion
                 );
 
+        Object[] filaResumenAnterior =
+                obtenerFilaResumen(resumenAnterior);
+
         BigDecimal totalComparacion =
-                convertirBigDecimal(resumenAnterior[0]);
+                convertirBigDecimal(filaResumenAnterior[0]);
 
         Long notasComparacion =
-                convertirLong(resumenAnterior[1]);
+                convertirLong(filaResumenAnterior[1]);
 
 
         // --------------------------------------------------------
@@ -529,6 +535,30 @@ public class DashboardService {
         return resultado;
     }
 
+
+    // ============================================================
+    // OBTENER FILA DEL RESUMEN DE VENTAS
+    // ============================================================
+
+    private Object[] obtenerFilaResumen(List<Object[]> resultados) {
+
+        // Si no existen resultados, devolver valores por defecto.
+        if (resultados == null || resultados.isEmpty()) {
+                return new Object[]{null, 0L};
+        }
+
+        Object[] fila = resultados.get(0);
+
+        // Comprobar que la consulta devuelva ambos valores.
+        if (fila == null || fila.length < 2) {
+                throw new IllegalStateException(
+                        "La consulta del resumen de ventas no devolvió "
+                        + "el total y la cantidad de notas esperados."
+                );
+        }
+
+        return fila;
+    }
 
     // ============================================================
     // CONVERSIONES DE VALORES

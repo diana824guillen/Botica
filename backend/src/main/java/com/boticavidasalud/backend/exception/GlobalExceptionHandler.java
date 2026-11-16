@@ -15,9 +15,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // ============================================================
     // ERRORES DE NEGOCIO
@@ -179,7 +183,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleRuntime(
             RuntimeException ex) {
 
-        // No exponer detalles internos de la base de datos al cliente.
+        // Registrar el error completo para identificar su causa.
+        log.error("Error inesperado al procesar la solicitud", ex);
+
+        // No exponer detalles internos al cliente.
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Error interno del servidor"

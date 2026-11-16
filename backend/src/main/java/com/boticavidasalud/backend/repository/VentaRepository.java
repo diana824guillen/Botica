@@ -138,10 +138,10 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
             COUNT(v.id)
         FROM Venta v
         WHERE v.estado = 1
-          AND v.fechaVenta >= :desde
-          AND v.fechaVenta < :hasta
+        AND v.fechaVenta >= :desde
+        AND v.fechaVenta < :hasta
         """)
-    Object[] obtenerResumenVentasDashboard(
+    List<Object[]> obtenerResumenVentasDashboard(
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta
     );
