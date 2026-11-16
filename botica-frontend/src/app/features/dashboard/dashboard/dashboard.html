@@ -29,8 +29,8 @@
         </h2>
 
         <p>
-          Presentaciones que necesitan reposición según
-          el mínimo configurado.
+          Presentaciones agotadas o con existencias que alcanzaron
+          su mínimo configurado.
         </p>
       </div>
 
@@ -111,7 +111,7 @@
       <div class="stock-alert-summary">
         Se encontraron
         <strong>{{ totalAlertasStockBajo }}</strong>
-        presentaciones que necesitan reposición.
+        presentaciones que requieren atención por su nivel de stock.
       </div>
 
       <article
@@ -146,10 +146,7 @@
               <span>Disponible</span>
 
               <strong>
-                {{
-                  (presentacion.stockDisponible ?? 0)
-                    | number:'1.0-2'
-                }}
+                {{ presentacion.stockDisponible | number:'1.0-2' }}
               </strong>
             </div>
 
@@ -157,18 +154,26 @@
               <span>Stock mínimo</span>
 
               <strong>
-                {{
-                  (presentacion.stockMinimo ?? 0)
-                    | number:'1.0-2'
-                }}
+                {{ presentacion.stockMinimo | number:'1.0-2' }}
               </strong>
             </div>
 
           </div>
 
-          <span class="stock-alert-badge">
-            <i class="bi bi-exclamation-circle"></i>
-            Reponer
+          <span
+            class="stock-alert-badge"
+            [class.stock-alert-badge--agotado]="presentacion.estadoAlerta === 'AGOTADO'"
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                presentacion.estadoAlerta === 'AGOTADO'
+                  ? 'bi-x-circle'
+                  : 'bi-exclamation-circle'
+              "
+            ></i>
+
+            {{ presentacion.estadoAlerta === 'AGOTADO' ? 'Agotado' : 'Reponer' }}
           </span>
 
         </div>
