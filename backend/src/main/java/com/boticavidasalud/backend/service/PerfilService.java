@@ -646,8 +646,6 @@ public class PerfilService {
                 "Movimientos de inventario"
         );
 
-        modulos.put("REPORTE", "Reportes");
-
         return Map.copyOf(modulos);
     }
 
