@@ -74,6 +74,13 @@ export class LotesListComponent implements OnInit {
   fechaHasta = '';
 
   // ============================================================
+  // PAGINACIÓN
+  // ============================================================
+
+  currentPage = 0;
+  pageSize = 10;
+
+  // ============================================================
   // MODALES DE INGRESO Y AJUSTE
   // ============================================================
 
@@ -123,6 +130,8 @@ export class LotesListComponent implements OnInit {
     // Las fechas anteriores no deben mantenerse al cambiar de filtro.
     this.fechaDesde = '';
     this.fechaHasta = '';
+
+    this.currentPage = 0;
   }
 
   // ============================================================
@@ -186,6 +195,46 @@ export class LotesListComponent implements OnInit {
   }
 
   // ============================================================
+  // PAGINACIÓN DEL LISTADO
+  // ============================================================
+
+  get totalPages(): number {
+    return Math.ceil(
+      this.lotesFiltrados.length / this.pageSize
+    );
+  }
+
+  get lotesPaginados(): Lote[] {
+
+    const inicio = this.currentPage * this.pageSize;
+
+    return this.lotesFiltrados.slice(
+      inicio,
+      inicio + this.pageSize
+    );
+  }
+
+  cambiarPagina(page: number): void {
+
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  reiniciarPagina(): void {
+    this.currentPage = 0;
+  }
+
+  private ajustarPagina(): void {
+
+    if (this.totalPages === 0) {
+      this.currentPage = 0;
+    } else if (this.currentPage >= this.totalPages) {
+      this.currentPage = this.totalPages - 1;
+    }
+  }
+
+  // ============================================================
   // CARGAR LOTES
   // ============================================================
 
@@ -204,9 +253,13 @@ export class LotesListComponent implements OnInit {
 
         next: respuesta => {
           this.lotes = respuesta || [];
+          this.ajustarPagina();
         },
 
         error: (err: any) => {
+          this.lotes = [];
+          this.currentPage = 0;
+
           console.error('Error al cargar los lotes:', err);
 
           this.errorCarga = this.obtenerMensajeError(

@@ -39,6 +39,7 @@
       type="text"
       name="busquedaLote"
       [(ngModel)]="busqueda"
+      (ngModelChange)="reiniciarPagina()"
       placeholder="Buscar por producto o número de lote..."
       aria-label="Buscar lotes"
     />
@@ -53,6 +54,7 @@
       id="filtroEstado"
       name="filtroEstado"
       [(ngModel)]="filtroEstado"
+      (ngModelChange)="reiniciarPagina()"
     >
       <option value="todos">Todos</option>
       <option value="activo">Activo</option>
@@ -91,6 +93,7 @@
         type="date"
         name="fechaDesde"
         [(ngModel)]="fechaDesde"
+        (ngModelChange)="reiniciarPagina()"
         [min]="fechaHoy"
       />
     </label>
@@ -102,6 +105,7 @@
         type="date"
         name="fechaHasta"
         [(ngModel)]="fechaHasta"
+        (ngModelChange)="reiniciarPagina()"
         [min]="fechaDesde || fechaHoy"
       />
     </label>
@@ -191,7 +195,7 @@
 
       <!-- Registros -->
       <tr
-        *ngFor="let lote of lotesFiltrados"
+        *ngFor="let lote of lotesPaginados"
         [class.row-inactive]="lote.estado === 0"
       >
 
@@ -314,6 +318,36 @@
     </tbody>
 
   </table>
+
+  <!-- Paginación -->
+  <div
+    class="pagination"
+    *ngIf="totalPages > 0 && !cargandoLotes && !errorCarga"
+  >
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      <i class="bi bi-chevron-left"></i>
+      Anterior
+    </button>
+
+    <span>
+      Página {{ currentPage + 1 }} de {{ totalPages }}
+    </span>
+
+    <button
+      type="button"
+      (click)="cambiarPagina(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Siguiente
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
 
 </div>
 

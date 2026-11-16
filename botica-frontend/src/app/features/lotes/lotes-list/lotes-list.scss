@@ -294,6 +294,52 @@
 }
 
 /* ==========================================================
+   PAGINACIÓN
+   ========================================================== */
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+
+  border-top: 1px solid v.$border-color;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    padding: 0.5rem 1rem;
+
+    color: v.$text-main;
+    background: white;
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius-md;
+
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: v.$bg-body;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    color: v.$text-muted;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+}
+
+/* ==========================================================
    INDICADORES DE ESTADO Y VENCIMIENTO
    ========================================================== */
 
@@ -552,6 +598,19 @@
   }
 
   .modal-backdrop { padding: 0.5rem; }
+
+  .pagination {
+    flex-wrap: wrap;
+
+    button {
+      padding: 0.5rem 0.65rem;
+    }
+
+    span {
+      flex: 1 1 100%;
+      order: -1;
+    }
+  }
 }
 
 
