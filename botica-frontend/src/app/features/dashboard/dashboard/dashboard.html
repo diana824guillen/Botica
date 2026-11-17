@@ -383,8 +383,159 @@
       <strong>No se registraron ventas en este periodo.</strong>
 
       <span>
-        Selecciona otro periodo para consultar más información.
+        Los gráficos de evolución y métodos de pago mostrarán importes en cero.
       </span>
+
+    </div>
+
+    <!-- ========================================================
+     GRÁFICOS DE VENTAS
+     ======================================================== -->
+
+    <div
+      class="charts-grid"
+      *ngIf="!cargandoVentas && !errorVentas && resumenVentas as ventas"
+    >
+
+      <!-- EVOLUCIÓN DE VENTAS -->
+
+      <article class="dashboard-panel chart-card">
+
+        <div class="section-heading chart-card-heading">
+
+          <div>
+
+            <h3>
+              <i class="bi bi-graph-up"></i>
+              Evolución de ventas
+            </h3>
+
+            <p>
+              {{ ventas.agrupacion === 'DIA'
+                ? 'Importe vendido por día.'
+                : 'Importe vendido por mes.' }}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="chart-container">
+
+          <canvas
+            baseChart
+            [type]="'line'"
+            [data]="ventasChartData"
+            [options]="ventasChartOptions"
+            role="img"
+            aria-label="Evolución de los importes vendidos"
+          >
+          </canvas>
+
+        </div>
+
+        <p class="chart-caption">
+          Los valores se presentan en soles y corresponden al periodo seleccionado.
+        </p>
+
+      </article>
+
+
+      <!-- MÉTODOS DE PAGO -->
+
+      <article class="dashboard-panel chart-card">
+
+        <div class="section-heading chart-card-heading">
+
+          <div>
+
+            <h3>
+              <i class="bi bi-credit-card"></i>
+              Métodos de pago
+            </h3>
+
+            <p>
+              Distribución de los importes aplicados a las ventas.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="chart-container chart-container--payments">
+
+          <canvas
+            baseChart
+            [type]="'bar'"
+            [data]="metodosPagoChartData"
+            [options]="metodosPagoChartOptions"
+            role="img"
+            aria-label="Importes por método de pago"
+          >
+          </canvas>
+
+        </div>
+
+
+        <!-- DETALLE DE MÉTODOS DE PAGO -->
+
+        <div class="payment-detail-wrapper">
+
+          <div class="table-wrapper">
+
+            <table class="dashboard-table payment-table">
+
+              <thead>
+
+                <tr>
+                  <th>Método</th>
+                  <th>Importe</th>
+                  <th>Porcentaje</th>
+                  <th>Pagos</th>
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                <tr *ngFor="let metodo of ventas.metodosPago">
+
+                  <td>
+                    <strong class="payment-method-name">
+                      {{ etiquetaMetodoPago(metodo.metodoPago) }}
+                    </strong>
+                  </td>
+
+                  <td>
+                    {{ metodo.monto | currency:'PEN':'symbol':'1.2-2':'es-PE' }}
+                  </td>
+
+                  <td>
+                    {{ metodo.porcentaje | number:'1.2-2' }} %
+                  </td>
+
+                  <td>
+                    {{ metodo.cantidadPagos }}
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+        <p class="chart-caption">
+          La cantidad corresponde a registros de pago, no necesariamente a notas de venta.
+        </p>
+
+      </article>
 
     </div>
 

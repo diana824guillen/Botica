@@ -1,6 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { BaseChartDirective } from 'ng2-charts';
+
+import type {
+  ChartConfiguration,
+  ChartOptions
+} from 'chart.js';
 
 import {
   ChangeDetectorRef,
@@ -19,7 +25,8 @@ import { AuthService } from '../../../core/services/auth.service';
 
 import {
   DashboardInventarioResponse,
-  DashboardPresentacionAlerta
+  DashboardPresentacionAlerta,
+  DashboardVentasResponse
 } from '../../../core/models/dashboard.model';
 
 import {
@@ -80,7 +87,8 @@ interface ProductoAlertaDashboardVista {
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule
+    FormsModule,
+    BaseChartDirective
   ],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
@@ -110,6 +118,142 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   errorFiltroFechas = '';
 
+  // ============================================================
+  // GRÁFICO DE EVOLUCIÓN DE VENTAS
+  // ============================================================
+
+  ventasChartData: ChartConfiguration<'line'>['data'] = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Importe vendido',
+        data: [],
+        borderColor: '#0F766E',
+        backgroundColor: 'rgba(15, 118, 110, 0.12)',
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: '#0F766E'
+      }
+    ]
+  };
+
+  ventasChartOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+
+    plugins: {
+      legend: {
+        display: false
+      },
+
+      tooltip: {
+        callbacks: {
+          label: (context) =>
+            `Ventas: ${this.formatearMoneda(
+              Number(context.parsed.y ?? 0)
+            )}`
+        }
+      }
+    },
+
+    scales: {
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          autoSkip: true,
+          maxRotation: 0,
+          maxTicksLimit: 8
+        }
+      },
+
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (valor) =>
+            this.formatearImporteEje(Number(valor))
+        }
+      }
+    }
+  };
+
+
+  // ============================================================
+  // GRÁFICO DE MÉTODOS DE PAGO
+  // ============================================================
+
+  metodosPagoChartData: ChartConfiguration<'bar'>['data'] = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Importe',
+        data: [],
+        backgroundColor: '#0F766E',
+        borderRadius: 6,
+        barThickness: 20,
+        maxBarThickness: 26
+      }
+    ]
+  };
+
+  metodosPagoChartOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+
+    indexAxis: 'y',
+
+    plugins: {
+      legend: {
+        display: false
+      },
+
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+
+            const metodo = this.resumenVentas
+              ?.metodosPago?.[context.dataIndex];
+
+            if (!metodo) {
+              return `Importe: ${this.formatearMoneda(
+                Number(context.parsed.x ?? 0)
+              )}`;
+            }
+
+            return [
+              `Importe: ${this.formatearMoneda(metodo.monto)}`,
+              `Participación: ${metodo.porcentaje.toFixed(2)} %`,
+              `Cantidad de pagos: ${metodo.cantidadPagos}`
+            ];
+          }
+        }
+      }
+    },
+
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: {
+          callback: (valor) =>
+            this.formatearImporteEje(Number(valor))
+        }
+      },
+
+      y: {
+        grid: {
+          display: false
+        }
+      }
+    }
+  };
 
   // ============================================================
   // RESUMEN DE INVENTARIO
@@ -388,6 +532,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
 
           this.resumenVentas = respuesta;
+
+          this.actualizarDatosGraficos(respuesta);
+
           this.cdr.markForCheck();
         },
 
@@ -414,7 +561,159 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       });
   }
+  
+  // ============================================================
+  // ACTUALIZAR DATOS DE LOS GRÁFICOS
+  // ============================================================
 
+  private actualizarDatosGraficos(
+    respuesta: DashboardVentasResponse
+  ): void {
+
+    // ----------------------------------------------------------
+    // EVOLUCIÓN DE VENTAS
+    // ----------------------------------------------------------
+
+    const periodos = respuesta.ventasPorPeriodo ?? [];
+
+    this.ventasChartData = {
+      labels: periodos.map(periodo =>
+        this.formatearEtiquetaPeriodo(
+          periodo.periodo,
+          respuesta.agrupacion
+        )
+      ),
+
+      datasets: [
+        {
+          label: 'Importe vendido',
+
+          data: periodos.map(periodo =>
+            Number(periodo.totalVendido ?? 0)
+          ),
+
+          borderColor: '#0F766E',
+          backgroundColor: 'rgba(15, 118, 110, 0.12)',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: periodos.length > 20 ? 2 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#0F766E'
+        }
+      ]
+    };
+
+
+    // ----------------------------------------------------------
+    // MÉTODOS DE PAGO
+    // ----------------------------------------------------------
+
+    const metodos = respuesta.metodosPago ?? [];
+
+    this.metodosPagoChartData = {
+      labels: metodos.map(metodo =>
+        this.etiquetaMetodoPago(metodo.metodoPago)
+      ),
+
+      datasets: [
+        {
+          label: 'Importe',
+
+          data: metodos.map(metodo =>
+            Number(metodo.monto ?? 0)
+          ),
+
+          backgroundColor: '#0F766E',
+          borderRadius: 6,
+          barThickness: 20,
+          maxBarThickness: 26
+        }
+      ]
+    };
+  }
+
+
+  // ============================================================
+  // FORMATEAR ETIQUETAS DE PERIODOS
+  // ============================================================
+
+  private formatearEtiquetaPeriodo(
+    periodo: string,
+    agrupacion: 'DIA' | 'MES'
+  ): string {
+
+    const partes = periodo.split('-');
+
+    const anio = Number(partes[0]);
+    const mes = Number(partes[1]);
+
+    if (!anio || !mes) {
+      return periodo;
+    }
+
+    // Agrupación diaria: DD/MM.
+    if (agrupacion === 'DIA') {
+
+      const dia = Number(partes[2]);
+
+      if (!dia) {
+        return periodo;
+      }
+
+      return `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}`;
+    }
+
+    // Agrupación mensual: nombre abreviado y año.
+    const fecha = new Date(anio, mes - 1, 1);
+
+    return new Intl.DateTimeFormat('es-PE', {
+      month: 'short',
+      year: 'numeric'
+    })
+      .format(fecha)
+      .replace(/\./g, '');
+  }
+
+
+  // ============================================================
+  // NOMBRES DE LOS MÉTODOS DE PAGO
+  // ============================================================
+
+  etiquetaMetodoPago(metodo: string): string {
+
+    const nombres: Record<string, string> = {
+      EFECTIVO: 'Efectivo',
+      YAPE: 'Yape',
+      PLIN: 'Plin',
+      TARJETA: 'Tarjeta',
+      TRANSFERENCIA: 'Transferencia'
+    };
+
+    return nombres[metodo] ?? metodo;
+  }
+
+
+  // ============================================================
+  // FORMATO DE IMPORTES
+  // ============================================================
+
+  private formatearMoneda(valor: number): string {
+
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'PEN'
+    }).format(valor);
+  }
+
+
+  private formatearImporteEje(valor: number): string {
+
+    const importe = new Intl.NumberFormat('es-PE', {
+      maximumFractionDigits: 2
+    }).format(valor);
+
+    return `S/ ${importe}`;
+  }
 
   // ============================================================
   // CONSTRUCCIÓN DE PERIODOS DE VENTAS
