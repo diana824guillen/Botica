@@ -1169,4 +1169,218 @@
 
 }
 
+// ============================================================
+// TOP 10 DE PRODUCTOS
+// ============================================================
+
+.top-products-card {
+  padding: 1.15rem;
+  margin-top: 1rem;
+}
+
+.top-products-heading {
+  margin-bottom: 0.9rem;
+
+  h3 {
+    font-size: 1rem;
+  }
+}
+
+.top-products-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.top-product-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #edf0f2;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.top-product-position {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border-radius: 8px;
+  background: #e0f2f1;
+  color: v.$primary-color;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.top-product-information {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.55rem;
+
+  > strong {
+    color: v.$text-main;
+    font-size: 0.87rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+}
+
+.top-product-progress {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #e5e7eb;
+
+  > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: v.$primary-color;
+    transition: width 0.25s ease;
+  }
+}
+
+.top-product-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+
+  strong {
+    color: v.$text-main;
+    font-size: 1.05rem;
+    font-weight: 800;
+  }
+
+  small {
+    color: v.$text-muted;
+    font-size: 0.75rem;
+  }
+}
+
+
+// ============================================================
+// ÚLTIMOS MOVIMIENTOS
+// ============================================================
+
+.dashboard-movements-wrapper {
+  margin-top: 0.9rem;
+}
+
+.dashboard-movement-table {
+  min-width: 1050px;
+
+  th {
+    font-size: 0.76rem;
+  }
+
+  td {
+    font-size: 0.81rem;
+  }
+}
+
+.movement-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.35rem 0.6rem;
+  border-radius: 16px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.movement-type--income {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.movement-type--sale {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.movement-type--adjustment {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.movement-type--loss {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.movement-type--return {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.movement-quantity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 130px;
+
+  strong {
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  small {
+    color: v.$text-muted;
+    font-size: 0.74rem;
+    line-height: 1.4;
+  }
+}
+
+.movement-quantity--positive strong {
+  color: #15803d;
+}
+
+.movement-quantity--negative strong {
+  color: #b91c1c;
+}
+
+.movement-quantity--neutral strong {
+  color: v.$text-main;
+}
+
+.movement-reason {
+  display: block;
+  max-width: 190px;
+  color: v.$text-main;
+  font-size: 0.81rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+
+// ============================================================
+// RESPONSIVE TOP 10 Y MOVIMIENTOS
+// ============================================================
+
+@media (max-width: 600px) {
+
+  .top-products-card {
+    padding: 0.95rem;
+  }
+
+  .top-product-item {
+    grid-template-columns: 31px minmax(0, 1fr) auto;
+    gap: 0.6rem;
+  }
+
+  .top-product-information > strong {
+    font-size: 0.83rem;
+  }
+
+}
+
 

@@ -34,7 +34,8 @@ import {
 } from '../../../core/models/producto.model';
 
 import {
-  MovimientoInventario
+  MovimientoInventario,
+  TipoMovimientoInventario
 } from '../../../core/models/movimiento-inventario.model';
 
 import {
@@ -1267,6 +1268,172 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     return nombres[tipo] || tipo;
+  }
+
+  // ============================================================
+  // TOP 10 DE PRODUCTOS
+  // ============================================================
+
+  get maximoNotasTopProductos(): number {
+
+    const productos =
+      this.resumenVentas?.productosMasSolicitados ?? [];
+
+    if (productos.length === 0) {
+      return 0;
+    }
+
+    return Math.max(
+      ...productos.map(producto => producto.cantidadNotas)
+    );
+  }
+
+
+  porcentajeTopProducto(cantidadNotas: number): number {
+
+    const maximo = this.maximoNotasTopProductos;
+
+    if (maximo <= 0) {
+      return 0;
+    }
+
+    return Math.min(
+      100,
+      Math.max(0, (cantidadNotas / maximo) * 100)
+    );
+  }
+
+
+  // ============================================================
+  // NOMBRE DEL TIPO DE MOVIMIENTO
+  // ============================================================
+
+  obtenerNombreTipoMovimiento(
+    tipo: TipoMovimientoInventario
+  ): string {
+
+    const nombres: Record<TipoMovimientoInventario, string> = {
+      INGRESO: 'Ingreso',
+      SALIDA_VENTA: 'Salida por venta',
+      AJUSTE: 'Ajuste',
+      MERMA: 'Merma',
+      DEVOLUCION: 'Devolución'
+    };
+
+    return nombres[tipo] ?? tipo;
+  }
+
+
+  // ============================================================
+  // CLASE VISUAL DEL TIPO DE MOVIMIENTO
+  // ============================================================
+
+  obtenerClaseTipoMovimiento(
+    tipo: TipoMovimientoInventario
+  ): string {
+
+    switch (tipo) {
+
+      case 'INGRESO':
+        return 'movement-type--income';
+
+      case 'SALIDA_VENTA':
+        return 'movement-type--sale';
+
+      case 'AJUSTE':
+        return 'movement-type--adjustment';
+
+      case 'MERMA':
+        return 'movement-type--loss';
+
+      case 'DEVOLUCION':
+        return 'movement-type--return';
+
+      default:
+        return '';
+    }
+  }
+
+
+  // ============================================================
+  // NOMBRE DE LA PRESENTACIÓN DEL MOVIMIENTO
+  // ============================================================
+
+  obtenerNombrePresentacionMovimiento(
+    tipo: string | null
+  ): string {
+
+    if (!tipo) {
+      return 'No disponible';
+    }
+
+    const nombres: Record<string, string> = {
+      UNIDAD: 'Unidad',
+      BLISTER: 'Blíster',
+      CAJA: 'Caja',
+      FRASCO: 'Frasco',
+      TIRA: 'Tira',
+      OTRO: 'Otro'
+    };
+
+    return nombres[tipo] ?? tipo;
+  }
+
+
+  // ============================================================
+  // NOMBRE DE LA PRESENTACIÓN SEGÚN LA CANTIDAD
+  // ============================================================
+
+  obtenerNombreCantidadMovimiento(
+    tipo: string | null,
+    cantidad: number
+  ): string {
+
+    const singulares: Record<string, string> = {
+      UNIDAD: 'unidad',
+      BLISTER: 'blíster',
+      CAJA: 'caja',
+      FRASCO: 'frasco',
+      TIRA: 'tira',
+      OTRO: 'presentación'
+    };
+
+    const plurales: Record<string, string> = {
+      UNIDAD: 'unidades',
+      BLISTER: 'blísteres',
+      CAJA: 'cajas',
+      FRASCO: 'frascos',
+      TIRA: 'tiras',
+      OTRO: 'presentaciones'
+    };
+
+    if (Math.abs(cantidad) === 1) {
+      return tipo
+        ? singulares[tipo] ?? 'presentación'
+        : 'presentación';
+    }
+
+    return tipo
+      ? plurales[tipo] ?? 'presentaciones'
+      : 'presentaciones';
+  }
+
+
+  // ============================================================
+  // CLASE VISUAL DE LA CANTIDAD
+  // ============================================================
+
+  obtenerClaseCantidadMovimiento(cantidad: number): string {
+
+    if (cantidad > 0) {
+      return 'movement-quantity--positive';
+    }
+
+    if (cantidad < 0) {
+      return 'movement-quantity--negative';
+    }
+
+    return 'movement-quantity--neutral';
   }
 
   // ============================================================

@@ -539,6 +539,113 @@
 
     </div>
 
+    <!-- ========================================================
+     TOP 10 DE PRODUCTOS MÁS SOLICITADOS
+     ======================================================== -->
+
+    <article
+      class="dashboard-panel top-products-card"
+      *ngIf="!cargandoVentas && !errorVentas && resumenVentas as ventas"
+    >
+
+      <div class="section-heading top-products-heading">
+
+        <div>
+
+          <h3>
+            <i class="bi bi-trophy"></i>
+            Top 10 productos más solicitados
+          </h3>
+
+          <p>
+            Ordenados por la cantidad de notas de venta distintas
+            en las que aparece cada producto.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- PRODUCTOS DEL RANKING -->
+
+      <div
+        class="top-products-list"
+        *ngIf="ventas.productosMasSolicitados.length > 0; else sinProductosTop"
+      >
+
+        <div
+          class="top-product-item"
+          *ngFor="
+            let producto of ventas.productosMasSolicitados;
+            let posicion = index
+          "
+        >
+
+          <span class="top-product-position">
+            {{ posicion + 1 }}
+          </span>
+
+
+          <div class="top-product-information">
+
+            <strong>
+              {{ producto.nombreProducto }}
+            </strong>
+
+            <div
+              class="top-product-progress"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-valuenow]="porcentajeTopProducto(producto.cantidadNotas)"
+            >
+
+              <span
+                [style.width.%]="porcentajeTopProducto(producto.cantidadNotas)"
+              >
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="top-product-count">
+
+            <strong>
+              {{ producto.cantidadNotas }}
+            </strong>
+
+            <small>
+              {{ producto.cantidadNotas === 1 ? 'nota' : 'notas' }}
+            </small>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- SIN PRODUCTOS -->
+
+      <ng-template #sinProductosTop>
+
+        <div class="panel-empty">
+
+          <i class="bi bi-inbox"></i>
+
+          <span>
+            No hay productos registrados en notas de venta durante este periodo.
+          </span>
+
+        </div>
+
+      </ng-template>
+
+    </article>
+
   </section>
 
 
@@ -1177,6 +1284,311 @@
         </section>
 
       </div>
+
+    </ng-container>
+
+  </section>
+
+  <!-- ========================================================
+     ÚLTIMOS MOVIMIENTOS DE INVENTARIO
+     ======================================================== -->
+
+  <section
+    class="dashboard-section"
+    *ngIf="puedeConsultarMovimientos"
+  >
+
+    <div class="section-title">
+
+      <div>
+
+        <h3>Últimos movimientos de inventario</h3>
+
+        <p>
+          Consulta las cinco operaciones más recientes y sus responsables.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="btn-refresh"
+        (click)="cargarMovimientosRecientes()"
+        [disabled]="cargandoMovimientos"
+        title="Actualizar movimientos"
+      >
+
+        <i
+          class="bi bi-arrow-clockwise"
+          [class.spinning]="cargandoMovimientos"
+        ></i>
+
+        Actualizar
+
+      </button>
+
+    </div>
+
+
+    <!-- CARGANDO -->
+
+    <div
+      class="dashboard-state"
+      *ngIf="cargandoMovimientos"
+    >
+
+      <span class="spinner"></span>
+
+      <span>
+        Consultando los últimos movimientos...
+      </span>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="dashboard-error"
+      *ngIf="!cargandoMovimientos && errorMovimientos"
+      role="alert"
+      aria-live="polite"
+    >
+
+      <div>
+
+        <i class="bi bi-exclamation-circle"></i>
+
+        <span>{{ errorMovimientos }}</span>
+
+      </div>
+
+      <button
+        type="button"
+        (click)="cargarMovimientosRecientes()"
+        [disabled]="cargandoMovimientos"
+      >
+        Reintentar
+      </button>
+
+    </div>
+
+
+    <!-- RESULTADOS -->
+
+    <ng-container
+      *ngIf="!cargandoMovimientos && !errorMovimientos"
+    >
+
+      <div
+        class="table-wrapper dashboard-movements-wrapper"
+        *ngIf="movimientosRecientes.length > 0; else sinMovimientos"
+      >
+
+        <table class="dashboard-table dashboard-movement-table">
+
+          <thead>
+
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Producto y lote</th>
+              <th>Presentación</th>
+              <th>Cantidad del movimiento</th>
+              <th>Responsable</th>
+              <th>Motivo</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            <tr
+              *ngFor="let movimiento of movimientosRecientes"
+            >
+
+              <!-- FECHA -->
+
+              <td>
+
+                <strong class="table-date">
+                  {{ movimiento.fecha | date:'dd/MM/yyyy' }}
+                </strong>
+
+                <small class="table-secondary-text">
+                  {{ movimiento.fecha | date:'HH:mm' }}
+                </small>
+
+              </td>
+
+
+              <!-- TIPO -->
+
+              <td>
+
+                <span
+                  class="movement-type-badge"
+                  [ngClass]="obtenerClaseTipoMovimiento(movimiento.tipoMovimiento)"
+                >
+                  {{ obtenerNombreTipoMovimiento(movimiento.tipoMovimiento) }}
+                </span>
+
+              </td>
+
+
+              <!-- PRODUCTO Y LOTE -->
+
+              <td>
+
+                <strong class="table-primary-text">
+                  {{ movimiento.productoNombre || 'Producto no disponible' }}
+                </strong>
+
+                <small class="table-secondary-text">
+                  Lote: {{ movimiento.numeroLote || 'No asociado' }}
+                </small>
+
+              </td>
+
+
+              <!-- PRESENTACIÓN -->
+
+              <td>
+
+                <strong class="table-primary-text">
+                  {{ obtenerNombrePresentacionMovimiento(movimiento.tipoPresentacion) }}
+                </strong>
+
+                <small
+                  class="table-secondary-text"
+                  *ngIf="
+                    movimiento.factorConversion !== null &&
+                    movimiento.factorConversion > 1
+                  "
+                >
+                  Factor de conversión: {{ movimiento.factorConversion }}
+                </small>
+
+              </td>
+
+
+              <!-- CANTIDAD -->
+
+              <td>
+
+                <div
+                  class="movement-quantity"
+                  [ngClass]="obtenerClaseCantidadMovimiento(movimiento.cantidad)"
+                >
+
+                  <ng-container
+                    *ngIf="
+                      movimiento.cantidadPresentacion !== null &&
+                      movimiento.cantidadPresentacion !== undefined;
+                      else cantidadSinPresentacion
+                    "
+                  >
+
+                    <strong>
+
+                      {{ movimiento.cantidadPresentacion > 0 ? '+' : '' }}{{ movimiento.cantidadPresentacion | number:'1.0-2' }}
+
+                      {{ obtenerNombreCantidadMovimiento(
+                        movimiento.tipoPresentacion,
+                        movimiento.cantidadPresentacion
+                      ) }}
+
+                    </strong>
+
+
+                    <small
+                      *ngIf="
+                        movimiento.factorConversion !== null &&
+                        movimiento.factorConversion > 1
+                      "
+                    >
+
+                      Cantidad equivalente:
+
+                      {{ movimiento.cantidad > 0 ? '+' : '' }}{{ movimiento.cantidad | number:'1.0-2' }}
+
+                    </small>
+
+                  </ng-container>
+
+
+                  <!-- SIN PRESENTACIÓN ASOCIADA -->
+
+                  <ng-template #cantidadSinPresentacion>
+
+                    <strong>
+                      {{ movimiento.cantidad > 0 ? '+' : '' }}{{ movimiento.cantidad | number:'1.0-2' }}
+                    </strong>
+
+                    <small>
+                      Sin presentación asociada
+                    </small>
+
+                  </ng-template>
+
+                </div>
+
+              </td>
+
+
+              <!-- RESPONSABLE -->
+
+              <td>
+
+                <strong class="table-primary-text">
+                  {{ movimiento.usuarioNombre || movimiento.usuarioUsername || 'No disponible' }}
+                </strong>
+
+              </td>
+
+
+              <!-- MOTIVO -->
+
+              <td>
+
+                <span
+                  class="movement-reason"
+                  [title]="movimiento.motivo || 'Sin motivo registrado'"
+                >
+                  {{ movimiento.motivo || 'Sin motivo registrado' }}
+                </span>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      <!-- SIN MOVIMIENTOS -->
+
+      <ng-template #sinMovimientos>
+
+        <div class="dashboard-empty">
+
+          <i class="bi bi-inbox"></i>
+
+          <strong>No hay movimientos registrados.</strong>
+
+          <span>
+            Cuando se realicen operaciones de inventario,
+            aparecerán aquí los registros más recientes.
+          </span>
+
+        </div>
+
+      </ng-template>
 
     </ng-container>
 
