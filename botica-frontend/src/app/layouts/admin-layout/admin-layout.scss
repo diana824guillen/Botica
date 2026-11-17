@@ -1,10 +1,11 @@
+
 @use '../../../styles/variables' as v;
 
 /* Contenedor principal: Fija la altura de la pantalla */
 .layout-container {
   display: flex;
-  height: 100vh; 
-  overflow: hidden; /* Evita que toda la página haga scroll */
+  height: 100vh;
+  overflow: hidden;
   background-color: v.$bg-body;
 }
 
@@ -18,9 +19,8 @@
   flex-direction: column;
   transition: width 0.3s ease, border 0.3s ease;
   white-space: nowrap;
-  overflow: hidden; /* Oculta el contenido cuando se cierra */
+  overflow: hidden;
 
-  /* Cuando la clase sidebar-collapsed está en el padre, ocultamos el sidebar */
   .sidebar-collapsed & {
     width: 0;
     border-right: none;
@@ -28,12 +28,12 @@
 }
 
 .sidebar-header {
-  padding: 1.5rem 1rem;
+  padding: 1.1rem 0.8rem;
   border-bottom: 1px solid v.$border-color;
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   h2 {
     color: v.$primary-color;
     font-size: 1.2rem;
@@ -42,45 +42,59 @@
 }
 
 .sidebar-menu {
-  padding: 1rem 0;
+  padding: 0.55rem 0;
   flex: 1;
-  overflow-y: auto; /* Si hay muchos menús, el sidebar tiene su propio scroll */
+  overflow-y: auto;
+  overflow-x: hidden;
 
   ul {
     list-style: none;
+
     li {
       a {
         display: flex;
         align-items: center;
-        padding: 0.85rem 1.5rem;
+        min-width: 0;
+        padding: 0.52rem 1.25rem;
         color: v.$text-main;
         text-decoration: none;
         font-weight: 500;
+        font-size: 0.95rem;
+        line-height: 1.2;
         transition: all 0.2s;
-        
-        &:hover, &.active {
+
+        &:hover,
+        &.active {
           background-color: v.$primary-light;
           color: v.$primary-color;
           border-right: 4px solid v.$primary-color;
         }
 
         .icon {
-          font-size: 1.2rem;
-          margin-right: 1rem;
-          width: 24px;
+          flex-shrink: 0;
+          width: 22px;
+          margin-right: 0.8rem;
+          font-size: 1.15rem;
           text-align: center;
+        }
+
+        .label {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       }
     }
   }
 }
 
+
 /* --- MAIN CONTENT --- */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Ocupa el 100% de la altura */
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -93,7 +107,7 @@
   align-items: center;
   border-bottom: 1px solid v.$border-color;
   box-shadow: v.$shadow-sm;
-  flex-shrink: 0; /* Evita que el topbar se encoja */
+  flex-shrink: 0;
 }
 
 .topbar-left {
@@ -109,8 +123,10 @@
     color: v.$text-main;
     display: flex;
     align-items: center;
-    
-    &:hover { color: v.$primary-color; }
+
+    &:hover {
+      color: v.$primary-color;
+    }
   }
 
   .greeting {
@@ -154,7 +170,7 @@
 .content-area {
   padding: 2rem;
   flex: 1;
-  overflow-y: auto; 
+  overflow-y: auto;
   background-color: v.$bg-body;
 }
 
@@ -221,6 +237,7 @@
   }
 }
 
+
 @media (max-width: 600px) {
 
   .session-warning {
@@ -230,45 +247,6 @@
 
   .session-warning-content > span {
     font-size: 0.68rem;
-  }
-
-}
-
-/* ============================================================
-   AJUSTE DE ESPACIADO DEL MENÚ LATERAL
-============================================================ */
-
-.sidebar-header {
-  padding: 1.1rem 0.8rem;
-}
-
-.sidebar-menu {
-  padding: 0.55rem 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  ul {
-    li {
-      a {
-        min-width: 0;
-        padding: 0.62rem 1.25rem;
-        line-height: 1.25;
-        font-size: 0.88rem;
-
-        .icon {
-          flex-shrink: 0;
-          width: 22px;
-          margin-right: 0.8rem;
-          font-size: 1.1rem;
-        }
-
-        .label {
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-      }
-    }
   }
 }
 
