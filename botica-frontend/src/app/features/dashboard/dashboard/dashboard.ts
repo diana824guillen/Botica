@@ -280,7 +280,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // FILTROS DE VENTAS
   // ============================================================
 
+  
   seleccionarPeriodo(periodo: PeriodoDashboard): void {
+
+    // Limpiar las fechas anteriores cuando se cambia
+    // de una opción de periodo a otra.
+    if (this.periodoSeleccionado !== periodo) {
+
+      this.fechaDesdePersonalizada = '';
+      this.fechaHastaPersonalizada = '';
+    }
 
     this.periodoSeleccionado = periodo;
     this.errorFiltroFechas = '';
@@ -292,6 +301,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       this.resumenVentas = null;
       this.errorVentas = '';
+
+      this.cdr.markForCheck();
 
       return;
     }

@@ -264,11 +264,6 @@
             {{ ventas.totalVendido | currency:'PEN':'symbol':'1.2-2':'es-PE' }}
           </strong>
 
-          <small class="metric-description">
-            {{ ventas.cantidadNotas }}
-            {{ ventas.cantidadNotas === 1 ? 'nota emitida' : 'notas emitidas' }}
-          </small>
-
         </div>
 
       </article>
@@ -879,9 +874,6 @@
                         <strong>
                           {{ existencia.cantidad | number:'1.0-2' }}
                         </strong>
-                        <small>
-                          ×{{ existencia.factorConversion }}
-                        </small>
                       </span>
 
                     </div>
@@ -998,9 +990,6 @@
                         <strong>
                           {{ existencia.cantidad | number:'1.0-2' }}
                         </strong>
-                        <small>
-                          ×{{ existencia.factorConversion }}
-                        </small>
                       </span>
 
                     </div>
