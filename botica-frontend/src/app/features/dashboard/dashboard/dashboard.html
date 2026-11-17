@@ -1,180 +1,373 @@
 <div class="dashboard-container">
 
-  <div class="welcome-header">
+  <!-- ========================================================
+       ENCABEZADO
+       ======================================================== -->
 
-    <h1>¡Bienvenida de nuevo!</h1>
+  <header class="page-header">
 
-    <p class="text-muted">
-      Selecciona una opción del menú lateral para comenzar
-      a gestionar tu botica.
-    </p>
+    <div>
+      <h2>Resumen de la botica</h2>
 
-  </div>
+      <p class="page-description">
+        Consulta el estado de las ventas, las existencias y
+        los vencimientos para mantener tu botica al día.
+      </p>
+    </div>
+
+    <div class="header-reference">
+      <i class="bi bi-speedometer2"></i>
+      <span>Panel general</span>
+    </div>
+
+  </header>
+
 
   <!-- ========================================================
-       ALERTAS DE STOCK MÍNIMO
+       FILTROS DE VENTAS
        ======================================================== -->
 
   <section
-    class="stock-alerts card"
-    *ngIf="puedeConsultarAlertasStock"
+    class="dashboard-panel sales-filter-card"
+    *ngIf="puedeConsultarVentas"
   >
 
-    <div class="stock-alerts-header">
+    <div class="section-heading">
 
       <div>
-        <h2>
-          <i class="bi bi-exclamation-triangle"></i>
-          Alertas de stock mínimo
-        </h2>
+        <h3>
+          <i class="bi bi-calendar3"></i>
+          Periodo de ventas
+        </h3>
 
         <p>
-          Presentaciones agotadas o con existencias que alcanzaron
-          su mínimo configurado.
+          Selecciona el periodo que deseas consultar.
         </p>
       </div>
 
       <button
         type="button"
-        class="btn-refresh-alerts"
-        [disabled]="cargandoAlertasStock"
-        (click)="cargarAlertasStockBajo()"
+        class="btn-refresh"
+        (click)="cargarResumenVentas()"
+        [disabled]="cargandoVentas"
+        title="Actualizar ventas"
       >
         <i
-          class="bi"
-          [ngClass]="
-            cargandoAlertasStock
-              ? 'bi-arrow-repeat'
-              : 'bi-arrow-clockwise'
-          "
+          class="bi bi-arrow-clockwise"
+          [class.spinning]="cargandoVentas"
         ></i>
-
-        {{ cargandoAlertasStock ? 'Actualizando...' : 'Actualizar' }}
+        Actualizar
       </button>
 
     </div>
 
-    <!-- Cargando -->
-    <div
-      class="stock-alert-state"
-      *ngIf="cargandoAlertasStock"
-    >
-      <i class="bi bi-arrow-repeat"></i>
-      <span>Consultando existencias...</span>
+
+    <div class="period-buttons">
+
+      <button
+        type="button"
+        class="period-button"
+        [class.active]="periodoSeleccionado === 'HOY'"
+        (click)="seleccionarPeriodo('HOY')"
+      >
+        Hoy
+      </button>
+
+      <button
+        type="button"
+        class="period-button"
+        [class.active]="periodoSeleccionado === 'SEMANA'"
+        (click)="seleccionarPeriodo('SEMANA')"
+      >
+        Esta semana
+      </button>
+
+      <button
+        type="button"
+        class="period-button"
+        [class.active]="periodoSeleccionado === 'MES'"
+        (click)="seleccionarPeriodo('MES')"
+      >
+        Este mes
+      </button>
+
+      <button
+        type="button"
+        class="period-button"
+        [class.active]="periodoSeleccionado === 'ANIO'"
+        (click)="seleccionarPeriodo('ANIO')"
+      >
+        Este año
+      </button>
+
+      <button
+        type="button"
+        class="period-button"
+        [class.active]="periodoSeleccionado === 'PERSONALIZADO'"
+        (click)="seleccionarPeriodo('PERSONALIZADO')"
+      >
+        Personalizado
+      </button>
+
     </div>
 
-    <!-- Error -->
+
+    <!-- Fechas personalizadas -->
+
     <div
-      class="stock-alert-error"
-      *ngIf="!cargandoAlertasStock && errorAlertasStock"
+      class="custom-date-filter"
+      *ngIf="periodoSeleccionado === 'PERSONALIZADO'"
+    >
+
+      <div class="filter-group">
+
+        <label for="dashboardFechaDesde">
+          Desde
+        </label>
+
+        <input
+          id="dashboardFechaDesde"
+          type="date"
+          [(ngModel)]="fechaDesdePersonalizada"
+          [max]="fechaMaxima"
+        />
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="dashboardFechaHasta">
+          Hasta
+        </label>
+
+        <input
+          id="dashboardFechaHasta"
+          type="date"
+          [(ngModel)]="fechaHastaPersonalizada"
+          [max]="fechaMaxima"
+        />
+
+      </div>
+
+
+      <div class="filter-action">
+
+        <button
+          type="button"
+          class="btn-apply-filters"
+          (click)="aplicarFechasPersonalizadas()"
+          [disabled]="cargandoVentas"
+        >
+          <i class="bi bi-funnel"></i>
+          Aplicar
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div
+      class="filter-validation-error"
+      *ngIf="errorFiltroFechas"
       role="alert"
       aria-live="polite"
     >
       <i class="bi bi-exclamation-circle"></i>
-
-      <span>{{ errorAlertasStock }}</span>
-
+      {{ errorFiltroFechas }}
     </div>
 
-    <!-- Sin alertas -->
-    <div
-      class="stock-alert-empty"
-      *ngIf="
-        !cargandoAlertasStock
-        && !errorAlertasStock
-        && totalAlertasStockBajo === 0
-      "
-    >
-      <i class="bi bi-check-circle"></i>
+  </section>
+
+
+  <!-- ========================================================
+       RESUMEN DE VENTAS
+       ======================================================== -->
+
+  <section
+    class="dashboard-section"
+    *ngIf="puedeConsultarVentas"
+  >
+
+    <div class="section-title">
 
       <div>
-        <strong>No hay alertas de stock mínimo.</strong>
+        <h3>Resumen de ventas</h3>
 
         <p>
-          Todas las presentaciones registradas se encuentran
-          por encima de su nivel mínimo configurado.
+          Resultados del periodo seleccionado y su comparación.
         </p>
       </div>
 
     </div>
 
-    <!-- Presentaciones con stock bajo -->
+
+    <!-- Cargando ventas -->
+
     <div
-      class="stock-alert-products"
-      *ngIf="
-        !cargandoAlertasStock
-        && !errorAlertasStock
-        && totalAlertasStockBajo > 0
-      "
+      class="dashboard-state"
+      *ngIf="cargandoVentas"
+    >
+      <span class="spinner"></span>
+      <span>Consultando información de ventas...</span>
+    </div>
+
+
+    <!-- Error de ventas -->
+
+    <div
+      class="dashboard-error"
+      *ngIf="!cargandoVentas && errorVentas"
+      role="alert"
+      aria-live="polite"
     >
 
-      <div class="stock-alert-summary">
-        Se encontraron
-        <strong>{{ totalAlertasStockBajo }}</strong>
-        presentaciones que requieren atención por su nivel de stock.
+      <div>
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ errorVentas }}</span>
       </div>
 
-      <article
-        class="stock-alert-product"
-        *ngFor="let producto of productosStockBajo"
+      <button
+        type="button"
+        (click)="cargarResumenVentas()"
+        [disabled]="cargandoVentas"
       >
+        Reintentar
+      </button>
 
-        <h3>{{ producto.nombre }}</h3>
+    </div>
+
+
+    <!-- Indicadores de ventas -->
+
+    <div
+      class="metric-grid metric-grid--sales"
+      *ngIf="!cargandoVentas && !errorVentas && resumenVentas as ventas"
+    >
+
+      <!-- Total vendido -->
+
+      <article class="metric-card">
+
+        <div class="metric-icon metric-icon--sales">
+          <i class="bi bi-currency-dollar"></i>
+        </div>
+
+        <div class="metric-content">
+
+          <span class="metric-label">
+            Total vendido
+          </span>
+
+          <strong class="metric-value metric-value--money">
+            {{ ventas.totalVendido | currency:'PEN':'symbol':'1.2-2':'es-PE' }}
+          </strong>
+
+          <small class="metric-description">
+            {{ ventas.cantidadNotas }}
+            {{ ventas.cantidadNotas === 1 ? 'nota emitida' : 'notas emitidas' }}
+          </small>
+
+        </div>
+
+      </article>
+
+
+      <!-- Variación -->
+
+      <article class="metric-card">
 
         <div
-          class="stock-alert-row"
-          *ngFor="
-            let presentacion of presentacionesConStockBajo(producto)
+          class="metric-icon"
+          [ngClass]="
+            ventas.variacionPorcentaje === null
+              ? 'metric-icon--neutral'
+              : ventas.variacionPorcentaje >= 0
+                ? 'metric-icon--success'
+                : 'metric-icon--danger'
           "
         >
+          <i
+            class="bi"
+            [ngClass]="
+              ventas.variacionPorcentaje === null
+                ? 'bi-dash-circle'
+                : ventas.variacionPorcentaje >= 0
+                  ? 'bi-graph-up-arrow'
+                  : 'bi-graph-down-arrow'
+            "
+          ></i>
+        </div>
 
-          <div class="stock-alert-presentation">
+        <div class="metric-content">
 
-            <strong>
-              {{ etiquetaTipo(presentacion.tipo) }}
+          <span class="metric-label">
+            Variación de ventas
+          </span>
+
+          <ng-container
+            *ngIf="ventas.variacionPorcentaje !== null; else sinComparacion"
+          >
+
+            <strong
+              class="metric-value"
+              [ngClass]="
+                ventas.variacionPorcentaje >= 0
+                  ? 'text-success'
+                  : 'text-danger'
+              "
+            >
+              {{ ventas.variacionPorcentaje > 0 ? '+' : '' }}
+              {{ ventas.variacionPorcentaje | number:'1.1-2' }}%
             </strong>
 
-            <span>
-              Factor: {{ presentacion.factorConversion }}
-            </span>
+            <small class="metric-description">
+              Comparado con S/
+              {{ ventas.totalPeriodoComparacion | number:'1.2-2' }}
+              del periodo anterior.
+            </small>
 
-          </div>
+          </ng-container>
 
-          <div class="stock-alert-values">
+          <ng-template #sinComparacion>
 
-            <div>
-              <span>Disponible</span>
+            <strong class="metric-value metric-value--neutral">
+              Sin comparación
+            </strong>
 
-              <strong>
-                {{ presentacion.stockDisponible | number:'1.0-2' }}
-              </strong>
-            </div>
+            <small class="metric-description">
+              El periodo anterior no tuvo ventas.
+            </small>
 
-            <div>
-              <span>Stock mínimo</span>
+          </ng-template>
 
-              <strong>
-                {{ presentacion.stockMinimo | number:'1.0-2' }}
-              </strong>
-            </div>
+        </div>
 
-          </div>
+      </article>
 
-          <span
-            class="stock-alert-badge"
-            [class.stock-alert-badge--agotado]="presentacion.estadoAlerta === 'AGOTADO'"
-          >
-            <i
-              class="bi"
-              [ngClass]="
-                presentacion.estadoAlerta === 'AGOTADO'
-                  ? 'bi-x-circle'
-                  : 'bi-exclamation-circle'
-              "
-            ></i>
 
-            {{ presentacion.estadoAlerta === 'AGOTADO' ? 'Agotado' : 'Reponer' }}
+      <!-- Notas emitidas -->
+
+      <article class="metric-card">
+
+        <div class="metric-icon metric-icon--notes">
+          <i class="bi bi-receipt"></i>
+        </div>
+
+        <div class="metric-content">
+
+          <span class="metric-label">
+            Notas de venta
           </span>
+
+          <strong class="metric-value">
+            {{ ventas.cantidadNotas }}
+          </strong>
+
+          <small class="metric-description">
+            {{ ventas.cantidadNotas === 1 ? 'Operación registrada' : 'Operaciones registradas' }}
+          </small>
 
         </div>
 
@@ -182,66 +375,672 @@
 
     </div>
 
+
+    <!-- Sin datos -->
+
+    <div
+      class="dashboard-empty"
+      *ngIf="!cargandoVentas && !errorVentas && resumenVentas && resumenVentas.cantidadNotas === 0"
+    >
+
+      <i class="bi bi-receipt"></i>
+
+      <strong>No se registraron ventas en este periodo.</strong>
+
+      <span>
+        Selecciona otro periodo para consultar más información.
+      </span>
+
+    </div>
+
   </section>
 
+
   <!-- ========================================================
-       TARJETAS SEGÚN LOS PERMISOS DEL PERFIL
+       RESUMEN DE INVENTARIO
        ======================================================== -->
 
-  <div
-    class="info-cards"
-    *ngIf="mostrarTarjetas"
+  <section
+    class="dashboard-section"
+    *ngIf="puedeConsultarInventario"
   >
 
-    <!-- PRODUCTOS -->
-    <div
-      class="card"
-      *ngIf="puedeVerProductos"
-    >
+    <div class="section-title section-title--with-control">
 
-      <i class="bi bi-capsule icon"></i>
+      <div>
+        <h3>Estado del inventario</h3>
 
-      <h3>Productos</h3>
+        <p>
+          El stock disponible excluye las existencias de lotes vencidos.
+          Estas se muestran por separado.
+        </p>
+      </div>
 
-      <p>
-        Gestiona tu catálogo, precios y presentaciones.
-      </p>
 
-    </div>
+      <div class="horizon-selector">
 
-    <!-- PUNTO DE VENTA -->
-    <div
-      class="card"
-      *ngIf="puedeRegistrarVenta"
-    >
+        <label for="dashboardDiasVencimiento">
+          Próximos vencimientos
+        </label>
 
-      <i class="bi bi-cart-check icon"></i>
+        <select
+          id="dashboardDiasVencimiento"
+          [ngModel]="diasAnticipacion"
+          (ngModelChange)="cambiarDiasAnticipacion($event)"
+        >
+          <option [ngValue]="7">7 días</option>
+          <option [ngValue]="15">15 días</option>
+          <option [ngValue]="30">30 días</option>
+        </select>
 
-      <h3>Nueva Venta</h3>
-
-      <p>
-        Registra ventas de forma rápida y aplica descuentos.
-      </p>
-
-    </div>
-
-    <!-- CLIENTES -->
-    <div
-      class="card"
-      *ngIf="puedeVerClientes"
-    >
-
-      <i class="bi bi-people icon"></i>
-
-      <h3>Clientes</h3>
-
-      <p>
-        Administra tu base de clientes y consulta su historial.
-      </p>
+      </div>
 
     </div>
 
-  </div>
+
+    <!-- Cargando inventario -->
+
+    <div
+      class="dashboard-state"
+      *ngIf="cargandoInventario"
+    >
+      <span class="spinner"></span>
+      <span>Consultando el estado del inventario...</span>
+    </div>
+
+
+    <!-- Error de inventario -->
+
+    <div
+      class="dashboard-error"
+      *ngIf="!cargandoInventario && errorInventario"
+      role="alert"
+      aria-live="polite"
+    >
+
+      <div>
+        <i class="bi bi-exclamation-circle"></i>
+        <span>{{ errorInventario }}</span>
+      </div>
+
+      <button
+        type="button"
+        (click)="cargarResumenInventario()"
+        [disabled]="cargandoInventario"
+      >
+        Reintentar
+      </button>
+
+    </div>
+
+
+    <!-- Información de inventario -->
+
+    <ng-container
+      *ngIf="!cargandoInventario && !errorInventario && resumenInventario as inventario"
+    >
+
+      <!-- Indicadores -->
+
+      <div class="metric-grid metric-grid--inventory">
+
+        <article class="metric-card metric-card--danger">
+
+          <div class="metric-icon metric-icon--danger">
+            <i class="bi bi-x-circle"></i>
+          </div>
+
+          <div class="metric-content">
+
+            <span class="metric-label">
+              Presentaciones agotadas
+            </span>
+
+            <strong class="metric-value">
+              {{ inventario.cantidadPresentacionesAgotadas }}
+            </strong>
+
+            <small class="metric-description">
+              Sin stock disponible
+            </small>
+
+          </div>
+
+        </article>
+
+
+        <article class="metric-card metric-card--warning">
+
+          <div class="metric-icon metric-icon--warning">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+
+          <div class="metric-content">
+
+            <span class="metric-label">
+              Presentaciones por reponer
+            </span>
+
+            <strong class="metric-value">
+              {{ inventario.cantidadPresentacionesPorReponer }}
+            </strong>
+
+            <small class="metric-description">
+              En el mínimo o por debajo de él
+            </small>
+
+          </div>
+
+        </article>
+
+
+        <article class="metric-card metric-card--danger">
+
+          <div class="metric-icon metric-icon--danger">
+            <i class="bi bi-calendar-x"></i>
+          </div>
+
+          <div class="metric-content">
+
+            <span class="metric-label">
+              Lotes vencidos
+            </span>
+
+            <strong class="metric-value">
+              {{ inventario.cantidadLotesVencidos }}
+            </strong>
+
+            <small class="metric-description">
+              Con existencias pendientes
+            </small>
+
+          </div>
+
+        </article>
+
+
+        <article class="metric-card metric-card--warning">
+
+          <div class="metric-icon metric-icon--warning">
+            <i class="bi bi-calendar-event"></i>
+          </div>
+
+          <div class="metric-content">
+
+            <span class="metric-label">
+              Próximos a vencer
+            </span>
+
+            <strong class="metric-value">
+              {{ inventario.cantidadLotesProximosAVencer }}
+            </strong>
+
+            <small class="metric-description">
+              Dentro de {{ inventario.diasAnticipacion }} días
+            </small>
+
+          </div>
+
+        </article>
+
+      </div>
+
+
+      <!-- ====================================================
+           ALERTAS DE PRESENTACIONES
+           ==================================================== -->
+
+      <div class="section-title section-title--subsection">
+
+        <div>
+          <h3>Alertas de stock</h3>
+
+          <p>
+            Presentaciones que requieren atención.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="alert-grid">
+
+        <!-- AGOTADAS -->
+
+        <article class="alert-panel">
+
+          <div class="alert-panel-heading">
+
+            <div class="alert-panel-title">
+
+              <span class="alert-panel-icon alert-panel-icon--danger">
+                <i class="bi bi-x-circle"></i>
+              </span>
+
+              <div>
+                <h4>Presentaciones agotadas</h4>
+                <p>Sin existencias disponibles para la venta.</p>
+              </div>
+
+            </div>
+
+            <span class="count-badge count-badge--danger">
+              {{ inventario.cantidadPresentacionesAgotadas }}
+            </span>
+
+          </div>
+
+
+          <div
+            class="alert-list"
+            *ngIf="inventario.presentacionesAgotadas.length > 0; else sinAgotadas"
+          >
+
+            <article
+              class="presentation-alert"
+              *ngFor="let presentacion of inventario.presentacionesAgotadas"
+            >
+
+              <div class="presentation-alert-main">
+
+                <strong>{{ presentacion.nombreProducto }}</strong>
+
+                <span>
+                  {{ etiquetaTipo(presentacion.tipoPresentacion) }}
+                  · Factor ×{{ presentacion.factorConversion }}
+                </span>
+
+              </div>
+
+              <div class="presentation-alert-values">
+
+                <div>
+                  <span>Disponible</span>
+                  <strong>
+                    {{ presentacion.stockDisponible | number:'1.0-2' }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Mínimo</span>
+                  <strong>
+                    {{ presentacion.stockMinimo | number:'1.0-2' }}
+                  </strong>
+                </div>
+
+              </div>
+
+              <span class="status-badge status-badge--danger">
+                Agotado
+              </span>
+
+            </article>
+
+          </div>
+
+
+          <ng-template #sinAgotadas>
+
+            <div class="panel-empty">
+              <i class="bi bi-check-circle"></i>
+              <span>No hay presentaciones agotadas.</span>
+            </div>
+
+          </ng-template>
+
+        </article>
+
+
+        <!-- POR REPONER -->
+
+        <article class="alert-panel">
+
+          <div class="alert-panel-heading">
+
+            <div class="alert-panel-title">
+
+              <span class="alert-panel-icon alert-panel-icon--warning">
+                <i class="bi bi-exclamation-triangle"></i>
+              </span>
+
+              <div>
+                <h4>Presentaciones por reponer</h4>
+                <p>Existencias en el mínimo configurado o por debajo.</p>
+              </div>
+
+            </div>
+
+            <span class="count-badge count-badge--warning">
+              {{ inventario.cantidadPresentacionesPorReponer }}
+            </span>
+
+          </div>
+
+
+          <div
+            class="alert-list"
+            *ngIf="inventario.presentacionesPorReponer.length > 0; else sinReposicion"
+          >
+
+            <article
+              class="presentation-alert"
+              *ngFor="let presentacion of inventario.presentacionesPorReponer"
+            >
+
+              <div class="presentation-alert-main">
+
+                <strong>{{ presentacion.nombreProducto }}</strong>
+
+                <span>
+                  {{ etiquetaTipo(presentacion.tipoPresentacion) }}
+                  · Factor ×{{ presentacion.factorConversion }}
+                </span>
+
+              </div>
+
+              <div class="presentation-alert-values">
+
+                <div>
+                  <span>Disponible</span>
+                  <strong>
+                    {{ presentacion.stockDisponible | number:'1.0-2' }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Mínimo</span>
+                  <strong>
+                    {{ presentacion.stockMinimo | number:'1.0-2' }}
+                  </strong>
+                </div>
+
+              </div>
+
+              <span class="status-badge status-badge--warning">
+                Reponer
+              </span>
+
+            </article>
+
+          </div>
+
+
+          <ng-template #sinReposicion>
+
+            <div class="panel-empty">
+              <i class="bi bi-check-circle"></i>
+              <span>No hay presentaciones pendientes de reposición.</span>
+            </div>
+
+          </ng-template>
+
+        </article>
+
+      </div>
+
+
+      <!-- ====================================================
+           ALERTAS DE VENCIMIENTOS
+           ==================================================== -->
+
+      <div class="section-title section-title--subsection">
+
+        <div>
+          <h3>Control de vencimientos</h3>
+
+          <p>
+            Existencias registradas en lotes vencidos y próximos a vencer.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="expiry-grid">
+
+        <!-- LOTES VENCIDOS -->
+
+        <section class="table-card">
+
+          <div class="table-heading">
+
+            <div>
+              <h4>
+                <i class="bi bi-calendar-x text-danger"></i>
+                Lotes vencidos
+              </h4>
+
+              <p>
+                Lotes que todavía tienen existencias registradas.
+              </p>
+            </div>
+
+            <span class="count-badge count-badge--danger">
+              {{ inventario.cantidadLotesVencidos }}
+            </span>
+
+          </div>
+
+
+          <div class="table-wrapper">
+
+            <table class="dashboard-table">
+
+              <thead>
+                <tr>
+                  <th>Producto y lote</th>
+                  <th>Vencimiento</th>
+                  <th>Existencias por presentación</th>
+                </tr>
+              </thead>
+
+
+              <tbody>
+
+                <tr
+                  *ngFor="let lote of inventario.lotesVencidos"
+                >
+
+                  <td data-label="Producto y lote">
+
+                    <strong class="table-primary-text">
+                      {{ lote.nombreProducto }}
+                    </strong>
+
+                    <small class="table-secondary-text">
+                      Lote: {{ lote.numeroLote }}
+                    </small>
+
+                  </td>
+
+
+                  <td data-label="Vencimiento">
+
+                    <strong class="table-date">
+                      {{ formatearFechaCorta(lote.fechaVencimiento) }}
+                    </strong>
+
+                    <span class="status-badge status-badge--danger">
+                      {{ descripcionVencimiento(lote.diasRestantes) }}
+                    </span>
+
+                  </td>
+
+
+                  <td data-label="Existencias">
+
+                    <div class="presentation-stock-tags">
+
+                      <span
+                        class="presentation-stock-tag"
+                        *ngFor="let existencia of lote.existenciasPresentaciones"
+                      >
+                        {{ etiquetaTipo(existencia.tipo) }}:
+                        <strong>
+                          {{ existencia.cantidad | number:'1.0-2' }}
+                        </strong>
+                        <small>
+                          ×{{ existencia.factorConversion }}
+                        </small>
+                      </span>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+
+                <tr *ngIf="inventario.lotesVencidos.length === 0">
+
+                  <td colspan="3" class="table-message">
+
+                    <div class="panel-empty">
+                      <i class="bi bi-check-circle"></i>
+                      <span>No hay lotes vencidos con existencias.</span>
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+        <!-- LOTES PRÓXIMOS A VENCER -->
+
+        <section class="table-card">
+
+          <div class="table-heading">
+
+            <div>
+              <h4>
+                <i class="bi bi-calendar-event text-warning"></i>
+                Próximos a vencer
+              </h4>
+
+              <p>
+                Lotes que vencerán dentro del horizonte seleccionado.
+              </p>
+            </div>
+
+            <span class="count-badge count-badge--warning">
+              {{ inventario.cantidadLotesProximosAVencer }}
+            </span>
+
+          </div>
+
+
+          <div class="table-wrapper">
+
+            <table class="dashboard-table">
+
+              <thead>
+                <tr>
+                  <th>Producto y lote</th>
+                  <th>Vencimiento</th>
+                  <th>Existencias por presentación</th>
+                </tr>
+              </thead>
+
+
+              <tbody>
+
+                <tr
+                  *ngFor="let lote of inventario.lotesProximosAVencer"
+                >
+
+                  <td data-label="Producto y lote">
+
+                    <strong class="table-primary-text">
+                      {{ lote.nombreProducto }}
+                    </strong>
+
+                    <small class="table-secondary-text">
+                      Lote: {{ lote.numeroLote }}
+                    </small>
+
+                  </td>
+
+
+                  <td data-label="Vencimiento">
+
+                    <strong class="table-date">
+                      {{ formatearFechaCorta(lote.fechaVencimiento) }}
+                    </strong>
+
+                    <span
+                      class="status-badge"
+                      [class.status-badge--danger]="lote.diasRestantes <= 7"
+                      [class.status-badge--warning]="lote.diasRestantes > 7"
+                    >
+                      {{ descripcionVencimiento(lote.diasRestantes) }}
+                    </span>
+
+                  </td>
+
+
+                  <td data-label="Existencias">
+
+                    <div class="presentation-stock-tags">
+
+                      <span
+                        class="presentation-stock-tag"
+                        *ngFor="let existencia of lote.existenciasPresentaciones"
+                      >
+                        {{ etiquetaTipo(existencia.tipo) }}:
+                        <strong>
+                          {{ existencia.cantidad | number:'1.0-2' }}
+                        </strong>
+                        <small>
+                          ×{{ existencia.factorConversion }}
+                        </small>
+                      </span>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+
+                <tr *ngIf="inventario.lotesProximosAVencer.length === 0">
+
+                  <td colspan="3" class="table-message">
+
+                    <div class="panel-empty">
+                      <i class="bi bi-check-circle"></i>
+
+                      <span>
+                        No hay lotes próximos a vencer dentro de
+                        {{ inventario.diasAnticipacion }} días.
+                      </span>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </ng-container>
+
+  </section>
 
 </div>
 

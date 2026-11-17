@@ -1,6 +1,6 @@
-
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 
 import {
   ChangeDetectorRef,
@@ -79,7 +79,8 @@ interface ProductoAlertaDashboardVista {
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule
   ],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
@@ -956,6 +957,56 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     return nombres[tipo] || tipo;
+  }
+
+  // ============================================================
+  // FORMATO DE FECHAS PARA EL DASHBOARD
+  // ============================================================
+
+  formatearFechaCorta(
+    fecha: string | null | undefined
+  ): string {
+
+    if (!fecha) {
+      return 'No disponible';
+    }
+
+    // Las fechas del backend llegan como YYYY-MM-DD.
+    // Se separan sus componentes para evitar conversiones UTC.
+    const partes = fecha.substring(0, 10).split('-');
+
+    if (partes.length !== 3) {
+      return 'No disponible';
+    }
+
+    const [anio, mes, dia] = partes;
+
+    if (!anio || !mes || !dia) {
+      return 'No disponible';
+    }
+
+    return `${dia}/${mes}/${anio}`;
+  }
+
+
+  descripcionVencimiento(dias: number): string {
+
+    if (dias < 0) {
+
+      const diasVencidos = Math.abs(dias);
+
+      return diasVencidos === 1
+        ? 'Vencido hace 1 día'
+        : `Vencido hace ${diasVencidos} días`;
+    }
+
+    if (dias === 0) {
+      return 'Vence hoy';
+    }
+
+    return dias === 1
+      ? 'Vence en 1 día'
+      : `Vence en ${dias} días`;
   }
 
 
